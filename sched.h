@@ -17,6 +17,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef NCRON_SCHED_H_
+#define NCRON_SCHED_H_
+
 #include <sys/types.h>
 
 typedef struct
@@ -78,3 +81,4 @@ void free_ipair_node_list (ipair_node_t *list);
 void free_stack(cronentry_t **stack);
 void free_cronentry (cronentry_t **p);
 
+#endif

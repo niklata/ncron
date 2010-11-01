@@ -26,15 +26,13 @@
 
 #include "defines.h"
 #include "log.h"
-#include "chroot.h"
-#include "rlimit.h"
 #include "nstrl.h"
 
 #ifndef HAVE_CLEARENV
 extern char **environ;
 #endif
 
-static void fix_env(uid_t uid)
+void ncm_fix_env(uid_t uid)
 {
     struct passwd *pw;
     char uids[20];
@@ -86,7 +84,7 @@ fail_fix_env:
     exit(EXIT_FAILURE);
 }
 
-static void execute(char *command, char *args)
+void ncm_execute(char *command, char *args)
 {
     static char *argv[MAX_ARGS];
     static int n;
@@ -134,48 +132,5 @@ static void execute(char *command, char *args)
     }
 
     execv(command, argv);
-}
-
-void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
-        char *chroot, limit_t *limits)
-{
-    switch ((int)fork()) {
-        case 0:
-            imprison(chroot);
-            if (enforce_limits(limits, uid, gid, command))
-                exit(EXIT_FAILURE);
-            if (gid != 0) {
-                if (setgid(gid)) {
-                    log_line("setgid failed for \"%s\", u:%i, g:%i\n",
-                            command, uid, gid);
-                    exit(EXIT_FAILURE);
-                }
-                if (getgid() == 0) {
-                    log_line("sanity check failed: child is still root, not exec'ing\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            if (uid != 0) {
-                if (setuid(uid)) {
-                    log_line("setuid failed for \"%s\", u:%i, g:%i\n",
-                            command, uid, gid);
-                    exit(EXIT_FAILURE);
-                }
-                if (getuid() == 0) {
-                    log_line("sanity check failed: child is still root, not execing\n");
-                    exit(EXIT_FAILURE);
-                }
-                fix_env(uid); /* provide minimally correct environment */
-            }
-            execute(command, args);
-            exit(EXIT_FAILURE); /* execl only returns on failure */
-            break;
-        case -1:
-            log_line("exec_and_fork: FATAL - unable to fork\n");
-            exit(EXIT_FAILURE);
-            break;
-        default:
-            break;
-    }
 }
 

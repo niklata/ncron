@@ -1,7 +1,8 @@
 /*
  * ncron.c - secure and minimalistic single user cron daemon
+ * Time-stamp: <2010-11-01 17:04:47 nk>
  *
- * (C) 2003-2007 Nicholas J. Kain <njk@aerifal.cx>
+ * (C) 2003-2010 Nicholas J. Kain <njk@aerifal.cx>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +46,8 @@
 #include "sched.h"
 #include "config.h"
 #include "exec.h"
+#include "chroot.h"
+#include "rlimit.h"
 #include "nstrl.h"
 
 static volatile sig_atomic_t pending_save_and_exit = 0;
@@ -174,6 +177,49 @@ static void fail_on_fdne(char *file, char *mode)
         exit(EXIT_FAILURE); 
     }
     fclose(f);
+}
+
+static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
+                          char *chroot, limit_t *limits)
+{
+    switch ((int)fork()) {
+        case 0:
+            imprison(chroot);
+            if (enforce_limits(limits, uid, gid, command))
+                exit(EXIT_FAILURE);
+            if (gid != 0) {
+                if (setgid(gid)) {
+                    log_line("setgid failed for \"%s\", u:%i, g:%i\n",
+                             command, uid, gid);
+                    exit(EXIT_FAILURE);
+                }
+                if (getgid() == 0) {
+                    log_line("sanity check failed: child is still root, not exec'ing\n");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            if (uid != 0) {
+                if (setuid(uid)) {
+                    log_line("setuid failed for \"%s\", u:%i, g:%i\n",
+                             command, uid, gid);
+                    exit(EXIT_FAILURE);
+                }
+                if (getuid() == 0) {
+                    log_line("sanity check failed: child is still root, not execing\n");
+                    exit(EXIT_FAILURE);
+                }
+                ncm_fix_env(uid); /* provide minimally correct environment */
+            }
+            ncm_execute(command, args);
+            exit(EXIT_FAILURE); /* execl only returns on failure */
+            break;
+        case -1:
+            log_line("exec_and_fork: FATAL - unable to fork\n");
+            exit(EXIT_FAILURE);
+            break;
+        default:
+            break;
+    }
 }
 
 int main(int argc, char** argv)
