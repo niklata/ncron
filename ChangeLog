@@ -1,0 +1,137 @@
+user:        njk@darksword.kain.us
+date:        Mon Sep 22 22:53:37 2008 -0400
+summary:     Make makefile more sane.
+
+user:        njk@darksword.kain.us
+date:        Mon Sep 22 22:33:31 2008 -0400
+summary:     Convert unnecessary static char arrays to char arrays.  Only one is needed.
+
+user:        njk@darksword.kain.us
+date:        Mon Sep 22 22:17:01 2008 -0400
+summary:     cosmetic: Cleaned up code formatting.
+
+user:        njk@darksword.kain.us
+date:        Thu Feb 08 05:59:40 2007 -0500
+summary:     Add w=week interval unit.  Update documentation to remove duplication.
+
+user:        njk@darksword.kain.us
+date:        Thu Feb 08 05:40:14 2007 -0500
+summary:     Clean up Makefile and whitespace/identing
+
+user:        njk@darksword.kain.us
+date:        Thu Feb 08 05:11:32 2007 -0500
+summary:     Make parse_interval() static
+
+user:        njk@darksword.kain.us
+date:        Thu Feb 08 03:38:03 2007 -0500
+summary:     Allow unit specifiers for intervals and update documentation.
+
+user:        njk@darksword.kain.us
+date:        Thu Feb 08 02:50:43 2007 -0500
+summary:     Fix bug that broke single value rlimit pairs
+
+user:        njk@darksword.kain.us
+date:        Thu Feb 08 02:49:08 2007 -0500
+summary:     Fix bug that broke single-item ipairs
+
+user:        njk@darksword.kain.us
+date:        Thu Feb 08 02:45:53 2007 -0500
+summary:     Initial commit
+
+2004-09-06:
+use clearenv if HAVE_CLEARENV is defined.  default for glibc compiles.
+
+2004-07-16:
+it's unnecessary to conditionalize free on a structure that does
+not itself contain pointers.  the implied changes were performed on sched.c
+and config.c.
+
+ncron now uses darcs for revision control.
+
+2004-06-26:
+signal flag variables are now static volatile sig_atomic_t rather than
+static volatile int.
+
+2004-03-06:
+
+ncron is now intelligent enough to automatically compensate for constraint
+changes for extant jobs.  This change means that users need not clear
+exectime data in ncron's history file for edited jobs.
+
+2004-03-05:
+
+"-Wall -pedantic" are now default flags in builds.
+Minor code cleanups to satisfy "-Wall -pedantic".
+
+ncron now has friendly man pages.
+
+version is now 0.98
+
+2004-03-04:
+
+Constrainer is now more intelligent about selecting intervals, and should
+always pick the most optimal runtime.
+
+Constrainer now understands that the number of days in a month varies as a
+function of the month and year.
+
+Constrainer should be faster and generally more correct.
+
+Config parser now drops a job onto the dead list if initial constraint fails.
+
+2004-03-02:
+
+Minor code cleanups.
+
+Add "runat" and "journal" keywords.
+
+Improved ncron so that exectime and number of runs for expired jobs will
+be saved.  However, this comes at a cost -- ncron will keep data structures
+for jobs that have expired in memory.  This problem may be fixed by either
+dividing the current history file into two files (preferred) or alternatively,
+by having ncron edit the user configuration file to delete expired jobs (bad!).
+For now, I don't consider it to be a big issue.
+
+Make nstrl.c idempotent.
+
+Added "maxruns" keyword.  In order to support this functionality properly,
+number of job runs is now recorded along with execution times.
+
+2004-02-26:
+
+Initial constraint for jobs without prior exectime data does not first
+add interval before constraining.
+
+2004-02-25:
+
+Multiple constraints of the same type are now allowed; they are implicitly
+OR'ed together.
+
+Discontinuous constraints should be more reliable.
+Lots of internal improvements.
+
+waitpid with WNOHANG never returns EINTR.
+
+Makefile fixes
+
+I have "ported" ncron so that it can be cleanly built on OS X.  I have no idea
+whether or not it will actually work properly, since I do not own any OS X
+machines.
+
+ncron now uses the daemon() syscall rather than homebrew fork code.  This
+change may introduce portability issues.
+
+Version is now 0.95.
+
+2003-09-27:
+
+No more repository -- paranoid security fears about the existing ones.
+(In reality, my local repo was claimed by a deathstar crash.)
+
+Did an audit for fun:
+Minor code cleanup in config.c.
+Unchecked malloc() in exec.c fixed.
+
+Added native support to chroot spawned jobs.  This change is only useful
+if ncron is being run uid root.
+

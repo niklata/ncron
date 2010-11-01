@@ -1,0 +1,85 @@
+ncron - secure, small, fast, and reliable cron/at daemon
+(C) 2003-2007 Nicholas J. Kain.  Licensed under GNU LGPL.
+
+INTRODUCTION
+------------
+
+Cron daemons have been a part of Unix systems for as long as most Unix users
+can remember, and over that time cron hasn't changed very much in form.  Ncron
+is not like other cron daemons in either design or intention.
+
+Ncron is intentionally not backwards compatible with existing cron daemons.  I
+honestly haven't used existing cron daemons very much at all, as I have never
+really trusted them, so I can say that any similarities with existing cronds
+are purely coincidential.
+
+SECURITY PHILOSOPHY
+-------------------
+
+The primary intention of ncron is to provide a secure cron daemon.  Ncron is
+designed above all to behave correctly and safely.  I have attempted to design
+ncron with three principles in mind: security, reliability, and efficiency.
+
+Security is really a matter of trust and knowledge, and programs are known to
+be secure by some combination of design, testing, and open review.  Secure
+programs generally minimize privilege, distrust inputs, are very careful about
+direct memory manipulation (including string handling in C), and are careful
+about numeric overflow conditions.
+
+Reliability is an obvious consequence of secure design -- most security issues
+are really reliability problems that can be subverted to behave in controllable
+ways.  Reliable programs should run smoothly and with little human attention
+once properly set up.
+
+Efficiency is desirable in all programs, and is compatible with security, so I
+do not neglect it.  However, I do not compromise correctness for efficiency.
+Making programs efficient is also one of the enjoyable things about
+programming, especially in imperative languages.
+
+INSTALL
+-------
+
+Ncron should run on most POSIX platforms, but it has not yet been extensively
+tested.  It is developed on SMP x86 Linux 2.6 systems running various versions
+of glibc (2.1-2.4) and gcc (2.95.3-4.1.1).  Success reports for other
+architectures and operating systems would be welcomed.
+
+Tested to work on:
+
+o Linux 2.[46], glibc 2.[1234].x, uclibc
+
+Before you build, I suggest that you check the Makefile to make sure that it
+matches your system.
+
+Building: 
+
+Choose the makefile that suits your system and edit it to taste.
+
+Or if you're running something similar to Linux/glibc:
+
+$ make
+$ su
+# make install
+# exit
+
+If you wish to clean up the build directory, use:
+
+$ make clean
+
+-=-=-=-=-
+
+DOCUMENTATION
+
+See the man pages:
+
+man 5 crontab
+man ncron
+
+-=-=-=-=-
+
+CONTACTING THE AUTHOR
+
+If you need to personally contact me, email me.  I would prefer if you
+formatted the header of your email to be prefixed with "NCRON: "; such a format
+may make a response more likely.  My email address is njk at aerifal dot cx.
+
