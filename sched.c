@@ -357,6 +357,7 @@ void save_stack(char *file, cronentry_t *stack, cronentry_t *deadstack)
 {
     FILE *f;
     cronentry_t *p;
+    size_t bsize;
     char buf[MAXLINE];
 
     f = fopen(file, "w");
@@ -369,12 +370,10 @@ void save_stack(char *file, cronentry_t *stack, cronentry_t *deadstack)
     p = stack;
 
     while (p) {
-        size_t ws, wo = 0;
         snprintf(buf, sizeof buf, "%i=%i:%i|%i\n", p->id, (int)p->exectime,
                 (unsigned int)p->numruns, (int)p->lasttime);
-        ws = strlen(buf);
-        while (ws - wo) {
-            wo += fwrite(buf + wo, sizeof(char), ws - wo, f);
+        bsize = strlen(buf);
+        while (!fwrite(buf, bsize, 1, f)) {
             if (ferror(f))
                 goto fail;
         }
@@ -384,12 +383,10 @@ void save_stack(char *file, cronentry_t *stack, cronentry_t *deadstack)
 
     p = deadstack;
     while (p) {
-        size_t ws, wo = 0;
         snprintf(buf, sizeof buf, "%i=%i:%i|%i\n", p->id, (int)p->exectime,
                 (unsigned int)p->numruns, (int)p->lasttime);
-        ws = strlen(buf);
-        while (ws - wo) {
-            wo += fwrite(buf + wo, sizeof(char), ws - wo, f);
+        bsize = strlen(buf);
+        while (!fwrite(buf, bsize, 1, f)) {
             if (ferror(f))
                 goto fail;
         }

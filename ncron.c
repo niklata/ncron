@@ -59,7 +59,7 @@ static void write_pid(char *file)
 {
     FILE *f;
     char buf[MAXLINE];
-    size_t ws, wo = 0;
+    size_t bsize;
 
     f = fopen(file, "w");
     if (f == NULL) {
@@ -68,11 +68,10 @@ static void write_pid(char *file)
     }
 
     snprintf(buf, sizeof buf, "%i", (unsigned int)getpid());
-    ws = strlen(buf);
-    while (ws - wo) {
-        wo += fwrite(buf + wo, sizeof(char), ws - wo, f);
-        if (ferror(f))
-            break;
+    bsize = strlen(buf);
+    while (!fwrite(buf, bsize, 1, f)) {
+         if (ferror(f))
+             break;
     }
 
     if (fclose(f) != 0) {
