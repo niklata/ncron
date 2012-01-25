@@ -437,7 +437,7 @@ static unsigned int parse_interval(char *value)
         value[i] = tolower(value[i]);
 
     p = strpbrk(value, units);
-    if (strpbrk == NULL)
+    if (!p)
         return (unsigned int)strtol(value, (char **)NULL, 10);
 
     i = 0;
