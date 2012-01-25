@@ -31,7 +31,7 @@
 #include "defines.h"
 #include "sched.h"
 #include "log.h"
-#include "nstrl.h"
+#include "strl.h"
 
 /* BSD uses OFILE rather than NOFILE... */
 #ifndef RLIMIT_NOFILE

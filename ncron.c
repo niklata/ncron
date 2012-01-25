@@ -48,7 +48,7 @@
 #include "exec.h"
 #include "chroot.h"
 #include "rlimit.h"
-#include "nstrl.h"
+#include "strl.h"
 
 static volatile sig_atomic_t pending_save_and_exit = 0;
 static volatile sig_atomic_t pending_reload_config = 0;

@@ -1,8 +1,8 @@
 /*
  * exec.c - functions to exec a job
- * Time-stamp: <2010-11-01 17:07:21 nk>
+ * Time-stamp: <2010-11-01 17:34:11 nk>
  *
- * (c) 2003-2010 Nicholas J. Kain <njkain@gmail.com>
+ * (c) 2003-2010 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,9 +35,9 @@
 #include <string.h>
 #include <pwd.h>
 
-#include "defines.h"
 #include "log.h"
-#include "nstrl.h"
+#include "strl.h"
+#include "defines.h"
 
 #ifndef HAVE_CLEARENV
 extern char **environ;

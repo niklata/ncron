@@ -1,6 +1,5 @@
-/*
- * exec.h - functions to exec a job
- * Time-stamp: <2010-11-01 17:17:37 nk>
+/* strl.c - strlcpy/strlcat implementation
+ * Time-stamp: <2010-11-03 05:25:02 njk>
  *
  * (c) 2003-2010 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
@@ -28,12 +27,34 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef NCM_EXEC_H_
-#define NCM_EXEC_H_
+#include <unistd.h>
+#include "strl.h"
 
-void ncm_fix_env(uid_t uid);
-void ncm_execute(char *command, char *args);
+#ifndef HAVE_STRLCPY
+size_t strlcpy (char *dest, const char *src, size_t size)
+{
+	register unsigned int i = 0;
 
-#endif
+	if (size > 0) {
+		size--;
+		for (i=0; size > 0 && src[i] != '\0'; ++i, size--)
+			dest[i] = src[i];
 
+		dest[i] = '\0';
+	}
+	while (src[i++]);
+
+	return i;
+}
+#endif /* HAVE_STRLCPY */
+
+#ifndef HAVE_STRLCAT
+size_t strlcat (char *dest, const char *src, size_t size)
+{
+	register char *d = dest;
+
+	for (; size > 0 && *d != '\0'; size--, d++);
+	return (d - dest) + strlcpy(d, src, size);
+}
+#endif /* HAVE_STRLCAT */
 
