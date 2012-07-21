@@ -58,6 +58,13 @@
 #include "rlimit.h"
 #include "strl.h"
 
+#define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
+#define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
+#define PID_FILE_DEFAULT "/var/run/ncron.pid"
+#define LOG_FILE_DEFAULT "/var/log/ncron.log"
+
+#define NCRON_VERSION "0.99"
+
 static volatile sig_atomic_t pending_save_and_exit = 0;
 static volatile sig_atomic_t pending_reload_config = 0;
 static volatile sig_atomic_t pending_free_children = 0;
@@ -223,7 +230,7 @@ static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
                     log_line("sanity check failed: child is still root, not execing\n");
                     exit(EXIT_FAILURE);
                 }
-                ncm_fix_env(uid); /* provide minimally correct environment */
+                ncm_fix_env(uid, true); /* provide minimally correct environment */
             }
             ncm_execute(command, args);
             exit(EXIT_FAILURE); /* execl only returns on failure */
