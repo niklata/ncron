@@ -1,21 +1,29 @@
-/*
- * ncron.c - secure and minimalistic single user cron daemon
- * Time-stamp: <2010-11-01 17:04:47 nk>
+/* ncron.c - secure, minimally-sleeping cron daemon
  *
- * (C) 2003-2012 Nicholas J. Kain <njkain@gmail.com>
+ * (c) 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
+ * All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License version 2.1 as published by the Free Software Foundation.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * - Redistributions of source code must retain the above copyright notice,
+ *   this list of conditions and the following disclaimer.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <unistd.h>
@@ -359,33 +367,51 @@ int main(int argc, char** argv)
         switch (c) {
 
             case 'h':
-                printf("ncron %s, secure cron/at daemon.  Licensed under GNU LGPL.\n", NCRON_VERSION);
+                printf("ncron %s, secure cron/at daemon.\n", NCRON_VERSION);
                 printf(
-                        "Copyright (C) 2003-2007 Nicholas J. Kain\n"
-                        "Usage: ncron [OPTIONS]\n"
-                        "  -d, --detach         detach from foreground and daemonize\n"
-                        "  -n, --nodetach       stay in foreground\n"
-                        "  -s, --sleep          time to wait in seconds to wait before processing\n"
-                        "                         jobs at startup\n");
+                       "Copyright (C) 2003-2012 Nicholas J. Kain\n"
+                       "Usage: ncron [OPTIONS]\n"
+                       "  -d, --detach         detach from foreground and daemonize\n"
+                       "  -n, --nodetach       stay in foreground\n"
+                       "  -s, --sleep          time to wait in seconds to wait before processing\n"
+                       "                         jobs at startup\n");
                 printf(
-                        "  -0, --noexecsave     don't save execution history at all\n"
-                        "  -j, --journal        saves exectimes at each job invocation\n"
-                        "  -c, --conf=FILE      use FILE for configuration info\n"
-                        "  -f, --history=FILE   save execution history in FILE\n"
-                        "  -p, --pidfile=FILE   write pid to FILE\n"
-                        "  -q, --quiet          don't log to syslog\n"
-                        "  -h, --help           print this help and exit\n"
-                        "  -v, --version        print version information and exit\n"
-                        "Read documentation and FAQ for more information.\n");
+                       "  -0, --noexecsave     don't save execution history at all\n"
+                       "  -j, --journal        saves exectimes at each job invocation\n"
+                       "  -c, --conf=FILE      use FILE for configuration info\n"
+                       "  -f, --history=FILE   save execution history in FILE\n"
+                       "  -p, --pidfile=FILE   write pid to FILE\n"
+                       "  -q, --quiet          don't log to syslog\n"
+                       "  -h, --help           print this help and exit\n"
+                       "  -v, --version        print version information and exit\n"
+                      );
                 exit(EXIT_FAILURE);
                 break;
 
             case 'v':
-                printf("ncron %s, secure single-user cron.  Licensed under GNU LGPL.\n", NCRON_VERSION);
+                printf("ncron %s, secure single-user cron.\n", NCRON_VERSION);
                 printf(
-                        "Copyright (C) 2003-2007 Nicholas J. Kain\n"
-                        "This is free software; see the source for copying conditions.  There is NO\n"
-                        "WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+                       "Copyright (c) 2003-2012 Nicholas J. Kain\n"
+                       "All rights reserved.\n\n"
+                       "Redistribution and use in source and binary forms, with or without\n"
+                       "modification, are permitted provided that the following conditions are met:\n\n"
+                       "- Redistributions of source code must retain the above copyright notice,\n"
+                       "  this list of conditions and the following disclaimer.\n"
+                       "- Redistributions in binary form must reproduce the above copyright notice,\n"
+                       "  this list of conditions and the following disclaimer in the documentation\n"
+                       "  and/or other materials provided with the distribution.\n\n"
+                       "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n"
+                       "AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n"
+                       "IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n"
+                       "ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE\n"
+                       "LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\n"
+                       "CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF\n"
+                       "SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS\n"
+                       "INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN\n"
+                       "CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)\n"
+                       "ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE\n"
+                       "POSSIBILITY OF SUCH DAMAGE.\n"
+                        );
                 exit(EXIT_FAILURE);
                 break;
 
