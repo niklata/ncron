@@ -2,12 +2,11 @@
  * ncron.c - secure and minimalistic single user cron daemon
  * Time-stamp: <2010-11-01 17:04:47 nk>
  *
- * (C) 2003-2010 Nicholas J. Kain <njk@aerifal.cx>
+ * (C) 2003-2012 Nicholas J. Kain <njkain@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License version 2.1 as published by the Free Software Foundation.
- *
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -53,7 +52,10 @@
 static volatile sig_atomic_t pending_save_and_exit = 0;
 static volatile sig_atomic_t pending_reload_config = 0;
 static volatile sig_atomic_t pending_free_children = 0;
-static int pending_save = 0;
+
+static char g_ncron_conf[MAX_PATH_LENGTH] = CONFIG_FILE_DEFAULT;
+static char g_ncron_execfile[MAX_PATH_LENGTH] = EXEC_FILE_DEFAULT;
+static int g_ncron_execmode = 0;
 
 static void write_pid(char *file)
 {
@@ -80,24 +82,23 @@ static void write_pid(char *file)
     }
 }
 
-static void reload_config(char *conf, char *execfile, cronentry_t **stack,
-        cronentry_t **deadstack, int execmode)
+static void reload_config(cronentry_t **stack, cronentry_t **deadstack)
 {
-    if (execmode != 2) save_stack(execfile, *stack, *deadstack);
+    if (g_ncron_execmode != 2)
+        save_stack(g_ncron_execfile, *stack, *deadstack);
 
     free_stack(stack);
     free_stack(deadstack);
-    parse_config(conf, execfile, stack, deadstack);
-    log_line("SIGHUP - Reloading config: %s.\n", conf);
+    parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
+    log_line("SIGHUP - Reloading config: %s.\n", g_ncron_conf);
     pending_reload_config = 0;
 }
 
-static void save_and_exit(char *execfile, cronentry_t **stack, cronentry_t
-        **deadstack, int execmode)
+static void save_and_exit(cronentry_t **stack, cronentry_t **deadstack)
 {
-    if (execmode != 2) {
-        save_stack(execfile, *stack, *deadstack);
-        log_line("Saving stack to %s.\n", execfile);
+    if (g_ncron_execmode != 2) {
+        save_stack(g_ncron_execfile, *stack, *deadstack);
+        log_line("Saving stack to %s.\n", g_ncron_execfile);
     }
     log_line("Exited.\n");
     exit(EXIT_SUCCESS);
@@ -227,22 +228,100 @@ static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
     }
 }
 
+static int reliable_sleep(struct timespec *ts)
+{
+    struct timespec rem;
+sleep:
+    if (nanosleep(ts, &rem)) {
+        switch (errno) {
+            case EINTR:
+                memcpy(ts, &rem, sizeof(struct timespec));
+                goto sleep;
+            default:
+                log_line("reliable_sleep: nanosleep errno=%d", errno);
+                return -1;
+        }
+    }
+    return 0;
+}
+
+static void do_work(unsigned int initial_sleep, cronentry_t *stack,
+                    cronentry_t *deadstack)
+{
+    struct timespec ts = { .tv_sec=0, .tv_nsec=0 };
+    if (reliable_sleep(&ts))
+        exit(EXIT_FAILURE);
+
+    int pending_save = 0;
+    time_t curtime;
+    cronentry_t *t;
+
+    while (1) {
+        curtime = time(NULL);
+
+        while (stack->exectime <= curtime) {
+            exec_and_fork((uid_t)stack->user, (gid_t)stack->group,
+                    stack->command, stack->args, stack->chroot, stack->limits);
+
+            stack->numruns++;
+            stack->lasttime = curtime;
+            stack->exectime = get_next_time(stack);
+            if (stack->journal)
+                pending_save = 1;
+
+            if ((stack->numruns < stack->maxruns || stack->maxruns == 0)
+                    && stack->exectime != 0) {
+                /* reinsert in sorted stack at the right place for next run */
+                if (stack->next) {
+                    t = stack;
+                    stack = stack->next;
+                    t->next = NULL;
+                    stack_insert(t, &stack);
+                }
+            } else {
+                /* remove the job */
+                t = stack;
+                stack = stack->next;
+                stack_insert(t, &deadstack);
+            }
+            if (!stack)
+                save_and_exit(&stack, &deadstack);
+
+            curtime = time(NULL);
+        }
+
+        if (pending_free_children)
+            free_children();
+        if (pending_save_and_exit)
+            save_and_exit(&stack, &deadstack);
+
+        if (g_ncron_execmode == 1 || pending_save) {
+            save_stack(g_ncron_execfile, stack, deadstack);
+            pending_save = 0;
+        }
+
+        if (pending_reload_config)
+            reload_config(&stack, &deadstack);
+
+        if (curtime <= stack->exectime) {
+            ts.tv_sec = stack->exectime - curtime;
+            ts.tv_nsec = 0;
+            if (reliable_sleep(&ts))
+                exit(EXIT_FAILURE);
+        }
+    }
+}
+
 int main(int argc, char** argv)
 {
     /* Time (in seconds) to sleep before dispatching events at startup.
        Set this macro to a nonzero value so as not to compete for cpu with init
        scripts at boot time. */
     int initial_sleep = 1;
-    int c, tmp;
+    int c;
     char pidfile[MAX_PATH_LENGTH] = PID_FILE_DEFAULT;
 
     cronentry_t *stack = NULL, *deadstack = NULL;
-    int execmode = 0;
-    char conf[MAX_PATH_LENGTH] = CONFIG_FILE_DEFAULT;
-    char execfile[MAX_PATH_LENGTH] = EXEC_FILE_DEFAULT;
-
-    time_t curtime;
-    cronentry_t *t;
 
     while (1) {
         int option_index = 0;
@@ -314,16 +393,16 @@ int main(int argc, char** argv)
                 break;
 
             /*
-             * execmode=0: default, save exectimes on exit
-             * execmode=1: journal, save exectimes on each job invocation
-             * execmode=2: none, don't save exectimes at all
+             * g_ncron_execmode=0: default, save exectimes on exit
+             * g_ncron_execmode=1: journal, save exectimes at job invocation
+             * g_ncron_execmode=2: none, don't save exectimes at all
              */
             case '0':
-                execmode = 2;
+                g_ncron_execmode = 2;
                 break;
 
             case 'j':
-                execmode = 1;
+                g_ncron_execmode = 1;
                 break;
 
             case 'q':
@@ -331,11 +410,11 @@ int main(int argc, char** argv)
                 break;
 
             case 'c':
-                strlcpy(conf, optarg, MAX_PATH_LENGTH);
+                strlcpy(g_ncron_conf, optarg, MAX_PATH_LENGTH);
                 break;
 
             case 'f':
-                strlcpy(execfile, optarg, MAX_PATH_LENGTH);
+                strlcpy(g_ncron_execfile, optarg, MAX_PATH_LENGTH);
                 break;
 
             case 'p':
@@ -344,8 +423,8 @@ int main(int argc, char** argv)
         }
     }
 
-    fail_on_fdne(conf, "r");
-    fail_on_fdne(execfile, "rw");
+    fail_on_fdne(g_ncron_conf, "r");
+    fail_on_fdne(g_ncron_execfile, "rw");
     fail_on_fdne(pidfile, "w");
 
     if (gflags_detach != 0) {
@@ -363,7 +442,7 @@ int main(int argc, char** argv)
 #endif
 
     fix_signals();
-    parse_config(conf, execfile, &stack, &deadstack);
+    parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
 
     if (stack == NULL) {
         log_line("FATAL - no jobs, exiting\n");
@@ -372,62 +451,7 @@ int main(int argc, char** argv)
 
     write_pid(pidfile);
 
-    /* initial sleep time is NOT guaranteed; if awakened, prog will proceed */
-    if (initial_sleep < 0)
-        initial_sleep = 0;
-    sleep((unsigned int)initial_sleep);
-
-    while (1) {
-        curtime = time(NULL);
-
-        while (stack->exectime <= curtime) {
-            exec_and_fork((uid_t)stack->user, (gid_t)stack->group,
-                    stack->command, stack->args, stack->chroot, stack->limits);
-
-            stack->numruns++;
-            stack->lasttime = curtime;
-            stack->exectime = get_next_time(stack);
-            if (stack->journal)
-                pending_save = 1;
-
-            if ((stack->numruns < stack->maxruns || stack->maxruns == 0)
-                    && stack->exectime != 0) {
-                /* reinsert in sorted stack at the right place for next run */
-                if (stack->next) {
-                    t = stack;
-                    stack = stack->next;
-                    t->next = NULL;
-                    stack_insert(t, &stack);
-                }
-            } else {
-                /* remove the job */
-                t = stack;
-                stack = stack->next;
-                stack_insert(t, &deadstack);
-            }
-            if (!stack)
-                save_and_exit(execfile, &stack, &deadstack, execmode);
-
-            curtime = time(NULL);
-        }
-
-        if (pending_free_children)
-            free_children();
-        if (pending_save_and_exit)
-            save_and_exit(execfile, &stack, &deadstack, execmode);
-
-        if (execmode == 1 || pending_save) {
-            save_stack(execfile, stack, deadstack);
-            pending_save = 0;
-        }
-
-        if (pending_reload_config)
-            reload_config(conf, execfile, &stack, &deadstack, execmode);
-
-        tmp = (int)(stack->exectime - curtime);
-        if (tmp < 0)
-            tmp = 0;
-
-        sleep((unsigned int)tmp);
-    }
+    do_work(initial_sleep, stack, deadstack);
+    exit(EXIT_SUCCESS);
 }
+
