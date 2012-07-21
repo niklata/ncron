@@ -102,7 +102,7 @@ static void reload_config(cronentry_t **stack, cronentry_t **deadstack)
     free_stack(stack);
     free_stack(deadstack);
     parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
-    log_line("SIGHUP - Reloading config: %s.\n", g_ncron_conf);
+    log_line("SIGHUP - Reloading config: %s.", g_ncron_conf);
     pending_reload_config = 0;
 }
 
@@ -110,9 +110,9 @@ static void save_and_exit(cronentry_t **stack, cronentry_t **deadstack)
 {
     if (g_ncron_execmode != 2) {
         save_stack(g_ncron_execfile, *stack, *deadstack);
-        log_line("Saving stack to %s.\n", g_ncron_execfile);
+        log_line("Saving stack to %s.", g_ncron_execfile);
     }
-    log_line("Exited.\n");
+    log_line("Exited.");
     exit(EXIT_SUCCESS);
 }
 

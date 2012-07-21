@@ -371,11 +371,8 @@ void save_stack(char *file, cronentry_t *stack, cronentry_t *deadstack)
     char buf[MAXLINE];
 
     f = fopen(file, "w");
-
-    if (!f) {
-        log_line("FATAL - failed to open history file %s for write\n", file);
-        exit(EXIT_FAILURE);
-    }
+    if (!f)
+        suicide("%s: failed to open history file %s for write", __func__, file);
 
     p = stack;
 

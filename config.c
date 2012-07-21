@@ -110,7 +110,7 @@ void get_history(cronentry_t *item, char *path, int noextime)
     f = fopen(path, "r");
 
     if (!f) {
-        log_line("failed to open history file \"%s\" for read\n", path);
+        log_line("failed to open history file \"%s\" for read", path);
         if (!noextime)
             item->exectime = (time_t)0; /* gracefully fail */
         return;
@@ -432,7 +432,6 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
     deadstack = *deadstk;
 
     f = fopen(path, "r");
-
     if (!f)
         suicide("%s: fopen(%s) failed: %s", __func__, path, strerror(errno));
 

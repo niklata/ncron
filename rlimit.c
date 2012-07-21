@@ -82,13 +82,13 @@ rlimit_failed:
 
     switch (errno) {
         case EFAULT:
-            log_line("Attempt to pass bad value to setrlimit, terminating job (uid: %i, gid: %i, command: %s).\n", uid, gid, command);
+            log_line("Attempt to pass bad value to setrlimit, terminating job (uid: %i, gid: %i, command: %s).", uid, gid, command);
             break;
         case EINVAL:
-            log_line("Attempt to set a limit that doesn't exist.  Strange rlimit semantics?  Not running job (uid: %i, gid: %i, command: %s).\n", uid, gid, command);
+            log_line("Attempt to set a limit that doesn't exist.  Strange rlimit semantics?  Not running job (uid: %i, gid: %i, command: %s).", uid, gid, command);
             break;
         case EPERM:
-            log_line("Job (uid: %i, gid: %i, command: %s) tried to set limits outside of permitted bounds.  Denied.\n", uid, gid, command);
+            log_line("Job (uid: %i, gid: %i, command: %s) tried to set limits outside of permitted bounds.  Denied.", uid, gid, command);
             break;
         default:
             break;
