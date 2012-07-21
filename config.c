@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include <pwd.h>
 #include <grp.h>
 #include <sys/types.h>
@@ -136,10 +137,8 @@ void get_history(cronentry_t *item, char *path, int noextime)
             item->lasttime = (time_t)atoi(++split);
     }
 
-    if (fclose(f)) {
-        log_line("FATAL - failed to close \"%s\"\n", path);
-        exit(EXIT_FAILURE);
-    }
+    if (fclose(f))
+        suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
 
     if (exectm < 0)
         exectm = 0;
@@ -348,10 +347,8 @@ static void parse_rlimit_key(int type, char *value, cronentry_t *item)
             return;
             break;
     }
-    if (!p) {
-        log_line("parse_rlimit_key: FATAL - a pointer that should never be NULL was NULL; program corruption?\n");
-        exit(EXIT_FAILURE);
-    }
+    if (!p)
+        suicide("%s: unexpected NULL, corruption?", __func__);
 
     if (!*p)
         *p = xmalloc(sizeof(struct rlimit));
@@ -436,10 +433,8 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
 
     f = fopen(path, "r");
 
-    if (f == NULL) {
-        log_line("parse_config: FATAL - failed to open configure file \"%s\"!\n", path);
-        exit(EXIT_FAILURE);
-    }
+    if (!f)
+        suicide("%s: fopen(%s) failed: %s", __func__, path, strerror(errno));
 
     memset(buf, 0, sizeof buf);
 
@@ -646,10 +641,8 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
         }
     }
 
-    if (fclose(f)) {
-        log_line("parse_config: FATAL - failed to close \"%s\"!\n", path);
-        exit(EXIT_FAILURE);
-    }
+    if (fclose(f))
+        suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
 
     *stk = stack;
     if (item)

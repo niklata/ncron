@@ -80,10 +80,8 @@ static void write_pid(char *file)
     size_t bsize;
 
     f = fopen(file, "w");
-    if (f == NULL) {
-        log_line("FATAL - failed to open pid file \"%s\"!\n", file);
-        exit(EXIT_FAILURE);
-    }
+    if (!f)
+        suicide("%s: fopen(%s) failed: %s", __func__, file, strerror(errno));
 
     snprintf(buf, sizeof buf, "%i", (unsigned int)getpid());
     bsize = strlen(buf);
@@ -92,10 +90,8 @@ static void write_pid(char *file)
              break;
     }
 
-    if (fclose(f) != 0) {
-        log_line("FATAL - failed to close pid file \"%s\"!\n", file);
-        exit(EXIT_FAILURE);
-    }
+    if (fclose(f))
+        suicide("%s: fclose(%s) failed: %s", __func__, file, strerror(errno));
 }
 
 static void reload_config(cronentry_t **stack, cronentry_t **deadstack)
@@ -150,10 +146,9 @@ static void hook_signal(int signum, void (*fn)(int), int flags)
     sigemptyset(&new_action.sa_mask);
     new_action.sa_flags = flags;
 
-    if (sigaction(signum, &new_action, NULL)) {
-        log_line("FATAL - failed to hook signal %i\n", signum);
-        exit(EXIT_FAILURE);
-    }
+    if (sigaction(signum, &new_action, NULL))
+        suicide("%s: sigaction(%d, ...) failed: %s", __func__, signum,
+                strerror(errno));
 }
 
 static void disable_signal(int signum)
@@ -163,10 +158,9 @@ static void disable_signal(int signum)
     new_action.sa_handler = SIG_IGN;
     sigemptyset(&new_action.sa_mask);
 
-    if (sigaction(signum, &new_action, NULL)) {
-        log_line("FATAL - failed to ignore signal %i\n", signum);
-        exit(EXIT_FAILURE);
-    }
+    if (sigaction(signum, &new_action, NULL))
+        suicide("%s: sigaction(%d, ...) failed: %s", __func__, signum,
+                strerror(errno));
 }
 
 static void fix_signals(void)
@@ -187,18 +181,15 @@ static void fail_on_fdne(char *file, char *mode)
 {
     FILE *f;
 
-    if (file == NULL || mode == NULL) {
-        log_line("fail_on_fdne: FATAL - coding bug: NULL passed\n");
-        exit(EXIT_FAILURE);
-    }
+    if (!file || !mode)
+        suicide("%s: file or mode were NULL", __func__);
 
     f = fopen(file, mode);
-    if (f == NULL) {
-        log_line("FATAL - can't open file %s with mode %s!\n",
-                file, mode);
-        exit(EXIT_FAILURE); 
-    }
-    fclose(f);
+    if (!f)
+        suicide("%s: fopen(%s, %o) failed: %s", __func__, file, mode,
+                strerror(errno));
+    if (fclose(f))
+        suicide("%s: fclose(%s) failed: %s", __func__, file, strerror(errno));
 }
 
 static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
@@ -208,37 +199,28 @@ static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
         case 0:
             imprison(chroot);
             if (enforce_limits(limits, uid, gid, command))
-                exit(EXIT_FAILURE);
+                suicide("%s: enforce_limits failed", __func__);
             if (gid != 0) {
-                if (setgid(gid)) {
-                    log_line("setgid failed for \"%s\", u:%i, g:%i\n",
-                             command, uid, gid);
-                    exit(EXIT_FAILURE);
-                }
-                if (getgid() == 0) {
-                    log_line("sanity check failed: child is still root, not exec'ing\n");
-                    exit(EXIT_FAILURE);
-                }
+                if (setgid(gid))
+                    suicide("%s: setgid(%i) failed for \"%s\"",
+                             __func__, gid, command);
+                if (getgid() == 0)
+                    suicide("%s: child is still gid=root after setgid()",
+                            __func__);
             }
             if (uid != 0) {
-                if (setuid(uid)) {
-                    log_line("setuid failed for \"%s\", u:%i, g:%i\n",
-                             command, uid, gid);
-                    exit(EXIT_FAILURE);
-                }
-                if (getuid() == 0) {
-                    log_line("sanity check failed: child is still root, not execing\n");
-                    exit(EXIT_FAILURE);
-                }
-                ncm_fix_env(uid, true); /* provide minimally correct environment */
+                if (setuid(uid))
+                    suicide("%s: setuid(%i) failed for \"%s\"",
+                             __func__, uid, command);
+                if (getuid() == 0)
+                    suicide("%s: child is still uid=root after setuid()",
+                            __func__);
+                ncm_fix_env(uid, true); // sanitize environment
             }
             ncm_execute(command, args);
-            exit(EXIT_FAILURE); /* execl only returns on failure */
-            break;
+            suicide("%s: execl failed: %s", __func__, strerror(errno));
         case -1:
-            log_line("exec_and_fork: FATAL - unable to fork\n");
-            exit(EXIT_FAILURE);
-            break;
+            suicide("%s: fork failed: %s", __func__, strerror(errno));
         default:
             break;
     }
@@ -266,18 +248,15 @@ sleep:
                 memcpy(ts, &rem, sizeof(struct timespec));
                 goto sleep;
             default:
-                log_line("reliable_sleep: nanosleep errno=%d", errno);
-                exit(EXIT_FAILURE);
+                suicide("%s: nanosleep failed: %s", __func__, strerror(errno));
         }
     }
 }
 
 static void clock_or_die(struct timespec *ts)
 {
-    if (clock_gettime(CLOCK_REALTIME, ts)) {
-        log_line("clock_gettime errno=%d");
-        exit(EXIT_FAILURE);
-    }
+    if (clock_gettime(CLOCK_REALTIME, ts))
+        suicide("%s: clock_gettime failed: %s", __func__, strerror(errno));
 }
 
 static void do_work(unsigned int initial_sleep, cronentry_t *stack,
@@ -466,10 +445,8 @@ int main(int argc, char** argv)
     fail_on_fdne(pidfile, "w");
 
     if (gflags_detach != 0) {
-        if (daemon(0,0)) {
-            log_line("FATAL - detaching fork failed\n");
-            exit(EXIT_FAILURE);
-        }
+        if (daemon(0,0))
+            suicide("%s: daemon failed: %s", __func__, strerror(errno));
     }
 
     umask(077);
@@ -482,10 +459,8 @@ int main(int argc, char** argv)
     fix_signals();
     parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
 
-    if (stack == NULL) {
-        log_line("FATAL - no jobs, exiting\n");
-        exit(EXIT_FAILURE);
-    }
+    if (stack == NULL)
+        suicide("%s: no jobs, exiting", __func__);
 
     write_pid(pidfile);
 
