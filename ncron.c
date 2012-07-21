@@ -52,6 +52,7 @@
 #include "defines.h"
 #include "log.h"
 #include "pidfile.h"
+#include "signals.h"
 #include "sched.h"
 #include "config.h"
 #include "exec.h"
@@ -116,31 +117,6 @@ static void sighandler(int sig)
             pending_free_children = 1;
             break;
     }
-}
-
-static void hook_signal(int signum, void (*fn)(int), int flags)
-{
-    struct sigaction new_action;
-
-    new_action.sa_handler = fn;
-    sigemptyset(&new_action.sa_mask);
-    new_action.sa_flags = flags;
-
-    if (sigaction(signum, &new_action, NULL))
-        suicide("%s: sigaction(%d, ...) failed: %s", __func__, signum,
-                strerror(errno));
-}
-
-static void disable_signal(int signum)
-{
-    struct sigaction new_action;
-
-    new_action.sa_handler = SIG_IGN;
-    sigemptyset(&new_action.sa_mask);
-
-    if (sigaction(signum, &new_action, NULL))
-        suicide("%s: sigaction(%d, ...) failed: %s", __func__, signum,
-                strerror(errno));
 }
 
 static void fix_signals(void)
