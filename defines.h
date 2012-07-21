@@ -43,9 +43,6 @@
 #define MAX_LOG_LINE 256
 #define MAX_ARGS 30
 
-/* 32-bit signed */
-#define MAXINT 0x7fffffff
-
 #define HAVE_STRL 1
 
 #endif

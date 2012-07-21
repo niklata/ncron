@@ -32,6 +32,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <string.h>
+#include <limits.h>
 
 #include "defines.h"
 #include "log.h"
@@ -87,7 +88,7 @@ static inline int is_range_valid(ipair_t constraint, ipair_t range,
 static int compare_list_range_v(ipair_node_t *list, int *unit, int *nextunit,
         ipair_t valid, int wildcard)
 {
-    int t, smallunit = MAXINT, dist = MAXINT, tinyunit = MAXINT;
+    int t, smallunit = INT_MAX, dist = INT_MAX, tinyunit = INT_MAX;
 
     if (!list || !unit || !nextunit)
         return 0;
@@ -118,7 +119,7 @@ static int compare_list_range_v(ipair_node_t *list, int *unit, int *nextunit,
     }
 
     /* All of our constraints are invalid, so act as if all are wildcard. */
-    if (tinyunit == MAXINT)
+    if (tinyunit == INT_MAX)
         return 0;
 
     if (dist > 0) {
@@ -136,7 +137,7 @@ static int compare_list_range_v(ipair_node_t *list, int *unit, int *nextunit,
 static int compare_list_range(ipair_node_t *list, int *unit, int *nextunit,
         int wildcard)
 {
-    int t, smallunit = MAXINT, dist = MAXINT, tinyunit = MAXINT;
+    int t, smallunit = INT_MAX, dist = INT_MAX, tinyunit = INT_MAX;
 
     if (!list || !unit || !nextunit) return 0;
 
@@ -175,7 +176,7 @@ static int compare_list_range(ipair_node_t *list, int *unit, int *nextunit,
 
 static int compare_wday_range(ipair_node_t *list, int *unit, int *nextunit)
 {
-    int dist = MAXINT, t;
+    int dist = INT_MAX, t;
     if (!list || !unit || !nextunit) return 0;
 
     /* find the range least distant from our target value */ 
