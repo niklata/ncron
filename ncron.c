@@ -245,26 +245,39 @@ sleep:
     return 0;
 }
 
+static inline void sleep_or_die(struct timespec *ts)
+{
+    if (reliable_sleep(ts))
+        exit(EXIT_FAILURE);
+}
+
+static void clock_or_die(struct timespec *ts)
+{
+    if (clock_gettime(CLOCK_REALTIME, ts)) {
+        log_line("clock_gettime errno=%d");
+        exit(EXIT_FAILURE);
+    }
+}
+
 static void do_work(unsigned int initial_sleep, cronentry_t *stack,
                     cronentry_t *deadstack)
 {
-    struct timespec ts = { .tv_sec=0, .tv_nsec=0 };
-    if (reliable_sleep(&ts))
-        exit(EXIT_FAILURE);
-
     int pending_save = 0;
-    time_t curtime;
-    cronentry_t *t;
+    struct timespec ts = {0};
+
+    sleep_or_die(&ts);
 
     while (1) {
-        curtime = time(NULL);
+        clock_or_die(&ts);
 
-        while (stack->exectime <= curtime) {
+        while (stack->exectime <= ts.tv_sec) {
+            cronentry_t *t;
+
             exec_and_fork((uid_t)stack->user, (gid_t)stack->group,
                     stack->command, stack->args, stack->chroot, stack->limits);
 
             stack->numruns++;
-            stack->lasttime = curtime;
+            stack->lasttime = ts.tv_sec;
             stack->exectime = get_next_time(stack);
             if (stack->journal)
                 pending_save = 1;
@@ -287,7 +300,7 @@ static void do_work(unsigned int initial_sleep, cronentry_t *stack,
             if (!stack)
                 save_and_exit(&stack, &deadstack);
 
-            curtime = time(NULL);
+            clock_or_die(&ts);
         }
 
         if (pending_free_children)
@@ -303,11 +316,9 @@ static void do_work(unsigned int initial_sleep, cronentry_t *stack,
         if (pending_reload_config)
             reload_config(&stack, &deadstack);
 
-        if (curtime <= stack->exectime) {
-            ts.tv_sec = stack->exectime - curtime;
-            ts.tv_nsec = 0;
-            if (reliable_sleep(&ts))
-                exit(EXIT_FAILURE);
+        if (ts.tv_sec <= stack->exectime) {
+            struct timespec sts = { .tv_sec = stack->exectime - ts.tv_sec };
+            sleep_or_die(&sts);
         }
     }
 }

@@ -1,4 +1,4 @@
-CC = gcc -s -std=gnu99 -pedantic -Wall -Wno-format-extra-args -Wno-format-zero-length -Wformat-nonliteral -Wformat-security -DHAVE_CLEARENV
+CC = gcc -s -std=gnu99 -lrt -pedantic -Wall -Wno-format-extra-args -Wno-format-zero-length -Wformat-nonliteral -Wformat-security -DHAVE_CLEARENV
 objects = log.o strl.o sched.o config.o chroot.o rlimit.o exec.o ncron.o
 
 ncron : $(objects)

@@ -1,2 +1,3 @@
-* Detect idiotic impossible rules (feb30, apr31, etc)
+- Support subsecond sleep times.  It's possible now that everything uses
+  clock_gettime() and nanosleep().
 
