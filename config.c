@@ -150,63 +150,54 @@ void get_history(cronentry_t *item, char *path, int noextime)
 
 static void parse_command_key(char *value, cronentry_t *item)
 {
-    int n, cmdstart, cmdend, noargs, escaped_space, ret;
+    size_t n, cmdstart, cmdend, ret;
+
     if (!strlen(value))
-        return; /* empty */
+        return;
 
     /* skip leading spaces */
-    for (n=0; isspace(value[n]); n++);
+    for (n = 0; isspace(value[n]); n++);
     if (value[n] == '\0')
         return;
 
-    cmdstart = n;
-    escaped_space = 0;
-
     /* get all of the command; we handle escaped spaces of the form:
      * "\ " as being part of the command, hence the added complexity */
-    do {
+    cmdstart = n;
+    while (1) {
         for (++n; !isspace(value[n]) && value[n] != '\0'; n++) {
             if (value[n] == '\0') {
                 /* command with no arguments, assign to item and exit */
-                ret = (int)strlen(&value[cmdstart]) + 1;
+                ret = strlen(&value[cmdstart]) + 1;
                 if (ret == 1)
                     return; /* empty */
 
                 free(item->command);
                 item->command = xmalloc(ret);
-                strlcpy(item->command, &value[cmdstart], (size_t)ret);
+                strlcpy(item->command, &value[cmdstart], ret);
                 return;
             }
         }
-        if (value[n-1] == '\\')
-            escaped_space = 1;
-        else
-            escaped_space = 0;
-    } while (escaped_space == 1);
-
-    noargs = 0;
+        if (value[n-1] == '\\') // always safe because of the ++n above
+            continue;
+        break;
+    }
     cmdend = n;
 
     /* skip leading spaces from our arguments */
     for (; isspace(value[n]); n++);
-    if (value[n] == '\0')
-        noargs = 1;
-
-    /* okay, at this point, we have value[cmdstart] is the start of the
-     * actual command.  n will be the start of our argument.  */
 
     /* assign our command to item */
     free(item->command);
     item->command = xmalloc(cmdend - cmdstart + 1);
-    strlcpy(item->command, &value[cmdstart], (size_t)(cmdend - cmdstart + 1));
+    strlcpy(item->command, &value[cmdstart], cmdend - cmdstart + 1);
 
     /* if we have arguments, assign them to item */
-    if (!noargs) {
+    if (value[n] != '\0') {
         ret = strlen(&value[n]) + 1;
 
         free(item->args);
         item->args = xmalloc(ret);
-        strlcpy(item->args, &value[n], (size_t)ret);
+        strlcpy(item->args, &value[n], ret);
     }
 }
 
