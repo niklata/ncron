@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include <sys/types.h>
@@ -236,27 +237,32 @@ static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
     }
 }
 
-static int reliable_sleep(struct timespec *ts)
+static void sleep_or_die(struct timespec *ts, cronentry_t **stack,
+                         cronentry_t **deadstack, bool pending_save)
 {
     struct timespec rem;
 sleep:
     if (nanosleep(ts, &rem)) {
         switch (errno) {
             case EINTR:
+                if (pending_free_children)
+                    free_children();
+                if (pending_save_and_exit)
+                    save_and_exit(stack, deadstack);
+
+                if (g_ncron_execmode == 1 || pending_save)
+                    save_stack(g_ncron_execfile, *stack, *deadstack);
+
+                if (pending_reload_config)
+                    reload_config(stack, deadstack);
+
                 memcpy(ts, &rem, sizeof(struct timespec));
                 goto sleep;
             default:
                 log_line("reliable_sleep: nanosleep errno=%d", errno);
-                return -1;
+                exit(EXIT_FAILURE);
         }
     }
-    return 0;
-}
-
-static inline void sleep_or_die(struct timespec *ts)
-{
-    if (reliable_sleep(ts))
-        exit(EXIT_FAILURE);
 }
 
 static void clock_or_die(struct timespec *ts)
@@ -270,12 +276,13 @@ static void clock_or_die(struct timespec *ts)
 static void do_work(unsigned int initial_sleep, cronentry_t *stack,
                     cronentry_t *deadstack)
 {
-    int pending_save = 0;
     struct timespec ts = {0};
 
-    sleep_or_die(&ts);
+    sleep_or_die(&ts, &stack, &deadstack, false);
 
     while (1) {
+        bool pending_save = false;
+
         clock_or_die(&ts);
 
         while (stack->exectime <= ts.tv_sec) {
@@ -288,7 +295,7 @@ static void do_work(unsigned int initial_sleep, cronentry_t *stack,
             stack->lasttime = ts.tv_sec;
             stack->exectime = get_next_time(stack);
             if (stack->journal)
-                pending_save = 1;
+                pending_save = true;
 
             if ((stack->numruns < stack->maxruns || stack->maxruns == 0)
                     && stack->exectime != 0) {
@@ -311,22 +318,9 @@ static void do_work(unsigned int initial_sleep, cronentry_t *stack,
             clock_or_die(&ts);
         }
 
-        if (pending_free_children)
-            free_children();
-        if (pending_save_and_exit)
-            save_and_exit(&stack, &deadstack);
-
-        if (g_ncron_execmode == 1 || pending_save) {
-            save_stack(g_ncron_execfile, stack, deadstack);
-            pending_save = 0;
-        }
-
-        if (pending_reload_config)
-            reload_config(&stack, &deadstack);
-
         if (ts.tv_sec <= stack->exectime) {
             struct timespec sts = { .tv_sec = stack->exectime - ts.tv_sec };
-            sleep_or_die(&sts);
+            sleep_or_die(&sts, &stack, &deadstack, pending_save);
         }
     }
 }
