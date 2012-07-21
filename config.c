@@ -41,6 +41,7 @@
 #include "sched.h"
 #include "log.h"
 #include "strl.h"
+#include "malloc.h"
 
 /* BSD uses OFILE rather than NOFILE... */
 #ifndef RLIMIT_NOFILE
@@ -172,10 +173,7 @@ static void parse_command_key(char *value, cronentry_t *item)
                     return; /* empty */
 
                 free(item->command);
-                item->command = malloc(ret);
-                if (!item->command)
-                    goto parse_command_key_failed;
-
+                item->command = xmalloc(ret);
                 strlcpy(item->command, &value[cmdstart], (size_t)ret);
                 return;
             }
@@ -199,10 +197,7 @@ static void parse_command_key(char *value, cronentry_t *item)
 
     /* assign our command to item */
     free(item->command);
-    item->command = malloc(cmdend - cmdstart + 1);
-    if (!item->command)
-        goto parse_command_key_failed;
-
+    item->command = xmalloc(cmdend - cmdstart + 1);
     strlcpy(item->command, &value[cmdstart], (size_t)(cmdend - cmdstart + 1));
 
     /* if we have arguments, assign them to item */
@@ -210,19 +205,9 @@ static void parse_command_key(char *value, cronentry_t *item)
         ret = strlen(&value[n]) + 1;
 
         free(item->args);
-        item->args = malloc(ret);
-        if (item->args == NULL)
-            goto parse_command_key_failed;
-
+        item->args = xmalloc(ret);
         strlcpy(item->args, &value[n], (size_t)ret);
     }
-
-    return;
-
-parse_command_key_failed:
-    log_line("parse_config: FATAL - malloc failed while parsing \"command=%s\"!\n",
-            value);
-    exit(EXIT_FAILURE);
 }
 
 static void parse_chroot_key(char *value, cronentry_t *item)
@@ -244,14 +229,7 @@ static void parse_chroot_key(char *value, cronentry_t *item)
 
     /* assign our chroot path to item */
     free(item->chroot);
-    item->chroot = malloc(l);
-
-    if (!item->chroot) {
-        log_line("parse_config: FATAL - malloc failed while parsing \"command=%s\"!\n",
-                value);
-        exit(EXIT_FAILURE);
-    }
-
+    item->chroot = xmalloc(l);
     strlcpy(item->chroot, p, l);
 }
 
@@ -282,9 +260,7 @@ static void add_to_ipair_list(ipair_node_t **list, char *value, int wildcard,
     /* discontinuous range, split into two continuous rules... */
     if (low > high) {
         if (*list == NULL) {
-            (*list) = malloc((size_t)sizeof (ipair_node_t));
-            if (*list == NULL)
-                goto add_to_ipair_list_failed;
+            (*list) = xmalloc(sizeof(ipair_node_t));
             l = *list;
             goto add_to_ipair_list_dc_first;
         }
@@ -292,16 +268,12 @@ static void add_to_ipair_list(ipair_node_t **list, char *value, int wildcard,
         while (l->next)
             l = l->next;
 
-        l->next = malloc((size_t)sizeof (ipair_node_t));
-        if (l->next == NULL)
-            goto add_to_ipair_list_failed;
+        l->next = xmalloc(sizeof(ipair_node_t));
         l = l->next;
 add_to_ipair_list_dc_first:
         l->node.l = low;
         l->node.h = max;
-        l->next = malloc((size_t)sizeof (ipair_node_t));
-        if (l->next == NULL)
-            goto add_to_ipair_list_failed;
+        l->next = xmalloc(sizeof(ipair_node_t));
         l = l->next;
         l->node.l = min;
         l->node.h = high;
@@ -311,9 +283,7 @@ add_to_ipair_list_dc_first:
 
     /* handle continuous ranges normally */
     if (*list == NULL) {
-        *list = malloc((size_t)sizeof (ipair_node_t));
-        if (*list == NULL)
-            goto add_to_ipair_list_failed;
+        *list = xmalloc(sizeof(ipair_node_t));
         l = *list;
         l->node.l = low;
         l->node.h = high;
@@ -325,18 +295,11 @@ add_to_ipair_list_dc_first:
     while (l->next)
         l = l->next;
 
-    l->next = malloc((size_t)sizeof (ipair_node_t));
-    if (!*list)
-        goto add_to_ipair_list_failed;
+    l->next = xmalloc(sizeof(ipair_node_t));
     l = l->next;
     l->node.l = low;
     l->node.h = high;
     l->next = NULL;
-    return;
-
-add_to_ipair_list_failed:
-    log_line("FATAL - add_to_ipair_list: malloc failed\n");
-    exit(EXIT_FAILURE);
 }
 
 static void parse_rlimit_key(int type, char *value, cronentry_t *item)
@@ -353,11 +316,7 @@ static void parse_rlimit_key(int type, char *value, cronentry_t *item)
         high = (int)strtol(value, (char **)NULL, 10);
 
     if (!item->limits) {
-        item->limits = malloc((size_t)sizeof (limit_t));
-        if (!item->limits) {
-            log_line("FATAL - parse_rlimit_key: malloc_failed\n");
-            exit(EXIT_FAILURE);
-        }
+        item->limits = xmalloc(sizeof(limit_t));
         nullify_limits(item->limits);
     }
 
@@ -403,13 +362,8 @@ static void parse_rlimit_key(int type, char *value, cronentry_t *item)
         exit(EXIT_FAILURE);
     }
 
-    if (!*p) {
-        *p = malloc((size_t)sizeof (struct rlimit));
-        if (!*p) {
-            log_line("parse_rlimit_key: FATAL - malloc failed\n");
-            exit(EXIT_FAILURE);
-        }
-    }
+    if (!*p)
+        *p = xmalloc(sizeof(struct rlimit));
 
     if (low == 0)
         (*p)->rlim_cur = RLIM_INFINITY;
@@ -545,14 +499,9 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
             }
 
             /* create a new, blank item */
-            item = malloc((size_t)sizeof (cronentry_t));
-            if (!item) {
-                log_line("parse_config: FATAL - malloc failed to create new cronentry_t\n");
-                exit(EXIT_FAILURE);
-            } else {
-                nullify_item(item);
-                item->id = (int)strtol(&buf[n+1], (char **)NULL, 10);
-            }
+            item = xmalloc(sizeof(cronentry_t));
+            nullify_item(item);
+            item->id = (int)strtol(&buf[n+1], (char **)NULL, 10);
             continue;
         }
 
