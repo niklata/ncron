@@ -51,6 +51,7 @@
 
 #include "defines.h"
 #include "log.h"
+#include "pidfile.h"
 #include "sched.h"
 #include "config.h"
 #include "exec.h"
@@ -72,27 +73,6 @@ static volatile sig_atomic_t pending_free_children = 0;
 static char g_ncron_conf[MAX_PATH_LENGTH] = CONFIG_FILE_DEFAULT;
 static char g_ncron_execfile[MAX_PATH_LENGTH] = EXEC_FILE_DEFAULT;
 static int g_ncron_execmode = 0;
-
-static void write_pid(char *file)
-{
-    FILE *f;
-    char buf[MAXLINE];
-    size_t bsize;
-
-    f = fopen(file, "w");
-    if (!f)
-        suicide("%s: fopen(%s) failed: %s", __func__, file, strerror(errno));
-
-    snprintf(buf, sizeof buf, "%i", (unsigned int)getpid());
-    bsize = strlen(buf);
-    while (!fwrite(buf, bsize, 1, f)) {
-         if (ferror(f))
-             break;
-    }
-
-    if (fclose(f))
-        suicide("%s: fclose(%s) failed: %s", __func__, file, strerror(errno));
-}
 
 static void reload_config(cronentry_t **stack, cronentry_t **deadstack)
 {
@@ -179,17 +159,8 @@ static void fix_signals(void)
 
 static void fail_on_fdne(char *file, char *mode)
 {
-    FILE *f;
-
-    if (!file || !mode)
-        suicide("%s: file or mode were NULL", __func__);
-
-    f = fopen(file, mode);
-    if (!f)
-        suicide("%s: fopen(%s, %o) failed: %s", __func__, file, mode,
-                strerror(errno));
-    if (fclose(f))
-        suicide("%s: fclose(%s) failed: %s", __func__, file, strerror(errno));
+    if (file_exists(file, mode))
+        exit(EXIT_FAILURE);
 }
 
 static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
