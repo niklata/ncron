@@ -172,7 +172,7 @@ static void parse_command_key(char *value, cronentry_t *item)
 
                 free(item->command);
                 item->command = xmalloc(ret);
-                strlcpy(item->command, &value[cmdstart], ret);
+                strnkcpy(item->command, &value[cmdstart], ret);
                 return;
             }
         }
@@ -188,7 +188,7 @@ static void parse_command_key(char *value, cronentry_t *item)
     /* assign our command to item */
     free(item->command);
     item->command = xmalloc(cmdend - cmdstart + 1);
-    strlcpy(item->command, &value[cmdstart], cmdend - cmdstart + 1);
+    strnkcpy(item->command, &value[cmdstart], cmdend - cmdstart + 1);
 
     /* if we have arguments, assign them to item */
     if (value[n] != '\0') {
@@ -196,7 +196,7 @@ static void parse_command_key(char *value, cronentry_t *item)
 
         free(item->args);
         item->args = xmalloc(ret);
-        strlcpy(item->args, &value[n], ret);
+        strnkcpy(item->args, &value[n], ret);
     }
 }
 
@@ -220,7 +220,7 @@ static void parse_chroot_key(char *value, cronentry_t *item)
     /* assign our chroot path to item */
     free(item->chroot);
     item->chroot = xmalloc(l);
-    strlcpy(item->chroot, p, l);
+    strnkcpy(item->chroot, p, l);
 }
 
 static void add_to_ipair_list(ipair_node_t **list, char *value, int wildcard,
@@ -503,9 +503,11 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
             continue; /* not a key/value pair */
 
         /* split line into key/value pair */
-        strlcpy(value, split + 1, MAXLINE);
+        if (strnkcpy(value, split + 1, MAXLINE))
+            continue; /* discard on truncation */
         *split = '\0';
-        strlcpy(key, &buf[n], MAXLINE);
+        if (strnkcpy(key, &buf[n], MAXLINE))
+            continue; /* discard on truncation */
 
         /* after this point, we handle keys by name */
 

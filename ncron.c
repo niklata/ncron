@@ -374,15 +374,15 @@ int main(int argc, char** argv)
                 break;
 
             case 'c':
-                strlcpy(g_ncron_conf, optarg, MAX_PATH_LENGTH);
+                strnkcpy(g_ncron_conf, optarg, MAX_PATH_LENGTH);
                 break;
 
             case 'f':
-                strlcpy(g_ncron_execfile, optarg, MAX_PATH_LENGTH);
+                strnkcpy(g_ncron_execfile, optarg, MAX_PATH_LENGTH);
                 break;
 
             case 'p':
-                strlcpy(pidfile, optarg, MAX_PATH_LENGTH);
+                strnkcpy(pidfile, optarg, MAX_PATH_LENGTH);
                 break;
         }
     }
