@@ -1,6 +1,6 @@
 /* ncron.c - secure, minimally-sleeping cron daemon
  *
- * (c) 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2013 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -144,7 +144,8 @@ static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
 {
     switch ((int)fork()) {
         case 0:
-            imprison(chroot);
+            if (chroot)
+                imprison(chroot);
             if (enforce_limits(limits, uid, gid, command))
                 suicide("%s: enforce_limits failed", __func__);
             if (gid != 0) {
@@ -296,7 +297,7 @@ int main(int argc, char** argv)
             case 'h':
                 printf("ncron %s, secure cron/at daemon.\n", NCRON_VERSION);
                 printf(
-                       "Copyright (C) 2003-2012 Nicholas J. Kain\n"
+                       "Copyright (C) 2003-2013 Nicholas J. Kain\n"
                        "Usage: ncron [OPTIONS]\n"
                        "  -d, --detach         detach from foreground and daemonize\n"
                        "  -n, --nodetach       stay in foreground\n"
@@ -318,7 +319,7 @@ int main(int argc, char** argv)
             case 'v':
                 printf("ncron %s, secure single-user cron.\n", NCRON_VERSION);
                 printf(
-                       "Copyright (c) 2003-2012 Nicholas J. Kain\n"
+                       "Copyright (c) 2003-2013 Nicholas J. Kain\n"
                        "All rights reserved.\n\n"
                        "Redistribution and use in source and binary forms, with or without\n"
                        "modification, are permitted provided that the following conditions are met:\n\n"
