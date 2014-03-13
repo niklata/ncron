@@ -2,7 +2,7 @@
 #define NCRON_RLIMIT_H_
 /* rlimit.c - sets rlimits for ncron jobs
  *
- * (c) 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
 
 #include "sched.h"
 
-int enforce_limits(limit_t *limits, int uid, int gid, char *command);
+extern int enforce_limits(limit_t *limits, int uid, int gid, char *command);
 
 #endif
 

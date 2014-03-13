@@ -1,6 +1,6 @@
 /* ncron.c - secure, minimally-sleeping cron daemon
  *
- * (c) 2003-2013 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -210,7 +210,7 @@ static void clock_or_die(struct timespec *ts)
 static void do_work(unsigned int initial_sleep, cronentry_t *stack,
                     cronentry_t *deadstack)
 {
-    struct timespec ts = {0};
+    struct timespec ts = { .tv_sec=initial_sleep, .tv_nsec=0 };
 
     sleep_or_die(&ts, &stack, &deadstack, false);
 
@@ -264,7 +264,7 @@ int main(int argc, char** argv)
     /* Time (in seconds) to sleep before dispatching events at startup.
        Set this macro to a nonzero value so as not to compete for cpu with init
        scripts at boot time. */
-    int initial_sleep = 1;
+    int initial_sleep = 0;
     int c;
     char pidfile[MAX_PATH_LENGTH] = PID_FILE_DEFAULT;
 
@@ -297,7 +297,7 @@ int main(int argc, char** argv)
             case 'h':
                 printf("ncron %s, secure cron/at daemon.\n", NCRON_VERSION);
                 printf(
-                       "Copyright (C) 2003-2013 Nicholas J. Kain\n"
+                       "Copyright (C) 2003-2014 Nicholas J. Kain\n"
                        "Usage: ncron [OPTIONS]\n"
                        "  -d, --detach         detach from foreground and daemonize\n"
                        "  -n, --nodetach       stay in foreground\n"
@@ -319,7 +319,7 @@ int main(int argc, char** argv)
             case 'v':
                 printf("ncron %s, secure single-user cron.\n", NCRON_VERSION);
                 printf(
-                       "Copyright (c) 2003-2013 Nicholas J. Kain\n"
+                       "Copyright (c) 2003-2014 Nicholas J. Kain\n"
                        "All rights reserved.\n\n"
                        "Redistribution and use in source and binary forms, with or without\n"
                        "modification, are permitted provided that the following conditions are met:\n\n"

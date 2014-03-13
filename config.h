@@ -2,7 +2,7 @@
 #define NCRON_CONFIG_H_
 /* config.h - configure file parser for ncron
  *
- * (c) 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,5 +27,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-void parse_config(char *path, char *execfile, cronentry_t **stack, cronentry_t **deadstack);
+#include "sched.h"
+extern void parse_config(char *path, char *execfile, cronentry_t **stack, cronentry_t **deadstack);
 #endif

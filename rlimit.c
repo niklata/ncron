@@ -1,6 +1,6 @@
 /* rlimit.c - sets rlimits for ncron jobs
  *
- * (c) 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "sched.h"
+#include "rlimit.h"
 #include "defines.h"
 #include "log.h"
 

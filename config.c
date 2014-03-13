@@ -1,6 +1,6 @@
 /* config.c - configure file parser for ncron
  *
- * (c) 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 #include <sys/resource.h>
 
 #include "defines.h"
-#include "sched.h"
+#include "config.h"
 #include "log.h"
 #include "strl.h"
 #include "malloc.h"
@@ -96,7 +96,7 @@ static void nullify_limits(limit_t *l)
  * id=exectime:numruns
  * ...
  */
-void get_history(cronentry_t *item, char *path, int noextime)
+static void get_history(cronentry_t *item, char *path, int noextime)
 {
     FILE *f;
     time_t exectm = 0;

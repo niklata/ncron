@@ -238,7 +238,7 @@ static ipair_t valid_day_of_month(int month, int year)
 
 /* entry is obvious, stime is the time we're constraining
  * returns a time value that has been appropriately constrained */
-time_t constrain_time(cronentry_t *entry, time_t stime)
+static time_t constrain_time(cronentry_t *entry, time_t stime)
 {
     struct tm *rtime;
     time_t t;
