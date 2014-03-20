@@ -37,11 +37,11 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <limits.h>
 
 #include "defines.h"
 #include "config.h"
 #include "log.h"
-#include "strl.h"
 #include "malloc.h"
 
 /* BSD uses OFILE rather than NOFILE... */
@@ -147,32 +147,48 @@ static void get_history(cronentry_t *item, char *path, int noextime)
         item->exectime = exectm;
 }
 
+static void parse_assign_str(char **dest, char *src, size_t srclen)
+{
+    free(*dest);
+    *dest = xmalloc(srclen);
+    ssize_t l = snprintf(*dest, srclen, "%s", src);
+    if (l < 0 || (size_t)l >= srclen)
+        suicide("%s: snprintf failed l=%u srclen=%u", __func__, l, srclen);
+}
+
+static void parse_assign_str_l(char **dest, char *src, size_t srclen)
+{
+    if (srclen > INT_MAX)
+        suicide("%s: srclen would overflow int", __func__);
+    free(*dest);
+    *dest = xmalloc(srclen+1);
+    ssize_t l = snprintf(*dest, srclen+1, "%.*s", (int)srclen, src);
+    if (l < 0 || (size_t)l >= srclen+1)
+        suicide("%s: snprintf failed l=%u srclen+1=%u", __func__, l, srclen+1);
+}
+
 static void parse_command_key(char *value, cronentry_t *item)
 {
-    size_t n, cmdstart, cmdend, ret;
-
     if (!strlen(value))
         return;
 
     /* skip leading spaces */
+    size_t n;
     for (n = 0; isspace(value[n]); n++);
     if (value[n] == '\0')
         return;
 
     /* get all of the command; we handle escaped spaces of the form:
      * "\ " as being part of the command, hence the added complexity */
-    cmdstart = n;
+    size_t cmdstart = n;
     while (1) {
         for (++n; !isspace(value[n]) && value[n] != '\0'; n++) {
             if (value[n] == '\0') {
                 /* command with no arguments, assign to item and exit */
-                ret = strlen(&value[cmdstart]) + 1;
-                if (ret == 1)
+                size_t cmdlen = strlen(value + cmdstart) + 1;
+                if (cmdlen == 1)
                     return; /* empty */
-
-                free(item->command);
-                item->command = xmalloc(ret);
-                strnkcpy(item->command, &value[cmdstart], ret);
+                parse_assign_str(&item->command, value + cmdstart, cmdlen);
                 return;
             }
         }
@@ -180,23 +196,18 @@ static void parse_command_key(char *value, cronentry_t *item)
             continue;
         break;
     }
-    cmdend = n;
+    size_t cmdend = n;
 
     /* skip leading spaces from our arguments */
     for (; isspace(value[n]); n++);
 
     /* assign our command to item */
-    free(item->command);
-    item->command = xmalloc(cmdend - cmdstart + 1);
-    strnkcpy(item->command, &value[cmdstart], cmdend - cmdstart + 1);
+    parse_assign_str_l(&item->command, value + cmdstart, cmdend - cmdstart);
 
     /* if we have arguments, assign them to item */
     if (value[n] != '\0') {
-        ret = strlen(&value[n]) + 1;
-
-        free(item->args);
-        item->args = xmalloc(ret);
-        strnkcpy(item->args, &value[n], ret);
+        size_t cmdlen = strlen(value + n) + 1;
+        parse_assign_str(&item->args, value + n, cmdlen);
     }
 }
 
@@ -218,9 +229,7 @@ static void parse_chroot_key(char *value, cronentry_t *item)
     l = strlen(p) + 1;
 
     /* assign our chroot path to item */
-    free(item->chroot);
-    item->chroot = xmalloc(l);
-    strnkcpy(item->chroot, p, l);
+    parse_assign_str(&item->chroot, p, l);
 }
 
 static void add_to_ipair_list(ipair_node_t **list, char *value, int wildcard,
@@ -502,11 +511,14 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
         if (split == NULL)
             continue; /* not a key/value pair */
 
+        ssize_t snlen;
         /* split line into key/value pair */
-        if (strnkcpy(value, split + 1, MAXLINE))
+        snlen = snprintf(value, sizeof value, "%s", split + 1);
+        if (snlen < 0 || (size_t)snlen >= sizeof value)
             continue; /* discard on truncation */
         *split = '\0';
-        if (strnkcpy(key, &buf[n], MAXLINE))
+        snlen = snprintf(key, sizeof key, "%s", buf + n);
+        if (snlen < 0 || (size_t)snlen >= sizeof key)
             continue; /* discard on truncation */
 
         /* after this point, we handle keys by name */
