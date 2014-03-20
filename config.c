@@ -495,7 +495,7 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
             /* create a new, blank item */
             item = xmalloc(sizeof(cronentry_t));
             nullify_item(item);
-            item->id = (int)strtol(&buf[n+1], (char **)NULL, 10);
+            item->id = (int)strtol(buf + n + 1, (char **)NULL, 10);
             continue;
         }
 
@@ -503,7 +503,7 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
             continue; /* haven't found a !-entry yet */
 
         /* strip trailing \n or \r */
-        trash = strcspn(&buf[n], "\n\r");
+        trash = strcspn(buf + n, "\n\r");
         buf[n+trash] = '\0';
 
         /* verify line as key/value pair */
@@ -598,27 +598,27 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
         }
 
         if (strncmp("month", key, 5) == 0) {
-            add_to_ipair_list(&(item->month), value, 0, 1, 12);
+            add_to_ipair_list(&item->month, value, 0, 1, 12);
             continue;
         }
 
         if (strncmp("day", key, 3) == 0) {
-            add_to_ipair_list(&(item->day), value, 0, 1, 31);
+            add_to_ipair_list(&item->day, value, 0, 1, 31);
             continue;
         }
 
         if (strncmp("weekday", key, 7) == 0) {
-            add_to_ipair_list(&(item->weekday), value, 0, 1, 7);
+            add_to_ipair_list(&item->weekday, value, 0, 1, 7);
             continue;
         }
 
         if (strncmp("hour", key, 4) == 0) {
-            add_to_ipair_list(&(item->hour), value, 24, 0, 23);
+            add_to_ipair_list(&item->hour, value, 24, 0, 23);
             continue;
         }
 
         if (strncmp("minute", key, 6) == 0) {
-            add_to_ipair_list(&(item->minute), value, 60, 0, 59);
+            add_to_ipair_list(&item->minute, value, 60, 0, 59);
             continue;
         }
 
