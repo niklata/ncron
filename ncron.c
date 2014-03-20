@@ -58,7 +58,7 @@
 #include "exec.h"
 #include "chroot.h"
 #include "rlimit.h"
-#include "strl.h"
+#include "copy_cmdarg.h"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
@@ -375,15 +375,17 @@ int main(int argc, char** argv)
                 break;
 
             case 'c':
-                strnkcpy(g_ncron_conf, optarg, MAX_PATH_LENGTH);
+                copy_cmdarg(g_ncron_conf, optarg, sizeof g_ncron_conf,
+                            "conf");
                 break;
 
             case 'f':
-                strnkcpy(g_ncron_execfile, optarg, MAX_PATH_LENGTH);
+                copy_cmdarg(g_ncron_execfile, optarg, sizeof g_ncron_execfile,
+                            "history");
                 break;
 
             case 'p':
-                strnkcpy(pidfile, optarg, MAX_PATH_LENGTH);
+                copy_cmdarg(pidfile, optarg, sizeof pidfile, "pidfile");
                 break;
         }
     }
