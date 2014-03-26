@@ -273,8 +273,7 @@ int main(int argc, char** argv)
     while (1) {
         int option_index = 0;
         static struct option long_options[] = {
-            {"detach", 0, 0, 'd'},
-            {"nodetach", 0, 0, 'n'},
+            {"detach", 0, 0, 'b'},
             {"sleep", 1, 0, 's'},
             {"conf", 1, 0, 'c'},
             {"history", 1, 0, 'f'},
@@ -287,7 +286,7 @@ int main(int argc, char** argv)
             {0, 0, 0, 0}
         };
 
-        c = getopt_long(argc, argv, "dns:c:f:p:0jqhv",
+        c = getopt_long(argc, argv, "bs:c:f:p:0jqhv",
                 long_options, &option_index);
         if (c == -1)
             break;
@@ -299,8 +298,7 @@ int main(int argc, char** argv)
                 printf(
                        "Copyright (C) 2003-2014 Nicholas J. Kain\n"
                        "Usage: ncron [OPTIONS]\n"
-                       "  -d, --detach         detach from foreground and daemonize\n"
-                       "  -n, --nodetach       stay in foreground\n"
+                       "  -b, --background     fork to the background\n"
                        "  -s, --sleep          time to wait in seconds to wait before processing\n"
                        "                         jobs at startup\n");
                 printf(
@@ -343,12 +341,8 @@ int main(int argc, char** argv)
                 exit(EXIT_FAILURE);
                 break;
 
-            case 'd':
+            case 'b':
                 gflags_detach = 1;
-                break;
-
-            case 'n':
-                gflags_detach = 0;
                 break;
 
             case 's':
