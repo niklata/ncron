@@ -56,7 +56,7 @@
 #include "sched.h"
 #include "config.h"
 #include "exec.h"
-#include "chroot.h"
+#include "privilege.h"
 #include "rlimit.h"
 #include "copy_cmdarg.h"
 
@@ -163,10 +163,9 @@ static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
                 if (getuid() == 0)
                     suicide("%s: child is still uid=root after setuid()",
                             __func__);
-                ncm_fix_env(uid, true); // sanitize environment
+                nk_fix_env(uid, true);
             }
-            ncm_execute(command, args);
-            suicide("%s: execl failed: %s", __func__, strerror(errno));
+            nk_execute(command, args);
         case -1:
             suicide("%s: fork failed: %s", __func__, strerror(errno));
         default:
