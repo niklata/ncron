@@ -29,9 +29,11 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <assert.h>
 #include <pwd.h>
 #include <grp.h>
 #include <sys/types.h>
@@ -127,6 +129,7 @@ static void nullify_limits(limit_t *l)
 struct hstm {
     char *st;
     int cs;
+    int id;
     time_t exectime;
     time_t lasttime;
     unsigned int numruns;
@@ -165,29 +168,24 @@ struct hstm {
 
 static int do_get_history(struct hstm *hstm, char *buf, size_t blen)
 {
-    const char *p = buf;
+    char *p = buf;
     const char *pe = buf + blen;
     const char *eof = pe;
 
     %% write exec;
 
-    if (cs == history_m_error)
-        cmdret = -1;
-    else if (cs >= history_m_first_final)
-        cmdret = 1;
-    else
-        cmdret = -2;
-
+    if (hstm->cs >= history_m_first_final)
+        return 1;
+    if (hstm->cs == history_m_error)
+        return -1;
+    return -2;
 }
 
 static void get_history(cronentry_t *item, char *path, int noextime)
 {
-    struct hstm hstm;
+    struct hstm hstm = {0};
 
     assert(item);
-    hstm.exectime = 0;
-    hstm.lasttime = 0;
-    hstm.numruns = 0;
 
     if (!noextime && !hstm.got_exectime)
         item->exectime = 0;
@@ -206,7 +204,9 @@ static void get_history(cronentry_t *item, char *path, int noextime)
 
     while (!feof(f)) {
         char *s = fgets(buf, (int)(sizeof buf), f);
-        int r = do_parse_config(&hstm, buf, strlen(buf));
+        if (!s)
+            break;
+        int r = do_get_history(&hstm, buf, strlen(buf));
         if (r < 0)
             suicide("%s: do_get_history(%s) failed", __func__, path);
         if (r == 1) {
@@ -312,14 +312,14 @@ static void setgroupv(struct ParseCfgState *ncs)
 {
     struct group *grp = getgrnam(ncs->v_str);
     if (grp)
-        ce->group = grp->gr_gid;
+        ncs->ce->group = grp->gr_gid;
 }
 
 static void setuserv(struct ParseCfgState *ncs)
 {
     struct passwd *pwd = getpwnam(ncs->v_str);
     if (pwd)
-        ce->user = pwd->pw_uid;
+        ncs->ce->user = pwd->pw_uid;
 }
 
 static void parse_assign_str(char **dest, char *src, size_t srclen)
@@ -333,7 +333,7 @@ static void parse_assign_str(char **dest, char *src, size_t srclen)
         suicide("%s: snprintf failed l=%u srclen+1=%u", __func__, l, srclen+1);
 }
 
-struct pkcm {
+struct pckm {
     char *st;
     int cs;
 };
@@ -342,10 +342,10 @@ struct pkcm {
     machine parse_cmd_key_m;
     access pckm.;
 
-    action St { pkcm.st = p; }
+    action St { pckm.st = p; }
     action CmdEn {
-        size_t cmdlen = p - pkcm.st;
-        parse_assign_str(&ncs->ce->command, pkcm.st, cmdlen);
+        size_t cmdlen = p - pckm.st;
+        parse_assign_str(&ncs->ce->command, pckm.st, cmdlen);
         // Unescape "\\" and "\ ".
         int prevsl = 0;
         size_t i = 0;
@@ -362,7 +362,7 @@ struct pkcm {
         }
     }
     action ArgEn {
-        parse_assign_str(&ncs->ce->args, pkcm.st, p - pkcm.st);
+        parse_assign_str(&ncs->ce->args, pckm.st, p - pckm.st);
     }
 
     sptab = [ \t];
@@ -380,25 +380,25 @@ struct pkcm {
 // cmdret = -3: Error: duplicate command key.
 static void parse_command_key(struct ParseCfgState *ncs)
 {
-    const char *p = ncs->v_str;
+    char *p = ncs->v_str;
     const char *pe = ncs->v_str + ncs->v_strlen;
     const char *eof = pe;
 
-    struct pkcm pkcm;
+    struct pckm pckm = {0};
 
-    if (cmdret != 0) {
-        cmdret = -3;
+    if (ncs->cmdret != 0) {
+        ncs->cmdret = -3;
         return;
     }
 
     %% write exec;
 
-    if (cs == parse_cmd_key_m_error)
-        cmdret = -1;
-    else if (cs >= parse_cmd_key_m_first_final)
-        cmdret = 1;
+    if (pckm.cs == parse_cmd_key_m_error)
+        ncs->cmdret = -1;
+    else if (pckm.cs >= parse_cmd_key_m_first_final)
+        ncs->cmdret = 1;
     else
-        cmdret = -2;
+        ncs->cmdret = -2;
 }
 
 static void create_ce(struct ParseCfgState *ncs)
@@ -433,7 +433,7 @@ static void finish_ce(struct ParseCfgState *ncs)
         get_history(ncs->ce, ncs->execfile, ncs->noextime && !cfg_reload);
 
         /* compensate for user edits to job constraints */
-        ttm = get_first_time(ncs->ce);
+        time_t ttm = get_first_time(ncs->ce);
         if (ttm - ncs->ce->lasttime >= ncs->ce->interval)
             ncs->ce->exectime = ttm;
         else
@@ -442,11 +442,11 @@ static void finish_ce(struct ParseCfgState *ncs)
         /* insert iif numruns < maxruns and no constr error */
         if ((ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
             && ncs->ce->exectime != 0)
-            stack_insert(ncs->cs, &ncs->stack);
+            stack_insert(ncs->ce, &ncs->stack);
         else
-            stack_insert(ncs->cs, &ncs->deadstack);
+            stack_insert(ncs->ce, &ncs->deadstack);
     }
-    ncs->cs = NULL;
+    ncs->ce = NULL;
 }
 
 %%{
@@ -478,10 +478,12 @@ static void finish_ce(struct ParseCfgState *ncs)
     action StrValSt { ncs->strv_st = p; ncs->v_strlen = 0; }
     action StrValEn {
         ncs->v_strlen = p - ncs->strv_st;
-        ssize_t snl = snprintf(ncs->v_str, sizeof ncs->v_str,
-                               "%.*s", ncs->v_strlen, ncs->strv_st);
-        if (snl < 0 || (size_t)snl >= sizeof ncs->v_str) {
-            // XXX: Error/truncated.
+        if (ncs->v_strlen <= INT_MAX) {
+            ssize_t snl = snprintf(ncs->v_str, sizeof ncs->v_str,
+                                   "%.*s", (int)ncs->v_strlen, ncs->strv_st);
+            if (snl < 0 || (size_t)snl >= sizeof ncs->v_str) {
+                // XXX: Error/truncated.
+            }
         }
     }
 
@@ -543,11 +545,11 @@ static void finish_ce(struct ParseCfgState *ncs)
 
     interval = 'interval'i eqsep timeval % IntervalEn;
 
-    action MonthEn { addipairlist(ncs, ncs->ce->month, 0, 1, 12); }
-    action DayEn { addipairlist(ncs, ncs->ce->day, 0, 1, 31); }
-    action WeekdayEn { addipairlist(ncs, ncs->ce->weekday, 0, 1, 7); }
-    action HourEn { addipairlist(ncs, ncs->ce->hour, 24, 0, 23); }
-    action MinuteEn { addipairlist(ncs, ncs->ce->minute, 60, 0, 59); }
+    action MonthEn { addipairlist(ncs, &ncs->ce->month, 0, 1, 12); }
+    action DayEn { addipairlist(ncs, &ncs->ce->day, 0, 1, 31); }
+    action WeekdayEn { addipairlist(ncs, &ncs->ce->weekday, 0, 1, 7); }
+    action HourEn { addipairlist(ncs, &ncs->ce->hour, 24, 0, 23); }
+    action MinuteEn { addipairlist(ncs, &ncs->ce->minute, 60, 0, 59); }
 
     month = 'month'i eqsep intrangeval % MonthEn;
     day = 'day'i eqsep intrangeval % DayEn;
@@ -566,10 +568,10 @@ static void finish_ce(struct ParseCfgState *ncs)
     chroot = 'chroot'i eqsep stringval % ChrootEn;
     command = 'command'i eqsep stringval % CommandEn;
 
-    cmd = command | chroot | user | group | minute | hour | weekday | day |
-          month | interval | lim_cpu | lim_fsize | lim_data | lim_stack |
-          lim_core | lim_rss | lim_nproc | lim_nofile | lim_memlock | lim_as |
-          maxruns | runat | noexectime | journal;
+    cmds = command | chroot | user | group | minute | hour | weekday | day |
+           month | interval | lim_cpu | lim_fsize | lim_data | lim_stack |
+           lim_core | lim_rss | lim_nproc | lim_nofile | lim_memlock | lim_as |
+           maxruns | runat | noexectime | journal;
 
     action JobIdSt { ncs->jobid_st = p; }
     action JobIdEn { ncs->v_jobid = atoi(ncs->jobid_st); }
@@ -588,15 +590,15 @@ static void finish_ce(struct ParseCfgState *ncs)
 static int do_parse_config(struct ParseCfgState *ncs,
                            char *data, size_t len, bool is_eof)
 {
-    const char *p = data;
+    char *p = data;
     const char *pe = data + len;
     const char *eof = is_eof ? pe : 0;
 
     %% write exec;
 
-    if (cs == ncrontab_error)
+    if (ncs->cs == ncrontab_error)
         return -1;
-    if (cs >= ncrontab_first_final)
+    if (ncs->cs >= ncrontab_first_final)
         return 1;
     return 0;
 }
@@ -607,10 +609,10 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
     char buf[MAXLINE];
     struct ParseCfgState ncs;
     memset(buf, 0, sizeof buf);
-    memset(ncs, 0, sizeof ncs);
-    ncs->execfile = execfile;
-    ncs->stack = *stk;
-    ncs->deadstack = *deadstack;
+    memset(&ncs, 0, sizeof ncs);
+    ncs.execfile = execfile;
+    ncs.stack = *stk;
+    ncs.deadstack = *deadstk;
 
     FILE *f = fopen(path, "r");
     if (!f)
@@ -618,7 +620,7 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
 
     while (!feof(f)) {
         char *s = fgets(buf, (int)(sizeof buf), f);
-        int r = do_parse_config(ncs, buf, strlen(buf), s == NULL);
+        int r = do_parse_config(&ncs, buf, strlen(buf), s == NULL);
         if (r < 0)
             suicide("%s: do_parse_config(%s) failed", __func__, path);
         if (r == 1)
@@ -627,10 +629,10 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
     if (fclose(f))
         suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
 
-    *stk = ncs->stack;
-    *deadstack = ncs->deadstack;
-    if (ncs->ce)
-        free_cronentry(&ncs->ce); // Free partially built unused item.
+    *stk = ncs.stack;
+    *deadstk = ncs.deadstack;
+    if (ncs.ce)
+        free_cronentry(&ncs.ce); // Free partially built unused item.
     cfg_reload = 1;
 }
 

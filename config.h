@@ -28,5 +28,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "sched.h"
-extern void parse_config(char *path, char *execfile, cronentry_t **stack, cronentry_t **deadstack);
+void parse_config(char *path, char *execfile, cronentry_t **stack,
+                  cronentry_t **deadstack);
 #endif
