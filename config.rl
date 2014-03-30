@@ -38,11 +38,11 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <limits.h>
+#include "nk/log.h"
+#include "nk/malloc.h"
 
 #include "defines.h"
 #include "config.h"
-#include "log.h"
-#include "malloc.h"
 #include "sched.h"
 
 /* BSD uses OFILE rather than NOFILE... */

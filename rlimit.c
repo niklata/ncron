@@ -30,10 +30,9 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <errno.h>
+#include "nk/log.h"
 
 #include "rlimit.h"
-#include "defines.h"
-#include "log.h"
 
 static int do_limit(int resource, const struct rlimit *rlim)
 {

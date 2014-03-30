@@ -42,6 +42,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <errno.h>
+#include <limits.h>
 
 #ifdef LINUX
 #include <linux/prctl.h>
@@ -49,16 +50,16 @@
 
 #include <getopt.h>
 
-#include "defines.h"
-#include "log.h"
-#include "pidfile.h"
-#include "signals.h"
+#include "nk/log.h"
+#include "nk/pidfile.h"
+#include "nk/signals.h"
+#include "nk/exec.h"
+#include "nk/privilege.h"
+#include "nk/copy_cmdarg.h"
+
 #include "sched.h"
 #include "config.h"
-#include "exec.h"
-#include "privilege.h"
 #include "rlimit.h"
-#include "copy_cmdarg.h"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
@@ -71,8 +72,8 @@ static volatile sig_atomic_t pending_save_and_exit = 0;
 static volatile sig_atomic_t pending_reload_config = 0;
 static volatile sig_atomic_t pending_free_children = 0;
 
-static char g_ncron_conf[MAX_PATH_LENGTH] = CONFIG_FILE_DEFAULT;
-static char g_ncron_execfile[MAX_PATH_LENGTH] = EXEC_FILE_DEFAULT;
+static char g_ncron_conf[PATH_MAX] = CONFIG_FILE_DEFAULT;
+static char g_ncron_execfile[PATH_MAX] = EXEC_FILE_DEFAULT;
 static int g_ncron_execmode = 0;
 
 static void reload_config(cronentry_t **stack, cronentry_t **deadstack)
@@ -265,7 +266,7 @@ int main(int argc, char** argv)
        scripts at boot time. */
     int initial_sleep = 0;
     int c;
-    char pidfile[MAX_PATH_LENGTH] = PID_FILE_DEFAULT;
+    char pidfile[PATH_MAX] = PID_FILE_DEFAULT;
 
     cronentry_t *stack = NULL, *deadstack = NULL;
 

@@ -30,7 +30,7 @@
 
 #include "sched.h"
 
-extern int enforce_limits(limit_t *limits, int uid, int gid, char *command);
+int enforce_limits(limit_t *limits, int uid, int gid, char *command);
 
 #endif
 

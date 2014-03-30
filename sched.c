@@ -33,9 +33,9 @@
 #include <sys/time.h>
 #include <string.h>
 #include <limits.h>
+#include "nk/log.h"
 
 #include "defines.h"
-#include "log.h"
 #include "sched.h"
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
