@@ -26,6 +26,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +47,6 @@
 #include <linux/prctl.h>
 #endif
 
-#define _GNU_SOURCE
 #include <getopt.h>
 
 #include "defines.h"
@@ -145,21 +145,21 @@ static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
     switch ((int)fork()) {
         case 0:
             if (chroot)
-                imprison(chroot);
+                nk_set_chroot(chroot);
             if (enforce_limits(limits, uid, gid, command))
                 suicide("%s: enforce_limits failed", __func__);
-            if (gid != 0) {
-                if (setgid(gid))
-                    suicide("%s: setgid(%i) failed for \"%s\"",
-                             __func__, gid, command);
+            if (gid) {
+                if (setresgid(gid, gid, gid))
+                    suicide("%s: setgid(%i) failed for \"%s\": %s",
+                            __func__, gid, command, strerror(errno));
                 if (getgid() == 0)
                     suicide("%s: child is still gid=root after setgid()",
                             __func__);
             }
-            if (uid != 0) {
-                if (setuid(uid))
-                    suicide("%s: setuid(%i) failed for \"%s\"",
-                             __func__, uid, command);
+            if (uid) {
+                if (setresuid(uid, uid, uid))
+                    suicide("%s: setuid(%i) failed for \"%s\": %s",
+                            __func__, uid, command, strerror(errno));
                 if (getuid() == 0)
                     suicide("%s: child is still uid=root after setuid()",
                             __func__);
