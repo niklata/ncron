@@ -396,8 +396,9 @@ int main(int argc, char** argv)
     umask(077);
 
 #ifdef LINUX
-    prctl(PR_SET_DUMPABLE, 0);
-    prctl(PR_SET_KEEPCAPS, 0);
+    prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);
+    prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0);
+    prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);
 #endif
 
     fix_signals();
