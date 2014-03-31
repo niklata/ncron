@@ -44,7 +44,7 @@
 #include <errno.h>
 #include <limits.h>
 
-#ifdef LINUX
+#ifdef __linux__
 #include <sys/prctl.h>
 #endif
 
@@ -395,7 +395,7 @@ int main(int argc, char** argv)
 
     umask(077);
 
-#ifdef LINUX
+#ifdef __linux__
     prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);
     prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0);
     prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);

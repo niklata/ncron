@@ -15,11 +15,6 @@ execute_process(
   )
 endif()
 
-if (${OSNAME} STREQUAL "Linux")
-  message("Detected that the current host is a Linux system.")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLINUX")
-endif()
-
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/ncmlib")
 add_subdirectory(ncmlib)
 
