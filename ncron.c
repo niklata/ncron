@@ -45,7 +45,7 @@
 #include <limits.h>
 
 #ifdef LINUX
-#include <linux/prctl.h>
+#include <sys/prctl.h>
 #endif
 
 #include <getopt.h>
