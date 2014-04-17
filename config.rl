@@ -72,6 +72,7 @@ struct ParseCfgState
     char *strv_st;
 
     size_t v_strlen;
+    size_t linenum;
 
     unsigned int v_jobid;
     unsigned int v_time;
@@ -173,6 +174,7 @@ static int do_get_history(struct hstm *hstm, char *buf, size_t blen)
     const char *pe = buf + blen;
     const char *eof = pe;
 
+    %% write init;
     %% write exec;
 
     if (hstm->cs >= history_m_first_final)
@@ -192,7 +194,6 @@ static void get_history(cronentry_t *item, char *path, int noextime)
         item->exectime = 0;
 
     FILE *f = fopen(path, "r");
-
     if (!f) {
         log_line("failed to open history file \"%s\" for read", path);
         if (!noextime)
@@ -201,12 +202,7 @@ static void get_history(cronentry_t *item, char *path, int noextime)
     }
 
     char buf[MAXLINE];
-    memset(buf, 0, sizeof buf);
-
-    while (!feof(f)) {
-        char *s = fgets(buf, (int)(sizeof buf), f);
-        if (!s)
-            break;
+    while (fgets(buf, sizeof buf, f)) {
         int r = do_get_history(&hstm, buf, strlen(buf));
         if (r < 0)
             suicide("%s: do_get_history(%s) failed", __func__, path);
@@ -321,15 +317,18 @@ static void setuserv(struct ParseCfgState *ncs)
         suicide("%s: nonexistent user specified at line %zu", ncs->linenum);
 }
 
-static void parse_assign_str(char **dest, char *src, size_t srclen)
+static void parse_assign_str(char **dest, char *src, size_t srclen,
+                             size_t linenum)
 {
     if (srclen > INT_MAX)
-        suicide("%s: srclen would overflow int", __func__);
+        suicide("%s: srclen would overflow int at line %zu",
+                __func__, linenum);
     free(*dest);
     *dest = xmalloc(srclen+1);
     ssize_t l = snprintf(*dest, srclen+1, "%.*s", (int)srclen, src);
     if (l < 0 || (size_t)l >= srclen+1)
-        suicide("%s: snprintf failed l=%u srclen+1=%u", __func__, l, srclen+1);
+        suicide("%s: snprintf failed l=%u srclen+1=%u at line %zu",
+                __func__, l, srclen+1, linenum);
 }
 
 struct pckm {
@@ -344,7 +343,7 @@ struct pckm {
     action St { pckm.st = p; }
     action CmdEn {
         size_t cmdlen = p - pckm.st;
-        parse_assign_str(&ncs->ce->command, pckm.st, cmdlen);
+        parse_assign_str(&ncs->ce->command, pckm.st, cmdlen, ncs->linenum);
         // Unescape "\\" and "\ ".
         int prevsl = 0;
         size_t i = 0;
@@ -361,7 +360,7 @@ struct pckm {
         }
     }
     action ArgEn {
-        parse_assign_str(&ncs->ce->args, pckm.st, p - pckm.st);
+        parse_assign_str(&ncs->ce->args, pckm.st, p - pckm.st, ncs->linenum);
     }
 
     sptab = [ \t];
@@ -387,17 +386,21 @@ static void parse_command_key(struct ParseCfgState *ncs)
 
     if (ncs->cmdret != 0) {
         ncs->cmdret = -3;
-        return;
+        suicide("Duplicate 'command' value at line %zu", ncs->linenum);
     }
 
+    %% write init;
     %% write exec;
 
-    if (pckm.cs == parse_cmd_key_m_error)
+    if (pckm.cs == parse_cmd_key_m_error) {
         ncs->cmdret = -1;
-    else if (pckm.cs >= parse_cmd_key_m_first_final)
+        suicide("Malformed 'command' value at line %zu", ncs->linenum);
+    } else if (pckm.cs >= parse_cmd_key_m_first_final)
         ncs->cmdret = 1;
-    else
+    else {
         ncs->cmdret = -2;
+        suicide("Incomplete 'command' value at line %zu", ncs->linenum);
+    }
 }
 
 static void create_ce(struct ParseCfgState *ncs)
@@ -452,8 +455,9 @@ static void finish_ce(struct ParseCfgState *ncs)
     machine ncrontab;
     access ncs->;
 
-    eqsep = [ \t]+ '=' [ \t]+;
-    cmdterm = '\0';
+    spc = [ \t];
+    eqsep = spc+ '=' spc+;
+    cmdterm = [\0\n];
 
     action TUnitSt { ncs->time_st = p; ncs->v_time = 0; }
     action TSecEn  { ncs->v_time +=          atoi(ncs->time_st); }
@@ -480,9 +484,9 @@ static void finish_ce(struct ParseCfgState *ncs)
         if (ncs->v_strlen <= INT_MAX) {
             ssize_t snl = snprintf(ncs->v_str, sizeof ncs->v_str,
                                    "%.*s", (int)ncs->v_strlen, ncs->strv_st);
-            if (snl < 0 || (size_t)snl >= sizeof ncs->v_str) {
-                // XXX: Error/truncated.
-            }
+            if (snl < 0 || (size_t)snl >= sizeof ncs->v_str)
+                suicide("error parsing line %u in crontab; too long?",
+                        ncs->linenum);
         }
     }
 
@@ -494,10 +498,10 @@ static void finish_ce(struct ParseCfgState *ncs)
     t_any = (t_sec | t_min | t_hr | t_day | t_week);
 
     intval = (digit+ > IntValSt % IntValEn) cmdterm;
-    timeval = t_any ([ \t]* t_any)* cmdterm;
+    timeval = t_any (spc* t_any)* cmdterm;
     intrangeval = (digit+ > IntValSt % IntValEn)
                   (',' (digit+ > IntVal2St % IntVal2En))? cmdterm;
-    stringval = ([^\0]+ > StrValSt % StrValEn) cmdterm;
+    stringval = ([^\0\n]+ > StrValSt % StrValEn) cmdterm;
 
     action JournalEn { ncs->ce->journal = 1; }
     action NoExecTimeEn { ncs->noextime = 1; }
@@ -558,8 +562,10 @@ static void finish_ce(struct ParseCfgState *ncs)
 
     action GroupEn { setgroupv(ncs); }
     action UserEn { setuserv(ncs); }
-    action ChrootEn { parse_assign_str(&ncs->ce->chroot,
-                                       ncs->v_str, ncs->v_strlen); }
+    action ChrootEn {
+        parse_assign_str(&ncs->ce->chroot, ncs->v_str, ncs->v_strlen,
+                         ncs->linenum);
+    }
     action CommandEn { parse_command_key(ncs); }
 
     group = 'group'i eqsep stringval % GroupEn;
@@ -574,25 +580,22 @@ static void finish_ce(struct ParseCfgState *ncs)
 
     action JobIdSt { ncs->jobid_st = p; }
     action JobIdEn { ncs->v_jobid = atoi(ncs->jobid_st); }
-    action CreateCe { create_ce(ncs); }
+    action CreateCe { finish_ce(ncs); create_ce(ncs); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) cmdterm % JobIdEn;
 
-    action FinishCe { finish_ce(ncs); }
-
-    job = jobid cmds+ % FinishCe;
-    main := job+;
+    main := jobid | cmds;
 }%%
 
 %% write data;
 
-static int do_parse_config(struct ParseCfgState *ncs,
-                           char *data, size_t len, bool is_eof)
+static int do_parse_config(struct ParseCfgState *ncs, char *data, size_t len)
 {
     char *p = data;
     const char *pe = data + len;
-    const char *eof = is_eof ? pe : 0;
+    const char *eof = pe;
 
+    %% write init;
     %% write exec;
 
     if (ncs->cs == ncrontab_error)
@@ -607,7 +610,6 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
 {
     char buf[MAXLINE];
     struct ParseCfgState ncs;
-    memset(buf, 0, sizeof buf);
     memset(&ncs, 0, sizeof ncs);
     ncs.execfile = execfile;
     ncs.stack = *stk;
@@ -617,9 +619,8 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
     if (!f)
         suicide("%s: fopen(%s) failed: %s", __func__, path, strerror(errno));
 
-    while (!feof(f)) {
-        char *s = fgets(buf, (int)(sizeof buf), f);
-        int r = do_parse_config(&ncs, buf, strlen(buf), s == NULL);
+    while (++ncs.linenum, fgets(buf, sizeof buf, f)) {
+        int r = do_parse_config(&ncs, buf, strlen(buf));
         if (r < 0)
             suicide("%s: do_parse_config(%s) failed", __func__, path);
         if (r == 1)
