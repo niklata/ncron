@@ -42,6 +42,7 @@
 #include <limits.h>
 #include "nk/log.h"
 #include "nk/malloc.h"
+#include "nk/privilege.h"
 
 #include "defines.h"
 #include "config.h"
@@ -310,16 +311,14 @@ static void addipairlist(struct ParseCfgState *ncs,
 
 static void setgroupv(struct ParseCfgState *ncs)
 {
-    struct group *grp = getgrnam(ncs->v_str);
-    if (grp)
-        ncs->ce->group = grp->gr_gid;
+    if (nk_gidbyname(ncs->v_str, &ncs->ce->group))
+        suicide("%s: nonexistent group specified at line %zu", ncs->linenum);
 }
 
 static void setuserv(struct ParseCfgState *ncs)
 {
-    struct passwd *pwd = getpwnam(ncs->v_str);
-    if (pwd)
-        ncs->ce->user = pwd->pw_uid;
+    if (nk_uidgidbyname(ncs->v_str, &ncs->ce->user, &ncs->ce->group))
+        suicide("%s: nonexistent user specified at line %zu", ncs->linenum);
 }
 
 static void parse_assign_str(char **dest, char *src, size_t srclen)
