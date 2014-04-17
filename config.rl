@@ -44,7 +44,7 @@
 #include "nk/malloc.h"
 #include "nk/privilege.h"
 
-#include "defines.h"
+#include "ncron.h"
 #include "config.h"
 #include "sched.h"
 

@@ -35,7 +35,7 @@
 #include <limits.h>
 #include "nk/log.h"
 
-#include "defines.h"
+#include "ncron.h"
 #include "sched.h"
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
