@@ -412,15 +412,65 @@ static void create_ce(struct ParseCfgState *ncs)
     ncs->noextime = 0;
 }
 
+#ifdef CONFIG_RL_DEBUG
+static void debug_print_ce(struct ParseCfgState *ncs)
+{
+    printf("\nfinish_ce:\n");
+    printf("id: %u\n", ncs->ce->id);
+    printf("command: %s\n", ncs->ce->command);
+    printf("args: %s\n", ncs->ce->args);
+    printf("chroot: %s\n", ncs->ce->chroot);
+    printf("numruns: %u\n", ncs->ce->numruns);
+    printf("maxruns: %u\n", ncs->ce->maxruns);
+    printf("journal: %d\n", ncs->ce->journal);
+    printf("user: %u\n", ncs->ce->user);
+    printf("group: %u\n", ncs->ce->group);
+    if (ncs->ce->month)
+        printf("month: [%d,%d]\n", ncs->ce->month->node.l, ncs->ce->month->node.h);
+    if (ncs->ce->day)
+        printf("day: [%d,%d]\n", ncs->ce->day->node.l, ncs->ce->day->node.h);
+    if (ncs->ce->weekday)
+        printf("weekday: [%d,%d]\n", ncs->ce->weekday->node.l, ncs->ce->weekday->node.h);
+    if (ncs->ce->hour)
+        printf("hour: [%d,%d]\n", ncs->ce->hour->node.l, ncs->ce->hour->node.h);
+    if (ncs->ce->minute)
+        printf("minute: [%d,%d]\n", ncs->ce->minute->node.l, ncs->ce->minute->node.h);
+    printf("interval: %u\n", ncs->ce->interval);
+    printf("exectime: %u\n", ncs->ce->exectime);
+    printf("lasttime: %u\n", ncs->ce->lasttime);
+}
+static void debug_print_ce_ignore(struct ParseCfgState *ncs)
+{
+    (void)ncs;
+    printf("===> IGNORE\n");
+}
+static void debug_print_ce_add(struct ParseCfgState *ncs)
+{
+    (void)ncs;
+    printf("===> ADD\n");
+}
+#else
+static void debug_print_ce(struct ParseCfgState *ncs) {(void)ncs;}
+static void debug_print_ce_ignore(struct ParseCfgState *ncs) {(void)ncs;}
+static void debug_print_ce_add(struct ParseCfgState *ncs) {(void)ncs;}
+#endif
+
 static void finish_ce(struct ParseCfgState *ncs)
 {
-    assert(ncs->ce);
+    if (!ncs->ce)
+        return;
+
+    debug_print_ce(ncs);
+
     if (ncs->ce->id <= 0
         || (ncs->ce->interval <= 0 && ncs->ce->exectime <= 0)
         || !ncs->ce->command || ncs->cmdret < 1) {
+        debug_print_ce_ignore(ncs);
         free_cronentry(&ncs->ce);
+        ncs->ce = NULL;
         return;
     }
+    debug_print_ce_add(ncs);
 
     /* we have a job to insert */
     if (ncs->ce->exectime != 0) { /* runat task */
