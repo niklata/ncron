@@ -74,7 +74,6 @@ struct ParseCfgState
     size_t v_strlen;
     size_t linenum;
 
-    unsigned int v_jobid;
     unsigned int v_time;
 
     int v_int;
@@ -364,9 +363,10 @@ struct pckm {
     }
 
     sptab = [ \t];
-    cmd = sptab+ ([^\0 \\] | '\\\\' | '\\ ')+ > St % CmdEn;
+    cmdstr = ([^\0 \t] | '\\\\' | '\\ ')+;
+    cmd = sptab* (cmdstr > St % CmdEn);
     args = sptab+ ([^\0])* > St % ArgEn;
-    main := cmd args;
+    main := cmd args?;
 }%%
 
 %% write data;
@@ -506,7 +506,7 @@ static void finish_ce(struct ParseCfgState *ncs)
     access ncs->;
 
     spc = [ \t];
-    eqsep = spc+ '=' spc+;
+    eqsep = spc* '=' spc*;
     cmdterm = [\0\n];
 
     action TUnitSt { ncs->time_st = p; ncs->v_time = 0; }
@@ -629,12 +629,14 @@ static void finish_ce(struct ParseCfgState *ncs)
            maxruns | runat | noexectime | journal;
 
     action JobIdSt { ncs->jobid_st = p; }
-    action JobIdEn { ncs->v_jobid = atoi(ncs->jobid_st); }
+    action JobIdEn { ncs->ce->id = atoi(ncs->jobid_st); }
     action CreateCe { finish_ce(ncs); create_ce(ncs); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) cmdterm % JobIdEn;
 
-    main := jobid | cmds;
+    emptyline = '\n';
+
+    main := jobid | cmds | emptyline;
 }%%
 
 %% write data;
@@ -672,9 +674,8 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
     while (++ncs.linenum, fgets(buf, sizeof buf, f)) {
         int r = do_parse_config(&ncs, buf, strlen(buf));
         if (r < 0)
-            suicide("%s: do_parse_config(%s) failed", __func__, path);
-        if (r == 1)
-            break;
+            suicide("%s: do_parse_config(%s) failed at line %u",
+                    __func__, path, ncs.linenum);
     }
     if (fclose(f))
         suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
