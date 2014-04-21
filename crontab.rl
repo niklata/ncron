@@ -145,24 +145,24 @@ struct hstm {
 
     action St { hstm->st = p; }
     action LastTimeEn {
-        hstm->lasttime = atoi(p);
+        hstm->lasttime = atoi(hstm->st);
         hstm->got_lasttime = 1;
     }
     action NumRunsEn {
-        hstm->numruns = atoi(p);
+        hstm->numruns = atoi(hstm->st);
         hstm->got_numruns = 1;
     }
     action ExecTimeEn {
-        hstm->exectime = atoi(p);
+        hstm->exectime = atoi(hstm->st);
         hstm->got_exectime = 1;
     }
-    action IdEn { hstm->id = atoi(p); }
+    action IdEn { hstm->id = atoi(hstm->st); }
 
     lasttime = '|' digit+ > St % LastTimeEn;
     numruns = ':' digit+ > St % NumRunsEn;
     exectime = '=' digit+ > St % ExecTimeEn;
     id = digit+ > St % IdEn;
-    main := id (numruns | exectime | lasttime)+;
+    main := id (numruns | exectime | lasttime)+ '\n';
 }%%
 
 %% write data;
@@ -171,7 +171,6 @@ static int do_get_history(struct hstm *hstm, char *buf, size_t blen)
 {
     char *p = buf;
     const char *pe = buf + blen;
-    const char *eof = pe;
 
     %% write init;
     %% write exec;
@@ -189,9 +188,6 @@ static void get_history(cronentry_t *item, char *path, int noextime)
 
     assert(item);
 
-    if (!noextime && !hstm.got_exectime)
-        item->exectime = 0;
-
     FILE *f = fopen(path, "r");
     if (!f) {
         log_line("failed to open history file \"%s\" for read", path);
@@ -200,21 +196,32 @@ static void get_history(cronentry_t *item, char *path, int noextime)
         return;
     }
 
+    size_t linenum = 0;
     char buf[MAXLINE];
     while (fgets(buf, sizeof buf, f)) {
-        int r = do_get_history(&hstm, buf, strlen(buf));
-        if (r < 0)
-            suicide("%s: do_get_history(%s) failed", __func__, path);
-        if (r == 1) {
-            if (hstm.id == item->id) {
-                if (hstm.got_lasttime)
-                    item->lasttime = hstm.lasttime;
-                if (hstm.got_numruns)
-                    item->numruns = hstm.numruns;
-                if (hstm.got_exectime && !noextime)
-                    item->exectime = hstm.exectime;
-                break;
-            }
+        ++linenum;
+        size_t buflen = strlen(buf);
+        if (buflen <= 0)
+            continue;
+        memset(&hstm, 0, sizeof hstm);
+        int r = do_get_history(&hstm, buf, buflen);
+        if (r < 0) {
+            if (r == -2)
+                log_error("%s: Incomplete configuration at line %zu; ignoring",
+                          __func__, linenum);
+            else
+                log_error("%s: Malformed configuration at line %zu; ignoring.",
+                          __func__, linenum);
+            continue;
+        }
+        if (hstm.id == item->id) {
+            if (hstm.got_lasttime)
+                item->lasttime = hstm.lasttime;
+            if (hstm.got_numruns)
+                item->numruns = hstm.numruns;
+            if (hstm.got_exectime && !noextime)
+                item->exectime = hstm.exectime;
+            break;
         }
     }
     if (fclose(f))
