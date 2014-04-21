@@ -1,4 +1,4 @@
-/* config.rl - configure file parser for ncron
+/* crontab.rl - configure file parser for ncron
  *
  * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
@@ -45,7 +45,7 @@
 #include "nk/privilege.h"
 
 #include "ncron.h"
-#include "config.h"
+#include "crontab.h"
 #include "sched.h"
 
 /* BSD uses OFILE rather than NOFILE... */

@@ -58,7 +58,7 @@
 #include "nk/copy_cmdarg.h"
 
 #include "sched.h"
-#include "config.h"
+#include "crontab.h"
 #include "rlimit.h"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"

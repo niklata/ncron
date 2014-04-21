@@ -120,18 +120,18 @@ endif()
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/ncmlib")
 add_subdirectory(ncmlib)
 
-set(RAGEL_PARSECFG ${CMAKE_CURRENT_BINARY_DIR}/config.c)
+set(RAGEL_CRONTAB ${CMAKE_CURRENT_BINARY_DIR}/crontab.c)
 
 find_program(RAGEL ragel)
 add_custom_command(
-  OUTPUT ${RAGEL_PARSECFG}
-  COMMAND ${RAGEL} -G2 -o ${RAGEL_PARSECFG} config.rl
-  DEPENDS config.rl
+  OUTPUT ${RAGEL_CRONTAB}
+  COMMAND ${RAGEL} -G2 -o ${RAGEL_CRONTAB} crontab.rl
+  DEPENDS crontab.rl
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  COMMENT "Compiling Ragel state machine: config.rl"
+  COMMENT "Compiling Ragel state machine: crontab.rl"
   VERBATIM
   )
 
 file(GLOB NCRON_SRCS "*.c")
-add_executable(ncron ${RAGEL_PARSECFG} ${NCRON_SRCS})
+add_executable(ncron ${RAGEL_CRONTAB} ${NCRON_SRCS})
 target_link_libraries(ncron ncmlib)
