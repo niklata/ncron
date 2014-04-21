@@ -452,7 +452,7 @@ void free_cronentry (cronentry_t **p)
 }
 
 /* frees the entire stack and all related resources; stack <- NULL */
-void free_stack (cronentry_t **stack)
+void free_stack(cronentry_t **stack)
 {
     cronentry_t *p, *q;
 
