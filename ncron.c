@@ -222,11 +222,13 @@ static void do_work(unsigned int initial_sleep)
     sleep_or_die(&ts, false);
 
     while (1) {
+        log_line("%s: LOOP", __func__);
         bool pending_save = false;
 
         clock_or_die(&ts);
 
         while (stack->exectime <= ts.tv_sec) {
+            log_line("%s: DISPATCH", __func__);
             cronentry_t *t;
 
             exec_and_fork((uid_t)stack->user, (gid_t)stack->group,
@@ -259,8 +261,15 @@ static void do_work(unsigned int initial_sleep)
             clock_or_die(&ts);
         }
 
+        log_line("%s: ts.tv_sec = %lu  stack->exectime = %lu", __func__,
+                 ts.tv_sec, stack->exectime);
+        for (cronentry_t *t = stack; t; t = t->next) {
+            log_line("%s: job %u exectime = %lu", __func__, t->id,
+                     t->exectime);
+        }
         if (ts.tv_sec <= stack->exectime) {
             struct timespec sts = { .tv_sec = stack->exectime - ts.tv_sec };
+            log_line("%s: SLEEP %lu seconds", __func__, sts.tv_sec);
             sleep_or_die(&sts, pending_save);
         }
     }

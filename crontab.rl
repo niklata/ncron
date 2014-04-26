@@ -182,16 +182,17 @@ static int do_get_history(struct hstm *hstm, char *buf, size_t blen)
     return -2;
 }
 
-static void get_history(cronentry_t *item, char *path, int noextime)
+static void get_history(cronentry_t *item, char *path, int ignore_exectime)
 {
     struct hstm hstm = {0};
+    time_t exectm = 0;
 
     assert(item);
 
     FILE *f = fopen(path, "r");
     if (!f) {
         log_line("failed to open history file \"%s\" for read", path);
-        if (!noextime)
+        if (!ignore_exectime)
             item->exectime = (time_t)0; /* gracefully fail */
         return;
     }
@@ -215,17 +216,26 @@ static void get_history(cronentry_t *item, char *path, int noextime)
             continue;
         }
         if (hstm.id == item->id) {
-            if (hstm.got_lasttime)
+            if (hstm.got_lasttime) {
                 item->lasttime = hstm.lasttime;
-            if (hstm.got_numruns)
+                log_line("[%d]->lasttime = %u", item->id, item->lasttime);
+            }
+            if (hstm.got_numruns) {
                 item->numruns = hstm.numruns;
-            if (hstm.got_exectime && !noextime)
-                item->exectime = hstm.exectime;
+                log_line("[%d]->numruns = %u", item->id, item->numruns);
+            }
+            if (hstm.got_exectime)
+                exectm = hstm.exectime;
             break;
         }
     }
     if (fclose(f))
         suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
+
+    if (!ignore_exectime) {
+        item->exectime = exectm > 0 ? exectm : 0;
+        log_line("[%d]->exectime = %u", item->id, item->exectime);
+    }
 }
 
 static void setlim(struct ParseCfgState *ncs, int type)
@@ -496,7 +506,7 @@ static void finish_ce(struct ParseCfgState *ncs)
         if (ttm - ncs->ce->lasttime >= ncs->ce->interval)
             ncs->ce->exectime = ttm;
         else
-            force_to_constraint(ncs->ce);
+            force_to_constraint(ncs->ce, ttm);
 
         /* insert iif numruns < maxruns and no constr error */
         if ((ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)

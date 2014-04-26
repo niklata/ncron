@@ -79,7 +79,7 @@ typedef struct
     void *next;
 } cronentry_t;
 
-void force_to_constraint(cronentry_t *entry);
+void force_to_constraint(cronentry_t *entry, time_t ttm);
 time_t get_first_time(cronentry_t *entry);
 time_t get_next_time(cronentry_t *entry);
 void stack_insert(cronentry_t *item, cronentry_t **stack);
