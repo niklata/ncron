@@ -278,9 +278,13 @@ static time_t constrain_time(cronentry_t *entry, time_t stime)
 /* Used when jobs without exectimes are first loaded. */
 void set_initial_exectime(cronentry_t *entry)
 {
-    entry->exectime = constrain_time(entry, time(NULL));
-    if (entry->exectime - entry->lasttime < entry->interval)
-        entry->exectime = constrain_time(entry, entry->exectime);
+    time_t ttm = constrain_time(entry, time(NULL));
+    time_t ttd = ttm - entry->lasttime;
+    if (ttd < entry->interval) {
+        ttm += entry->interval - ttd;
+        ttm = constrain_time(entry, ttm);
+    }
+    entry->exectime = ttm;
 }
 
 /* stupidly advances to next time of execution; performs constraint.  */
