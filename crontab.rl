@@ -186,6 +186,7 @@ static void get_history(cronentry_t *item, char *path, int ignore_exectime)
 {
     struct hstm hstm = {0};
     time_t exectm = 0;
+    time_t lasttm = 0;
 
     assert(item);
 
@@ -216,10 +217,8 @@ static void get_history(cronentry_t *item, char *path, int ignore_exectime)
             continue;
         }
         if (hstm.id == item->id) {
-            if (hstm.got_lasttime) {
-                item->lasttime = hstm.lasttime;
-                log_line("[%d]->lasttime = %u", item->id, item->lasttime);
-            }
+            if (hstm.got_lasttime)
+                lasttm = hstm.lasttime;
             if (hstm.got_numruns) {
                 item->numruns = hstm.numruns;
                 log_line("[%d]->numruns = %u", item->id, item->numruns);
@@ -233,6 +232,8 @@ static void get_history(cronentry_t *item, char *path, int ignore_exectime)
         suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
 
     if (!ignore_exectime) {
+        item->lasttime = lasttm > 0 ? lasttm : 0;
+        log_line("[%d]->lasttime = %u", item->id, item->lasttime);
         item->exectime = exectm > 0 ? exectm : 0;
         log_line("[%d]->exectime = %u", item->id, item->exectime);
     }
