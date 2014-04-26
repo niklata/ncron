@@ -275,17 +275,12 @@ static time_t constrain_time(cronentry_t *entry, time_t stime)
     return 0;
 }
 
-void force_to_constraint(cronentry_t *entry, time_t ttm)
-{
-    if (!entry)
-        return;
-    entry->exectime = constrain_time(entry, ttm);
-}
-
 /* Used when jobs without exectimes are first loaded. */
-time_t get_first_time(cronentry_t *entry)
+void set_initial_exectime(cronentry_t *entry)
 {
-    return constrain_time(entry, time(NULL));
+    entry->exectime = constrain_time(entry, time(NULL));
+    if (entry->exectime - entry->lasttime < entry->interval)
+        entry->exectime = constrain_time(entry, entry->exectime);
 }
 
 /* stupidly advances to next time of execution; performs constraint.  */

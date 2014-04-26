@@ -500,13 +500,7 @@ static void finish_ce(struct ParseCfgState *ncs)
             stack_insert(ncs->ce, &ncs->deadstack);
     } else { /* interval task */
         get_history(ncs->ce, ncs->execfile, ncs->noextime && !cfg_reload);
-
-        /* compensate for user edits to job constraints */
-        time_t ttm = get_first_time(ncs->ce);
-        if (ttm - ncs->ce->lasttime >= ncs->ce->interval)
-            ncs->ce->exectime = ttm;
-        else
-            force_to_constraint(ncs->ce, ttm);
+        set_initial_exectime(ncs->ce);
 
         /* insert iif numruns < maxruns and no constr error */
         if ((ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
