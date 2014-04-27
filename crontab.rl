@@ -592,6 +592,10 @@ static void finish_ce(struct ParseCfgState *ncs)
     action LimDataEn { setlim(ncs, RLIMIT_DATA); }
     action LimFsizeEn { setlim(ncs, RLIMIT_FSIZE); }
     action LimCpuEn { setlim(ncs, RLIMIT_CPU); }
+    action LimMsgQueueEn { setlim(ncs, RLIMIT_MSGQUEUE); }
+    action LimNiceEn { setlim(ncs, RLIMIT_NICE); }
+    action LimRtTimeEn { setlim(ncs, RLIMIT_RTTIME); }
+    action LimSigPendingEn { setlim(ncs, RLIMIT_SIGPENDING); }
 
     lim_as = 'l_as'i eqsep intrangeval % LimAsEn;
     lim_memlock = 'l_memlock'i eqsep intrangeval % LimMemlockEn;
@@ -603,6 +607,10 @@ static void finish_ce(struct ParseCfgState *ncs)
     lim_data = 'l_data'i eqsep intrangeval % LimDataEn;
     lim_fsize = 'l_fsize'i eqsep intrangeval % LimFsizeEn;
     lim_cpu = 'l_cpu'i eqsep intrangeval % LimCpuEn;
+    lim_msgqueue = 'l_msgqueue'i eqsep intrangeval % LimMsgQueueEn;
+    lim_nice = 'l_nice'i eqsep intrangeval % LimNiceEn;
+    lim_rttime = 'l_rttime'i eqsep intrangeval % LimRtTimeEn;
+    lim_sigpending = 'l_sigpending'i eqsep intrangeval % LimSigPendingEn;
 
     action IntervalEn { ncs->ce->interval = ncs->v_time; }
 
