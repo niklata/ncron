@@ -212,27 +212,13 @@ static ipair_t valid_day_of_month(int month, int year)
 {
     ipair_t ret = { 1, 31 };
     switch (month) {
-        case 1:
-        case 3:
-        case 5:
-        case 7:
-        case 8:   /* if only augustus hadn't been so arrogant */
-        case 10:
-        case 12:
-            break;
-        case 4:
-        case 6:
-        case 9:
-        case 11:
-            ret.h = 30;
-            break;
-        case 2:
-            /* we follow the gregorian calendar */
-            if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
-                ret.h = 29;
-            else
-                ret.h = 28;
-            break;
+    case 2: /* we follow the gregorian calendar */
+        if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
+            ret.h = 29;
+        else
+            ret.h = 28;
+        break;
+    case 4: case 6: case 9: case 11: ret.h = 30; default: break;
     }
     return ret;
 }
