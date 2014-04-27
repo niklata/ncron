@@ -33,6 +33,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include <limits.h>
+#include <assert.h>
 #include "nk/log.h"
 
 #include "ncron.h"
@@ -278,7 +279,9 @@ static time_t constrain_time(cronentry_t *entry, time_t stime)
 /* Used when jobs without exectimes are first loaded. */
 void set_initial_exectime(cronentry_t *entry)
 {
-    time_t ttm = constrain_time(entry, time(NULL));
+    struct timespec ts;
+    clock_or_die(&ts);
+    time_t ttm = constrain_time(entry, ts.tv_sec);
     time_t ttd = ttm - entry->lasttime;
     if (ttd < entry->interval) {
         ttm += entry->interval - ttd;
@@ -290,17 +293,11 @@ void set_initial_exectime(cronentry_t *entry)
 /* stupidly advances to next time of execution; performs constraint.  */
 time_t get_next_time(cronentry_t *entry)
 {
-    time_t etime, ctime;
-
-    if (!entry)
-        return 0;
-    etime = ctime = time(NULL);
-    etime += (time_t)entry->interval;
-    etime = constrain_time(entry, etime);
-    if (etime > ctime)
-        return etime;
-    else
-        return 0;
+    assert(entry);
+    struct timespec ts;
+    clock_or_die(&ts);
+    time_t etime = constrain_time(entry, ts.tv_sec + entry->interval);
+    return etime > ts.tv_sec ? etime : 0;
 }
 
 /* inserts item into the sorted stack */

@@ -209,7 +209,7 @@ sleep:
     }
 }
 
-static void clock_or_die(struct timespec *ts)
+void clock_or_die(struct timespec *ts)
 {
     if (clock_gettime(CLOCK_REALTIME, ts))
         suicide("%s: clock_gettime failed: %s", __func__, strerror(errno));

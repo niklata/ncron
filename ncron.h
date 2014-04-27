@@ -4,6 +4,7 @@
 #define MAXLINE 1024
 #define MAX_BUF 1024
 
+void clock_or_die(struct timespec *ts);
 void show_usage(void);
 void print_version(void);
 
