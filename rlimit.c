@@ -76,21 +76,21 @@ int enforce_limits(limit_t *limits, int uid, int gid, char *command)
 #endif
 
     return 0;
-
 rlimit_failed:
-
     switch (errno) {
-        case EFAULT:
-            log_line("Attempt to pass bad value to setrlimit, terminating job (uid: %i, gid: %i, command: %s).", uid, gid, command);
-            break;
-        case EINVAL:
-            log_line("Attempt to set a limit that doesn't exist.  Strange rlimit semantics?  Not running job (uid: %i, gid: %i, command: %s).", uid, gid, command);
-            break;
-        case EPERM:
-            log_line("Job (uid: %i, gid: %i, command: %s) tried to set limits outside of permitted bounds.  Denied.", uid, gid, command);
-            break;
-        default:
-            break;
+    case EFAULT:
+        log_error("setrlimit given bad value for job: uid=%u gid=%u command='%s'",
+                  uid, gid, command);
+        break;
+    case EINVAL:
+        log_error("setrlimit given invalid RLIMIT for job: uid=%u gid=%u command='%s'",
+                  uid, gid, command);
+        break;
+    case EPERM:
+        log_error("setrlimit denied permission to set limit for job: uid=%u gid=%u command='%s'",
+                  uid, gid, command);
+    default:
+        break;
     }
     return -1;
 }
