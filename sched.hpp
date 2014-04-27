@@ -1,6 +1,6 @@
-#ifndef NCRON_SCHED_H_
-#define NCRON_SCHED_H_
-/* sched.h - ncron job scheduling
+#ifndef NCRON_SCHED_HPP_
+#define NCRON_SCHED_HPP_
+/* sched.hpp - ncron job scheduling
  *
  * (c) 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
@@ -28,35 +28,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/types.h>
+#include <memory>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <boost/optional.hpp>
+#include <boost/utility.hpp>
 
-typedef struct
+struct ipair_t
 {
     int l;
     int h;
-} ipair_t;
+};
 
-typedef struct
+struct ipair_node_t
 {
     ipair_t node;
-    void *next;
-} ipair_node_t;
+    ipair_node_t *next;
+};
 
-typedef struct
+class rlimits : boost::noncopyable
 {
-    struct rlimit *cpu;
-    struct rlimit *fsize;
-    struct rlimit *data;
-    struct rlimit *stack;
-    struct rlimit *core;
-    struct rlimit *rss;
-    struct rlimit *nproc;
-    struct rlimit *nofile;
-    struct rlimit *memlock;
-    struct rlimit *as;
-} limit_t;
+public:
+    boost::optional<rlimit> cpu;
+    boost::optional<rlimit> fsize;
+    boost::optional<rlimit> data;
+    boost::optional<rlimit> stack;
+    boost::optional<rlimit> core;
+    boost::optional<rlimit> rss;
+    boost::optional<rlimit> nproc;
+    boost::optional<rlimit> nofile;
+    boost::optional<rlimit> memlock;
+    boost::optional<rlimit> as;
+    boost::optional<rlimit> msgqueue;
+    boost::optional<rlimit> nice;
+    boost::optional<rlimit> rttime;
+    boost::optional<rlimit> sigpending;
+};
 
-typedef struct
+struct cronentry_t
 {
     int id;
     uid_t user;
@@ -75,9 +84,9 @@ typedef struct
     ipair_node_t *weekday;   /* 1-7,  l=0  is wildcard, h=l is no range */
     ipair_node_t *hour;      /* 0-23, l=24 is wildcard, h=l is no range */
     ipair_node_t *minute;    /* 0-59, l=60 is wildcard, h=l is no range */
-    limit_t *limits;
-    void *next;
-} cronentry_t;
+    rlimits *limits;
+    cronentry_t *next;
+};
 
 void set_initial_exectime(cronentry_t *entry);
 time_t get_next_time(cronentry_t *entry);

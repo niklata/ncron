@@ -1,6 +1,6 @@
-#ifndef NCRON_CONFIG_H_
-#define NCRON_CONFIG_H_
-/* config.h - configure file parser for ncron
+#ifndef NCRON_RLIMIT_H_
+#define NCRON_RLIMIT_H_
+/* rlimit.c - sets rlimits for ncron jobs
  *
  * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "sched.h"
-void parse_config(char *path, char *execfile, cronentry_t **stack,
-                  cronentry_t **deadstack);
+#include "sched.hpp"
+int enforce_limits(rlimits *limits, int uid, int gid, char *command);
 #endif
+

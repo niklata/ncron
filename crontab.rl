@@ -40,13 +40,14 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <limits.h>
+extern "C" {
 #include "nk/log.h"
-#include "nk/malloc.h"
 #include "nk/privilege.h"
+}
 
-#include "ncron.h"
-#include "crontab.h"
-#include "sched.h"
+#include "ncron.hpp"
+#include "sched.hpp"
+#include "crontab.hpp"
 
 /* BSD uses OFILE rather than NOFILE... */
 #ifndef RLIMIT_NOFILE
@@ -111,20 +112,20 @@ static void nullify_item(cronentry_t *item)
     item->next = NULL;
 }
 
-static void nullify_limits(limit_t *l)
+static void nullify_limits(rlimits *l)
 {
     if (!l)
         return;
-    l->cpu = NULL;
-    l->fsize = NULL;
-    l->data = NULL;
-    l->stack = NULL;
-    l->core = NULL;
-    l->rss = NULL;
-    l->nproc = NULL;
-    l->nofile = NULL;
-    l->memlock = NULL;
-    l->as = NULL;
+    l->cpu = boost::optional<struct rlimit>();
+    l->fsize = boost::optional<struct rlimit>();
+    l->data = boost::optional<struct rlimit>();
+    l->stack = boost::optional<struct rlimit>();
+    l->core = boost::optional<struct rlimit>();
+    l->rss = boost::optional<struct rlimit>();
+    l->nproc = boost::optional<struct rlimit>();
+    l->nofile = boost::optional<struct rlimit>();
+    l->memlock = boost::optional<struct rlimit>();
+    l->as = boost::optional<struct rlimit>();
 }
 
 struct hstm {
@@ -241,35 +242,32 @@ static void get_history(cronentry_t *item, char *path, int ignore_exectime)
 
 static void setlim(struct ParseCfgState *ncs, int type)
 {
-    struct rlimit **p = NULL;
-    if (!ncs->ce->limits) {
-        ncs->ce->limits = xmalloc(sizeof(limit_t));
-        nullify_limits(ncs->ce->limits);
-    }
-    switch (type) {
-    case RLIMIT_CPU: *p = ncs->ce->limits->cpu; break;
-    case RLIMIT_FSIZE: *p = ncs->ce->limits->fsize; break;
-    case RLIMIT_DATA: *p = ncs->ce->limits->data; break;
-    case RLIMIT_STACK: *p = ncs->ce->limits->stack; break;
-    case RLIMIT_CORE: *p = ncs->ce->limits->core; break;
-    case RLIMIT_RSS: *p = ncs->ce->limits->rss; break;
-    case RLIMIT_NPROC: *p = ncs->ce->limits->nproc; break;
-    case RLIMIT_NOFILE: *p = ncs->ce->limits->nofile; break;
-    case RLIMIT_MEMLOCK: *p = ncs->ce->limits->memlock; break;
-#ifndef BSD
-    case RLIMIT_AS: *p = ncs->ce->limits->as; break;
-#endif /* BSD */
-    default: return;
-    }
-    if (!p)
-        suicide("%s: unexpected NULL, corruption?", __func__);
-    if (!*p)
-        *p = xmalloc(sizeof(struct rlimit));
-    if (ncs->v_int == 0) (*p)->rlim_cur = RLIM_INFINITY;
-    else (*p)->rlim_cur = ncs->v_int;
+    struct rlimit rli;
+    rli.rlim_cur = ncs->v_int == 0 ? RLIM_INFINITY : ncs->v_int;
+    rli.rlim_max = ncs->v_int2 == 0 ? RLIM_INFINITY : ncs->v_int2;
 
-    if (ncs->v_int2 == 0) (*p)->rlim_max = RLIM_INFINITY;
-    else (*p)->rlim_cur = ncs->v_int2;
+    if (!ncs->ce->limits)
+        ncs->ce->limits = new rlimits;
+
+    switch (type) {
+    case RLIMIT_CPU: ncs->ce->limits->cpu = rli; break;
+    case RLIMIT_FSIZE: ncs->ce->limits->fsize = rli; break;
+    case RLIMIT_DATA: ncs->ce->limits->data = rli; break;
+    case RLIMIT_STACK: ncs->ce->limits->stack = rli; break;
+    case RLIMIT_CORE: ncs->ce->limits->core = rli; break;
+    case RLIMIT_RSS: ncs->ce->limits->rss = rli; break;
+    case RLIMIT_NPROC: ncs->ce->limits->nproc = rli; break;
+    case RLIMIT_NOFILE: ncs->ce->limits->nofile = rli; break;
+    case RLIMIT_MEMLOCK: ncs->ce->limits->memlock = rli; break;
+#ifndef BSD
+    case RLIMIT_AS: ncs->ce->limits->as = rli; break;
+    case RLIMIT_MSGQUEUE: ncs->ce->limits->msgqueue = rli; break;
+    case RLIMIT_NICE: ncs->ce->limits->nice = rli; break;
+    case RLIMIT_RTTIME: ncs->ce->limits->rttime = rli; break;
+    case RLIMIT_SIGPENDING: ncs->ce->limits->sigpending = rli; break;
+#endif /* BSD */
+    default: suicide("%s: Bad RLIMIT_type specified.", __func__);
+    }
 }
 
 static void addipairlist(struct ParseCfgState *ncs,
@@ -294,14 +292,14 @@ static void addipairlist(struct ParseCfgState *ncs,
         return;
 
     if (*list == NULL) {
-        *list = xmalloc(sizeof(ipair_node_t));
+        *list = new ipair_node_t;
         l = *list;
     } else {
         l = *list;
         while (l->next)
             l = l->next;
 
-        l->next = xmalloc(sizeof(ipair_node_t));
+        l->next = new ipair_node_t;
         l = l->next;
     }
 
@@ -309,7 +307,7 @@ static void addipairlist(struct ParseCfgState *ncs,
     if (low > high) {
         l->node.l = low;
         l->node.h = max;
-        l->next = xmalloc(sizeof(ipair_node_t));
+        l->next = new ipair_node_t;
         l = l->next;
         l->node.l = min;
         l->node.h = high;
@@ -340,8 +338,8 @@ static void parse_assign_str(char **dest, char *src, size_t srclen,
     if (srclen > INT_MAX)
         suicide("%s: srclen would overflow int at line %zu",
                 __func__, linenum);
-    free(*dest);
-    *dest = xmalloc(srclen+1);
+    delete *dest;
+    *dest = new char[srclen+1];
     ssize_t l = snprintf(*dest, srclen+1, "%.*s", (int)srclen, src);
     if (l < 0 || (size_t)l >= srclen+1)
         suicide("%s: snprintf failed l=%u srclen+1=%u at line %zu",
@@ -424,7 +422,7 @@ static void parse_command_key(struct ParseCfgState *ncs)
 static void create_ce(struct ParseCfgState *ncs)
 {
     assert(!ncs->ce);
-    ncs->ce = xmalloc(sizeof(cronentry_t));
+    ncs->ce = new cronentry_t;
     nullify_item(ncs->ce);
     ncs->cmdret = 0;
     ncs->noextime = 0;

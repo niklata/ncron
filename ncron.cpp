@@ -1,4 +1,4 @@
-/* ncron.c - secure, minimally-sleeping cron daemon
+/* ncron.cpp - secure, minimally-sleeping cron daemon
  *
  * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
@@ -26,7 +26,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define _GNU_SOURCE
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,18 +47,20 @@
 #include <sys/prctl.h>
 #endif
 
+extern "C" {
 #include "nk/log.h"
 #include "nk/pidfile.h"
 #include "nk/signals.h"
 #include "nk/exec.h"
 #include "nk/privilege.h"
 #include "nk/copy_cmdarg.h"
+}
 
-#include "ncron.h"
-#include "cfg.h"
-#include "sched.h"
-#include "crontab.h"
-#include "rlimit.h"
+#include "ncron.hpp"
+#include "sched.hpp"
+#include "cfg.hpp"
+#include "crontab.hpp"
+#include "rlimit.hpp"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
@@ -143,14 +144,14 @@ static void fix_signals(void)
     hook_signal(SIGTERM, sighandler, 0);
 }
 
-static void fail_on_fdne(char *file, char *mode)
+static void fail_on_fdne(const char *file, const char *mode)
 {
     if (file_exists(file, mode))
         exit(EXIT_FAILURE);
 }
 
 static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
-                          char *chroot, limit_t *limits)
+                          char *chroot, rlimits *limits)
 {
     switch ((int)fork()) {
         case 0:
@@ -217,7 +218,9 @@ void clock_or_die(struct timespec *ts)
 
 static void do_work(unsigned int initial_sleep)
 {
-    struct timespec ts = { .tv_nsec=initial_sleep * 1000000 };
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec=initial_sleep * 1000000;
 
     sleep_or_die(&ts, false);
 

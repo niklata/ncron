@@ -120,8 +120,8 @@ endif()
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/ncmlib")
 add_subdirectory(ncmlib)
 
-set(RAGEL_CRONTAB ${CMAKE_CURRENT_BINARY_DIR}/crontab.c)
-set(RAGEL_CFG_PARSE ${CMAKE_CURRENT_BINARY_DIR}/cfg.c)
+set(RAGEL_CRONTAB ${CMAKE_CURRENT_BINARY_DIR}/crontab.cpp)
+set(RAGEL_CFG_PARSE ${CMAKE_CURRENT_BINARY_DIR}/cfg.cpp)
 
 find_program(RAGEL ragel)
 add_custom_command(
@@ -141,6 +141,6 @@ add_custom_command(
   VERBATIM
   )
 
-file(GLOB NCRON_SRCS "*.c")
+file(GLOB NCRON_SRCS "*.cpp")
 add_executable(ncron ${RAGEL_CFG_PARSE} ${RAGEL_CRONTAB} ${NCRON_SRCS})
 target_link_libraries(ncron ncmlib)

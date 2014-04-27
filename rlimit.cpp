@@ -1,4 +1,4 @@
-/* rlimit.c - sets rlimits for ncron jobs
+/* rlimit.cpp - sets rlimits for ncron jobs
  *
  * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
@@ -30,19 +30,20 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <errno.h>
+extern "C" {
 #include "nk/log.h"
+}
+#include "rlimit.hpp"
 
-#include "rlimit.h"
-
-static int do_limit(int resource, const struct rlimit *rlim)
+static int do_limit(int resource, const boost::optional<struct rlimit> &rlim)
 {
     if (!rlim)
         return 0;
-    return setrlimit(resource, rlim);
+    return setrlimit(resource, &*rlim);
 }
 
 
-int enforce_limits(limit_t *limits, int uid, int gid, char *command)
+int enforce_limits(rlimits *limits, int uid, int gid, char *command)
 {
     if (!limits)
         return 0;

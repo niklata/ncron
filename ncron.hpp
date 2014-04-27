@@ -1,5 +1,5 @@
-#ifndef NCRON_DEFINES_H_
-#define NCRON_DEFINES_H_
+#ifndef NCRON_NCRON_HPP_
+#define NCRON_NCRON_HPP_
 
 #define MAXLINE 1024
 #define MAX_BUF 1024
@@ -14,4 +14,4 @@ extern char g_ncron_execfile[PATH_MAX];
 extern char g_ncron_pidfile[PATH_MAX];
 extern int g_ncron_execmode;
 
-#endif /* NCRON_DEFINES_H_ */
+#endif /* NCRON_NCRON_HPP_ */

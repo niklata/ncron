@@ -34,10 +34,11 @@
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
+extern "C" {
 #include "nk/log.h"
-
-#include "ncron.h"
-#include "sched.h"
+}
+#include "ncron.hpp"
+#include "sched.hpp"
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
 
@@ -386,7 +387,7 @@ void free_ipair_node_list (ipair_node_t *list)
 
     while (list) {
         p = list->next;
-        free(list);
+        delete list;
         list = p;
     }
 }
@@ -401,28 +402,17 @@ void free_cronentry (cronentry_t **p)
     if (!q)
         return;
 
-    free(q->command);
-    free(q->args);
-    free(q->chroot);
-    if (q->limits) {
-        free(q->limits->cpu);
-        free(q->limits->fsize);
-        free(q->limits->data);
-        free(q->limits->stack);
-        free(q->limits->core);
-        free(q->limits->rss);
-        free(q->limits->nproc);
-        free(q->limits->nofile);
-        free(q->limits->memlock);
-        free(q->limits->as);
-        free(q->limits);
-    }
+    delete q->command;
+    delete q->args;
+    delete q->chroot;
+    if (q->limits)
+        delete q->limits;
     free_ipair_node_list(q->month);
     free_ipair_node_list(q->day);
     free_ipair_node_list(q->weekday);
     free_ipair_node_list(q->hour);
     free_ipair_node_list(q->minute);
-    free(q);
+    delete q;
 
     q = NULL;
 }

@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include "cfg.h"
-#include "ncron.h"
+#include "cfg.hpp"
+#include "ncron.hpp"
+extern "C" {
 #include "nk/log.h"
 #include "nk/privilege.h"
 #include "nk/copy_cmdarg.h"
+}
 
 struct cfgparse {
    char buf[MAX_BUF];
