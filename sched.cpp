@@ -47,22 +47,28 @@ extern "C" {
  * returns 0 if within range
  * returns 1 if above range
  */
-static inline int compare_range(ipair_t range, int v, int wildcard)
+static inline int compare_range(const std::pair<int,int> &r,
+                                int v, int wildcard)
 {
-    if (range.l == wildcard)
-        range.l = range.h;
-    if (range.h == wildcard || range.l == range.h) {
-        if (range.l == v)
-            return 0;
-        if (v < range.l)
+    if (r.first == wildcard && r.second == wildcard)
+        return 0;
+    if (r.first == wildcard) {
+        if (v < r.second)
             return -1;
-        if (v > range.l)
+        if (v > r.second)
             return 1;
+        return 0;
     }
-
-    if (v < range.l)
+    if (r.second == wildcard) {
+        if (v < r.first)
+            return -1;
+        if (v > r.first)
+            return 1;
+        return 0;
+    }
+    if (v < r.first)
         return -1;
-    if (v > range.h)
+    if (v > r.second)
         return 1;
     return 0;
 }
@@ -70,12 +76,13 @@ static inline int compare_range(ipair_t range, int v, int wildcard)
 /*
  * 1 if range is valid, 0 if not; assumes for constraint and range: (x,y) | x<y
  */
-static inline int is_range_valid(ipair_t constraint, ipair_t range,
-        int wildcard)
+static inline int is_range_valid(const std::pair<int,int> &constraint,
+                                 const std::pair<int,int> &range,
+                                 int wildcard)
 {
-    if (range.l < constraint.l && range.l != wildcard)
+    if (range.first < constraint.first && range.first != wildcard)
         return 0;
-    if (range.h > constraint.h && range.h != wildcard)
+    if (range.second > constraint.second && range.second != wildcard)
         return 0;
     return 1;
 }
@@ -87,37 +94,37 @@ static inline int is_range_valid(ipair_t constraint, ipair_t range,
  * range exists, then the next higher unit is incremented by one and the
  * smallest extant valid value is chosen for the constrained unit.
  */
-static int compare_list_range_v(ipair_node_t *list, int *unit, int *nextunit,
-        ipair_t valid, int wildcard)
+static int compare_list_range_v(const cronentry_t::cst_list &list, int *unit,
+                                int *nextunit, const std::pair<int,int> &valid,
+                                int wildcard)
 {
     int t, smallunit = INT_MAX, dist = INT_MAX, tinyunit = INT_MAX;
 
-    if (!list || !unit || !nextunit)
+    if (list.empty() || !unit || !nextunit)
         return 0;
 
     /* find the range least distant from our target value */
-    while (list) {
-        if (list->node.l < tinyunit)
-            tinyunit = list->node.l;
-        if (is_range_valid(valid, list->node, wildcard)) {
-            switch (compare_range(list->node, *unit, wildcard)) {
+    for (const auto &i: list) {
+        if (i.first < tinyunit)
+            tinyunit = i.first;
+        if (is_range_valid(valid, i, wildcard)) {
+            switch (compare_range(i, *unit, wildcard)) {
                 case 1: /* range below our value, avoid if possible */
-                    t = *unit - list->node.h; /* t > 0 */
+                    t = *unit - i.second; /* t > 0 */
                     if (t < abs(dist) && dist > 0)
                         dist = t;
-                    smallunit = list->node.l;
+                    smallunit = i.first;
                     break;
                 default: /* bingo, our value is within a range */
                     return 0;
                 case -1: /* range above our value, favor */
-                    t = *unit - list->node.l; /* implicitly, t < 0 */
+                    t = *unit - i.first; /* implicitly, t < 0 */
                     if (abs(t) < abs(dist) || dist > 0)
                         dist = t;
-                    smallunit = list->node.l;
+                    smallunit = i.first;
                     break;
             }
         }
-        list = list->next;
     }
 
     /* All of our constraints are invalid, so act as if all are wildcard. */
@@ -136,33 +143,33 @@ static int compare_list_range_v(ipair_node_t *list, int *unit, int *nextunit,
 }
 
 /* same as above, but no check on range validity */
-static int compare_list_range(ipair_node_t *list, int *unit, int *nextunit,
-        int wildcard)
+static int compare_list_range(const cronentry_t::cst_list &list, int *unit,
+                              int *nextunit, int wildcard)
 {
     int t, smallunit = INT_MAX, dist = INT_MAX, tinyunit = INT_MAX;
 
-    if (!list || !unit || !nextunit) return 0;
+    if (list.empty() || !unit || !nextunit)
+        return 0;
 
     /* find the range least distant from our target value */
-    while (list) {
-        if (list->node.l < tinyunit) tinyunit = list->node.l;
-        switch (compare_range(list->node, *unit, wildcard)) {
+    for (const auto &i: list) {
+        if (i.first < tinyunit) tinyunit = i.first;
+        switch (compare_range(i, *unit, wildcard)) {
             case 1: /* range below our value, avoid if possible */
-                t = *unit - list->node.h; /* t > 0 */
+                t = *unit - i.second; /* t > 0 */
                 if (dist > 0 && t < dist)
                     dist = t;
-                smallunit = list->node.l;
+                smallunit = i.first;
                 break;
             default: /* bingo, our value is within a range */
                 return 0;
             case -1: /* range above our value, favor */
-                t = *unit - list->node.l; /* implicitly, t < 0 */
+                t = *unit - i.first; /* implicitly, t < 0 */
                 if (dist > 0 || t > dist)
                     dist = t;
-                smallunit = list->node.l;
+                smallunit = i.first;
                 break;
         }
-        list = list->next;
     }
 
     if (dist > 0) {
@@ -176,28 +183,29 @@ static int compare_list_range(ipair_node_t *list, int *unit, int *nextunit,
     return 1;
 }
 
-static int compare_wday_range(ipair_node_t *list, int *unit, int *nextunit)
+static int compare_wday_range(const cronentry_t::cst_list &list, int *unit,
+                              int *nextunit)
 {
     int dist = INT_MAX, t;
-    if (!list || !unit || !nextunit) return 0;
+    if (list.empty() || !unit || !nextunit)
+        return 0;
 
     /* find the range least distant from our target value */ 
-    while (list) {
-        switch (compare_range(list->node, *unit, 0)) {
+    for (const auto &i: list) {
+        switch (compare_range(i, *unit, 0)) {
             case 1:
-                t = *unit - list->node.h;
+                t = *unit - i.second;
                 if (dist > 0 && t < dist)
                     dist = t;
                 break;
             case 0:
                 return 0;
             case -1:
-                t = *unit - list->node.l;
+                t = *unit - i.first;
                 if (dist > 0 || t > dist)
                     dist = t;
                 break;
         }
-        list = list->next;
     }
 
     if (dist < 0) {
@@ -209,17 +217,17 @@ static int compare_wday_range(ipair_node_t *list, int *unit, int *nextunit)
     return 1;
 }
 
-static ipair_t valid_day_of_month(int month, int year)
+static std::pair<int,int> valid_day_of_month(int month, int year)
 {
-    ipair_t ret = { 1, 31 };
+    auto ret = std::make_pair<int,int>(1, 31);
     switch (month) {
     case 2: /* we follow the gregorian calendar */
         if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
-            ret.h = 29;
+            ret.second = 29;
         else
-            ret.h = 28;
+            ret.second = 28;
         break;
-    case 4: case 6: case 9: case 11: ret.h = 30; default: break;
+    case 4: case 6: case 9: case 11: ret.second = 30; default: break;
     }
     return ret;
 }
@@ -328,17 +336,6 @@ fail:
     fclose(f);
 }
 
-void free_ipair_node_list (ipair_node_t *list)
-{
-    ipair_node_t *p;
-
-    while (list) {
-        p = list->next;
-        delete list;
-        list = p;
-    }
-}
-
 void free_cronentry (cronentry_t **p)
 {
     cronentry_t *q;
@@ -354,11 +351,6 @@ void free_cronentry (cronentry_t **p)
     delete q->chroot;
     if (q->limits)
         delete q->limits;
-    free_ipair_node_list(q->month);
-    free_ipair_node_list(q->day);
-    free_ipair_node_list(q->weekday);
-    free_ipair_node_list(q->hour);
-    free_ipair_node_list(q->minute);
     delete q;
 
     q = NULL;

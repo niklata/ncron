@@ -35,18 +35,6 @@
 #include <boost/optional.hpp>
 #include <boost/utility.hpp>
 
-struct ipair_t
-{
-    int l;
-    int h;
-};
-
-struct ipair_node_t
-{
-    ipair_t node;
-    ipair_node_t *next;
-};
-
 class rlimits : boost::noncopyable
 {
 public:
@@ -68,6 +56,7 @@ public:
 
 struct cronentry_t
 {
+    typedef std::vector<std::pair<int,int>> cst_list;
     unsigned int id;
     uid_t user;
     gid_t group;
@@ -80,11 +69,12 @@ struct cronentry_t
     char *command;
     char *args;
     char *chroot;
-    ipair_node_t *month;     /* 1-12, l=0  is wildcard, h=l is no range */
-    ipair_node_t *day;       /* 1-31, l=0  is wildcard, h=l is no range */
-    ipair_node_t *weekday;   /* 1-7,  l=0  is wildcard, h=l is no range */
-    ipair_node_t *hour;      /* 0-23, l=24 is wildcard, h=l is no range */
-    ipair_node_t *minute;    /* 0-59, l=60 is wildcard, h=l is no range */
+
+    cst_list month;       /* 1-12, l=0  is wildcard, h=l is no range */
+    cst_list day;         /* 1-31, l=0  is wildcard, h=l is no range */
+    cst_list weekday;     /* 1-7,  l=0  is wildcard, h=l is no range */
+    cst_list hour;        /* 0-23, l=24 is wildcard, h=l is no range */
+    cst_list minute;      /* 0-59, l=60 is wildcard, h=l is no range */
     rlimits *limits;
 
     inline bool operator<(const cronentry_t &o) {
@@ -102,7 +92,6 @@ time_t get_next_time(const cronentry_t &entry);
 void save_stack(const char *file,
                 const std::vector<std::unique_ptr<cronentry_t>> &stack,
                 const std::vector<std::unique_ptr<cronentry_t>> &deadstack);
-void free_ipair_node_list (ipair_node_t *list);
 void free_cronentry (cronentry_t **p);
 
 #endif

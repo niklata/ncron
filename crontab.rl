@@ -27,6 +27,7 @@
  */
 
 #include <algorithm>
+#include <utility>
 #include <unordered_map>
 #include <unistd.h>
 #include <stdio.h>
@@ -111,11 +112,6 @@ static void nullify_item(cronentry_t *item)
     item->journal = 0;
     item->user = 0;
     item->group = 0;
-    item->month = nullptr;
-    item->day = nullptr;
-    item->weekday = nullptr;
-    item->hour = nullptr;
-    item->minute = nullptr;
     item->interval = 0;
     item->exectime = 0;
     item->lasttime = 0;
@@ -265,18 +261,14 @@ static void setlim(struct ParseCfgState *ncs, int type)
     }
 }
 
-static void addipairlist(struct ParseCfgState *ncs,
-                         ipair_node_t **list, int wildcard, int min, int max)
+static void addcstlist(struct ParseCfgState *ncs, cronentry_t::cst_list &list,
+                       int wildcard, int min, int max)
 {
-    ipair_node_t *l;
-    int low, high = wildcard;
-
-    low = ncs->v_int;
+    int low = ncs->v_int;
+    int high = wildcard;
     if (ncs->intv2_exist)
         high = ncs->v_int2;
 
-    if (high == wildcard)
-        high = low;
     if (low > max || low < min)
         low = wildcard;
     if (high > max || high < min)
@@ -286,32 +278,13 @@ static void addipairlist(struct ParseCfgState *ncs,
     if (low == wildcard && high == wildcard)
         return;
 
-    if (*list == NULL) {
-        *list = new ipair_node_t;
-        l = *list;
-    } else {
-        l = *list;
-        while (l->next)
-            l = l->next;
-
-        l->next = new ipair_node_t;
-        l = l->next;
-    }
-
-    /* discontinuous range, split into two continuous rules... */
     if (low > high) {
-        l->node.l = low;
-        l->node.h = max;
-        l->next = new ipair_node_t;
-        l = l->next;
-        l->node.l = min;
-        l->node.h = high;
-        l->next = NULL;
+        /* discontinuous range, split into two continuous rules... */
+        list.emplace_back(std::make_pair(low, max));
+        list.emplace_back(std::make_pair(min, high));
     } else {
         /* handle continuous ranges normally */
-        l->node.l = low;
-        l->node.h = high;
-        l->next = NULL;
+        list.emplace_back(std::make_pair(low, high));
     }
 }
 
@@ -424,6 +397,7 @@ static void create_ce(struct ParseCfgState *ncs)
     ncs->noextime = 0;
 }
 
+#define CONFIG_RL_DEBUG
 #ifdef CONFIG_RL_DEBUG
 static void debug_print_ce(struct ParseCfgState *ncs)
 {
@@ -437,19 +411,19 @@ static void debug_print_ce(struct ParseCfgState *ncs)
     printf("journal: %d\n", ncs->ce->journal);
     printf("user: %u\n", ncs->ce->user);
     printf("group: %u\n", ncs->ce->group);
-    if (ncs->ce->month)
-        printf("month: [%d,%d]\n", ncs->ce->month->node.l, ncs->ce->month->node.h);
-    if (ncs->ce->day)
-        printf("day: [%d,%d]\n", ncs->ce->day->node.l, ncs->ce->day->node.h);
-    if (ncs->ce->weekday)
-        printf("weekday: [%d,%d]\n", ncs->ce->weekday->node.l, ncs->ce->weekday->node.h);
-    if (ncs->ce->hour)
-        printf("hour: [%d,%d]\n", ncs->ce->hour->node.l, ncs->ce->hour->node.h);
-    if (ncs->ce->minute)
-        printf("minute: [%d,%d]\n", ncs->ce->minute->node.l, ncs->ce->minute->node.h);
+    for (const auto &i: ncs->ce->month)
+        printf("month: [%d,%d]\n", i.first, i.second);
+    for (const auto &i: ncs->ce->day)
+        printf("day: [%d,%d]\n", i.first, i.second);
+    for (const auto &i: ncs->ce->weekday)
+        printf("weekday: [%d,%d]\n", i.first, i.second);
+    for (const auto &i: ncs->ce->hour)
+        printf("hour: [%d,%d]\n", i.first, i.second);
+    for (const auto &i: ncs->ce->minute)
+        printf("minute: [%d,%d]\n", i.first, i.second);
     printf("interval: %u\n", ncs->ce->interval);
-    printf("exectime: %u\n", ncs->ce->exectime);
-    printf("lasttime: %u\n", ncs->ce->lasttime);
+    printf("exectime: %lu\n", ncs->ce->exectime);
+    printf("lasttime: %lu\n", ncs->ce->lasttime);
 }
 static void debug_print_ce_ignore(struct ParseCfgState *ncs)
 {
@@ -496,6 +470,9 @@ static void finish_ce(struct ParseCfgState *ncs)
     } else { /* interval task */
         get_history(ncs->ce, ncs->noextime && !cfg_reload);
         set_initial_exectime(ncs->ce);
+
+        if (ncs->ce->exectime == 0)
+            printf("Zero exectime!\n");
 
         /* insert iif numruns < maxruns and no constr error */
         if ((ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
@@ -612,11 +589,11 @@ static void finish_ce(struct ParseCfgState *ncs)
 
     interval = 'interval'i eqsep timeval % IntervalEn;
 
-    action MonthEn { addipairlist(ncs, &ncs->ce->month, 0, 1, 12); }
-    action DayEn { addipairlist(ncs, &ncs->ce->day, 0, 1, 31); }
-    action WeekdayEn { addipairlist(ncs, &ncs->ce->weekday, 0, 1, 7); }
-    action HourEn { addipairlist(ncs, &ncs->ce->hour, 24, 0, 23); }
-    action MinuteEn { addipairlist(ncs, &ncs->ce->minute, 60, 0, 59); }
+    action MonthEn { addcstlist(ncs, ncs->ce->month, 0, 1, 12); }
+    action DayEn { addcstlist(ncs, ncs->ce->day, 0, 1, 31); }
+    action WeekdayEn { addcstlist(ncs, ncs->ce->weekday, 0, 1, 7); }
+    action HourEn { addcstlist(ncs, ncs->ce->hour, 24, 0, 23); }
+    action MinuteEn { addcstlist(ncs, ncs->ce->minute, 60, 0, 59); }
 
     month = 'month'i eqsep intrangeval % MonthEn;
     day = 'day'i eqsep intrangeval % DayEn;
