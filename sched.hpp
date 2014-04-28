@@ -28,6 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <vector>
 #include <memory>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -85,15 +86,23 @@ struct cronentry_t
     ipair_node_t *hour;      /* 0-23, l=24 is wildcard, h=l is no range */
     ipair_node_t *minute;    /* 0-59, l=60 is wildcard, h=l is no range */
     rlimits *limits;
-    cronentry_t *next;
+
+    inline bool operator<(const cronentry_t &o) {
+        return exectime < o.exectime;
+    }
 };
 
+static inline bool GtCronEntry(const std::unique_ptr<cronentry_t> &a,
+                               const std::unique_ptr<cronentry_t> &b) {
+    return a->exectime > b->exectime;
+}
+
 void set_initial_exectime(cronentry_t *entry);
-time_t get_next_time(cronentry_t *entry);
-void stack_insert(cronentry_t *item, cronentry_t **stack);
-void save_stack(char *file, cronentry_t *stack, cronentry_t *deadstack);
+time_t get_next_time(const cronentry_t &entry);
+void save_stack(const char *file,
+                const std::vector<std::unique_ptr<cronentry_t>> &stack,
+                const std::vector<std::unique_ptr<cronentry_t>> &deadstack);
 void free_ipair_node_list (ipair_node_t *list);
-void free_stack(cronentry_t **stack);
 void free_cronentry (cronentry_t **p);
 
 #endif

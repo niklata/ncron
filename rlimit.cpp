@@ -42,7 +42,6 @@ static int do_limit(int resource, const boost::optional<struct rlimit> &rlim)
     return setrlimit(resource, &*rlim);
 }
 
-
 int enforce_limits(rlimits *limits, int uid, int gid, char *command)
 {
     if (!limits)

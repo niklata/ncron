@@ -226,7 +226,7 @@ static ipair_t valid_day_of_month(int month, int year)
 
 /* entry is obvious, stime is the time we're constraining
  * returns a time value that has been appropriately constrained */
-static time_t constrain_time(cronentry_t *entry, time_t stime)
+static time_t constrain_time(const cronentry_t *entry, time_t stime)
 {
     struct tm *rtime;
     time_t t;
@@ -278,104 +278,51 @@ void set_initial_exectime(cronentry_t *entry)
 }
 
 /* stupidly advances to next time of execution; performs constraint.  */
-time_t get_next_time(cronentry_t *entry)
+time_t get_next_time(const cronentry_t &entry)
 {
-    assert(entry);
     struct timespec ts;
     clock_or_die(&ts);
-    time_t etime = constrain_time(entry, ts.tv_sec + entry->interval);
+    time_t etime = constrain_time(&entry, ts.tv_sec + entry.interval);
     return etime > ts.tv_sec ? etime : 0;
 }
 
-/* inserts item into the sorted stack */
-void stack_insert(cronentry_t *item, cronentry_t **stack)
+void save_stack(const char *file,
+                const std::vector<std::unique_ptr<cronentry_t>> &stack,
+                const std::vector<std::unique_ptr<cronentry_t>> &deadstack)
 {
-    cronentry_t *p;
-    if (!item || !stack)
-        return;
-
-    /* Null stack; stack <- item */
-    if (*stack == NULL) {
-        item->next = NULL;
-        *stack = item;
-        return;
-    }
-
-    p = *stack;
-
-    /* if item < top of stack, insert item as head element */
-    if (item->exectime < p->exectime) {
-        item->next = p;
-        *stack = item;
-        return;
-    }
-
-    /* if only two elements in stack, insert item as tail */
-    if (p->next == NULL) {
-        item->next = NULL;
-        p->next = item;
-        return;
-    }
-
-    /* try to insert in the interior of stack */
-    while (((cronentry_t *)p->next)->next != NULL) {
-        /* if item < next element, insert before next element */
-        if (item->exectime < ((cronentry_t *)p->next)->exectime) {
-            item->next = p->next;
-            p->next = item;
-            return;
-        }
-        p = p->next;
-    }
-
-    /* implicit: p->next->next == NULL; we're at the end of the stack */
-    if (item->exectime < ((cronentry_t *)p->next)->exectime) {
-        /* insert before end */
-        item->next = p->next;
-        p->next = item;
-    } else {
-        /* place item as the last element */
-        item->next = NULL;
-        ((cronentry_t *)p->next)->next = item;
-    }
-}
-
-void save_stack(char *file, cronentry_t *stack, cronentry_t *deadstack)
-{
-    FILE *f;
-    cronentry_t *p;
-    size_t bsize;
     char buf[MAXLINE];
 
-    f = fopen(file, "w");
+    FILE *f = fopen(file, "w");
     if (!f)
         suicide("%s: failed to open history file %s for write", __func__, file);
 
-    p = stack;
-
-    while (p) {
-        snprintf(buf, sizeof buf, "%i=%i:%i|%i\n", p->id, (int)p->exectime,
-                (unsigned int)p->numruns, (int)p->lasttime);
-        bsize = strlen(buf);
+    for (auto &i: stack) {
+        auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i->id,
+                              i->exectime, i->numruns, i->lasttime);
+        if (snlen < 0 || static_cast<std::size_t>(snlen) >= sizeof buf) {
+            log_error("%s: Would truncate history entry for job %u; skipping.",
+                      __func__, i->id);
+            continue;
+        }
+        auto bsize = strlen(buf);
         while (!fwrite(buf, bsize, 1, f)) {
             if (ferror(f))
                 goto fail;
         }
-
-        p = p->next;
     }
-
-    p = deadstack;
-    while (p) {
-        snprintf(buf, sizeof buf, "%i=%i:%i|%i\n", p->id, (int)p->exectime,
-                (unsigned int)p->numruns, (int)p->lasttime);
-        bsize = strlen(buf);
+    for (auto &i: deadstack) {
+        auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i->id,
+                              i->exectime, i->numruns, i->lasttime);
+        if (snlen < 0 || static_cast<std::size_t>(snlen) >= sizeof buf) {
+            log_error("%s: Would truncate history entry for job %u; skipping.",
+                      __func__, i->id);
+            continue;
+        }
+        auto bsize = strlen(buf);
         while (!fwrite(buf, bsize, 1, f)) {
             if (ferror(f))
                 goto fail;
         }
-
-        p = p->next;
     }
 fail:
     fclose(f);
@@ -415,23 +362,5 @@ void free_cronentry (cronentry_t **p)
     delete q;
 
     q = NULL;
-}
-
-/* frees the entire stack and all related resources; stack <- NULL */
-void free_stack(cronentry_t **stack)
-{
-    cronentry_t *p, *q;
-
-    if (!stack)
-        return;
-    p = *stack;
-
-    while (p) {
-        q = p->next;
-        free_cronentry(&p);
-        p = q;
-    }
-
-    *stack = NULL;
 }
 

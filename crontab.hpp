@@ -27,7 +27,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <memory>
 #include "sched.hpp"
-void parse_config(char *path, char *execfile, cronentry_t **stack,
-                  cronentry_t **deadstack);
+void parse_config(const char *path, const char *execfile,
+                  std::vector<std::unique_ptr<cronentry_t>> &stack,
+                  std::vector<std::unique_ptr<cronentry_t>> &deadstack);
 #endif

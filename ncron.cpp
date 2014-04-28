@@ -26,6 +26,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <memory>
+#include <algorithm>
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -83,17 +86,17 @@ char g_ncron_execfile[PATH_MAX] = EXEC_FILE_DEFAULT;
 char g_ncron_pidfile[PATH_MAX] = PID_FILE_DEFAULT;
 int g_ncron_execmode = 0;
 
-static cronentry_t *stack;
-static cronentry_t *deadstack;
+static std::vector<std::unique_ptr<cronentry_t>> stack;
+static std::vector<std::unique_ptr<cronentry_t>> deadstack;
 
 static void reload_config(void)
 {
     if (g_ncron_execmode != 2)
         save_stack(g_ncron_execfile, stack, deadstack);
 
-    free_stack(&stack);
-    free_stack(&deadstack);
-    parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
+    stack.clear();
+    deadstack.clear();
+    parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack); // XXX
     log_line("SIGHUP - Reloading config: %s.", g_ncron_conf);
     pending_reload_config = 0;
 }
@@ -230,48 +233,42 @@ static void do_work(unsigned int initial_sleep)
 
         clock_or_die(&ts);
 
-        while (stack->exectime <= ts.tv_sec) {
+        while (stack.front()->exectime <= ts.tv_sec) {
+            auto &i = *stack.front();
             log_line("%s: DISPATCH", __func__);
-            cronentry_t *t;
 
-            exec_and_fork((uid_t)stack->user, (gid_t)stack->group,
-                    stack->command, stack->args, stack->chroot, stack->limits);
+            exec_and_fork((uid_t)i.user, (gid_t)i.group, i.command, i.args,
+                          i.chroot, i.limits);
 
-            stack->numruns++;
-            stack->lasttime = ts.tv_sec;
-            stack->exectime = get_next_time(stack);
-            if (stack->journal)
+            i.numruns++;
+            i.lasttime = ts.tv_sec;
+            i.exectime = get_next_time(*stack.front());
+            if (i.journal)
                 pending_save = true;
 
-            if ((stack->numruns < stack->maxruns || stack->maxruns == 0)
-                    && stack->exectime != 0) {
-                /* reinsert in sorted stack at the right place for next run */
-                if (stack->next) {
-                    t = stack;
-                    stack = stack->next;
-                    t->next = NULL;
-                    stack_insert(t, &stack);
-                }
+            if ((i.numruns < i.maxruns || i.maxruns == 0)
+                && i.exectime != 0) {
+                std::make_heap(stack.begin(), stack.end(), GtCronEntry);
             } else {
-                /* remove the job */
-                t = stack;
-                stack = stack->next;
-                stack_insert(t, &deadstack);
+                std::pop_heap(stack.begin(), stack.end(), GtCronEntry);
+                deadstack.emplace_back(std::move(stack.back()));
+                stack.pop_back();
             }
-            if (!stack)
+            if (stack.empty())
                 save_and_exit();
 
             clock_or_die(&ts);
         }
 
-        log_line("%s: ts.tv_sec = %lu  stack->exectime = %lu", __func__,
-                 ts.tv_sec, stack->exectime);
-        for (cronentry_t *t = stack; t; t = t->next) {
-            log_line("%s: job %u exectime = %lu", __func__, t->id,
-                     t->exectime);
-        }
-        if (ts.tv_sec <= stack->exectime) {
-            struct timespec sts = { .tv_sec = stack->exectime - ts.tv_sec };
+        log_line("%s: ts.tv_sec = %lu  stack.front()->exectime = %lu",
+                 __func__, ts.tv_sec, stack.front()->exectime);
+        for (const auto &i: stack)
+            log_line("%s: job %u exectime = %lu", __func__,
+                     i->id, i->exectime);
+        if (ts.tv_sec <= stack.front()->exectime) {
+            struct timespec sts;
+            sts.tv_sec = stack.front()->exectime - ts.tv_sec;
+            sts.tv_nsec = 0;
             log_line("%s: SLEEP %lu seconds", __func__, sts.tv_sec);
             sleep_or_die(&sts, pending_save);
         }
@@ -349,9 +346,9 @@ int main(int argc, char* argv[])
 #endif
 
     fix_signals();
-    parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
+    parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
 
-    if (!stack)
+    if (stack.empty())
         suicide("%s: no jobs, exiting", __func__);
 
     write_pid(g_ncron_pidfile);

@@ -26,10 +26,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
@@ -58,13 +58,23 @@ static int cfg_reload;    /* 0 on first call, 1 on subsequent calls */
 
 struct ParseCfgState
 {
+    ParseCfgState(const char *ef,
+                  std::vector<std::unique_ptr<cronentry_t>> &stk,
+                  std::vector<std::unique_ptr<cronentry_t>> &dstk) :
+        stack(stk), deadstack(dstk), ce(nullptr), execfile(ef),
+        jobid_st(nullptr), time_st(nullptr), intv_st(nullptr),
+        intv2_st(nullptr), strv_st(nullptr), v_strlen(0), linenum(0), v_int(0),
+        v_int2(0), cs(0), noextime(0), cmdret(0), intv2_exist(false)
+    {
+        memset(v_str, 0, sizeof v_str);
+    }
     char v_str[1024];
 
-    cronentry_t *stack;
-    cronentry_t *deadstack;
+    std::vector<std::unique_ptr<cronentry_t>> &stack;
+    std::vector<std::unique_ptr<cronentry_t>> &deadstack;
     cronentry_t *ce;
 
-    char *execfile;
+    const char *execfile;
 
     char *jobid_st;
     char *time_st;
@@ -92,43 +102,29 @@ static void nullify_item(cronentry_t *item)
     if (!item)
         return;
     item->id = 0;
-    item->command = NULL;
-    item->args = NULL;
-    item->chroot = NULL;
+    item->command = nullptr;
+    item->args = nullptr;
+    item->chroot = nullptr;
     item->numruns = 0;
     item->maxruns = 0;
     item->journal = 0;
     item->user = 0;
     item->group = 0;
-    item->month = NULL;
-    item->day = NULL;
-    item->weekday = NULL;
-    item->hour = NULL;
-    item->minute = NULL;
+    item->month = nullptr;
+    item->day = nullptr;
+    item->weekday = nullptr;
+    item->hour = nullptr;
+    item->minute = nullptr;
     item->interval = 0;
     item->exectime = 0;
     item->lasttime = 0;
-    item->limits = NULL;
-    item->next = NULL;
-}
-
-static void nullify_limits(rlimits *l)
-{
-    if (!l)
-        return;
-    l->cpu = boost::optional<struct rlimit>();
-    l->fsize = boost::optional<struct rlimit>();
-    l->data = boost::optional<struct rlimit>();
-    l->stack = boost::optional<struct rlimit>();
-    l->core = boost::optional<struct rlimit>();
-    l->rss = boost::optional<struct rlimit>();
-    l->nproc = boost::optional<struct rlimit>();
-    l->nofile = boost::optional<struct rlimit>();
-    l->memlock = boost::optional<struct rlimit>();
-    l->as = boost::optional<struct rlimit>();
+    item->limits = nullptr;
 }
 
 struct hstm {
+    hstm() :
+        st(nullptr), cs(0), id(0), exectime(0), lasttime(0), numruns(0),
+        got_exectime(false), got_lasttime(false), got_numruns(false) {}
     char *st;
     int cs;
     int id;
@@ -183,9 +179,10 @@ static int do_get_history(struct hstm *hstm, char *buf, size_t blen)
     return -2;
 }
 
-static void get_history(cronentry_t *item, char *path, int ignore_exectime)
+static void get_history(cronentry_t *item, const char *path,
+                        int ignore_exectime)
 {
-    struct hstm hstm = {0};
+    struct hstm hstm;
     time_t exectm = 0;
     time_t lasttm = 0;
 
@@ -347,6 +344,7 @@ static void parse_assign_str(char **dest, char *src, size_t srclen,
 }
 
 struct pckm {
+    pckm() : st(nullptr), cs(0) {}
     char *st;
     int cs;
 };
@@ -398,7 +396,7 @@ static void parse_command_key(struct ParseCfgState *ncs)
     const char *pe = ncs->v_str + ncs->v_strlen;
     const char *eof = pe;
 
-    struct pckm pckm = {0};
+    struct pckm pckm;
 
     if (ncs->cmdret != 0) {
         ncs->cmdret = -3;
@@ -494,9 +492,9 @@ static void finish_ce(struct ParseCfgState *ncs)
 
         /* insert iif we haven't exceeded maxruns */
         if (ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
-            stack_insert(ncs->ce, &ncs->stack);
+            ncs->stack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
         else
-            stack_insert(ncs->ce, &ncs->deadstack);
+            ncs->deadstack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
     } else { /* interval task */
         get_history(ncs->ce, ncs->execfile, ncs->noextime && !cfg_reload);
         set_initial_exectime(ncs->ce);
@@ -504,9 +502,9 @@ static void finish_ce(struct ParseCfgState *ncs)
         /* insert iif numruns < maxruns and no constr error */
         if ((ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
             && ncs->ce->exectime != 0)
-            stack_insert(ncs->ce, &ncs->stack);
+            ncs->stack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
         else
-            stack_insert(ncs->ce, &ncs->deadstack);
+            ncs->deadstack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
     }
     ncs->ce = NULL;
 }
@@ -675,15 +673,12 @@ static int do_parse_config(struct ParseCfgState *ncs, char *data, size_t len)
     return 0;
 }
 
-void parse_config(char *path, char *execfile, cronentry_t **stk,
-                  cronentry_t **deadstk)
+void parse_config(const char *path, const char *execfile,
+                  std::vector<std::unique_ptr<cronentry_t>> &stk,
+                  std::vector<std::unique_ptr<cronentry_t>> &deadstk)
 {
     char buf[MAXLINE];
-    struct ParseCfgState ncs;
-    memset(&ncs, 0, sizeof ncs);
-    ncs.execfile = execfile;
-    ncs.stack = *stk;
-    ncs.deadstack = *deadstk;
+    struct ParseCfgState ncs(execfile, stk, deadstk);
 
     FILE *f = fopen(path, "r");
     if (!f)
@@ -698,8 +693,8 @@ void parse_config(char *path, char *execfile, cronentry_t **stk,
     if (fclose(f))
         suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
 
-    *stk = ncs.stack;
-    *deadstk = ncs.deadstack;
+    std::make_heap(stk.begin(), stk.end(), GtCronEntry);
+
     if (ncs.ce)
         free_cronentry(&ncs.ce); // Free partially built unused item.
     cfg_reload = 1;
