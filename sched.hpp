@@ -75,7 +75,7 @@ struct cronentry_t
     cst_list weekday;     /* 1-7,  l=0  is wildcard, h=l is no range */
     cst_list hour;        /* 0-23, l=24 is wildcard, h=l is no range */
     cst_list minute;      /* 0-59, l=60 is wildcard, h=l is no range */
-    rlimits *limits;
+    std::unique_ptr<rlimits> limits;
 
     inline bool operator<(const cronentry_t &o) {
         return exectime < o.exectime;

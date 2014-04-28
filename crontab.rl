@@ -46,6 +46,7 @@ extern "C" {
 #include "nk/log.h"
 #include "nk/privilege.h"
 }
+#include "make_unique.hpp"
 
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -238,7 +239,7 @@ static void setlim(struct ParseCfgState *ncs, int type)
     rli.rlim_max = ncs->v_int2 == 0 ? RLIM_INFINITY : ncs->v_int2;
 
     if (!ncs->ce->limits)
-        ncs->ce->limits = new rlimits;
+        ncs->ce->limits = nk::make_unique<rlimits>();
 
     switch (type) {
     case RLIMIT_CPU: ncs->ce->limits->cpu = rli; break;

@@ -238,7 +238,7 @@ static void do_work(unsigned int initial_sleep)
             log_line("%s: DISPATCH", __func__);
 
             exec_and_fork((uid_t)i.user, (gid_t)i.group, i.command, i.args,
-                          i.chroot, i.limits);
+                          i.chroot, i.limits ? i.limits.get() : nullptr);
 
             i.numruns++;
             i.lasttime = ts.tv_sec;

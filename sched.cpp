@@ -349,8 +349,6 @@ void free_cronentry (cronentry_t **p)
     delete q->command;
     delete q->args;
     delete q->chroot;
-    if (q->limits)
-        delete q->limits;
     delete q;
 
     q = NULL;
