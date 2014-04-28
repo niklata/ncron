@@ -27,6 +27,7 @@
  */
 
 #include <algorithm>
+#include <unordered_map>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -121,39 +122,33 @@ static void nullify_item(cronentry_t *item)
     item->limits = nullptr;
 }
 
+struct item_history {
+    item_history() {}
+    item_history(boost::optional<time_t> e, boost::optional<time_t> l,
+                 boost::optional<unsigned int> n) :
+        exectime(e), lasttime(l), numruns(n) {}
+    boost::optional<time_t> exectime;
+    boost::optional<time_t> lasttime;
+    boost::optional<unsigned int> numruns;
+};
+
 struct hstm {
-    hstm() :
-        st(nullptr), cs(0), id(0), exectime(0), lasttime(0), numruns(0),
-        got_exectime(false), got_lasttime(false), got_numruns(false) {}
+    hstm() : st(nullptr), cs(0), id(0) {}
     char *st;
     int cs;
-    int id;
-    time_t exectime;
-    time_t lasttime;
-    unsigned int numruns;
-    bool got_exectime:1;
-    bool got_lasttime:1;
-    bool got_numruns:1;
+    unsigned int id;
+    item_history h;
 };
 
 %%{
     machine history_m;
-    access hstm->;
+    access hst.;
 
-    action St { hstm->st = p; }
-    action LastTimeEn {
-        hstm->lasttime = atoi(hstm->st);
-        hstm->got_lasttime = 1;
-    }
-    action NumRunsEn {
-        hstm->numruns = atoi(hstm->st);
-        hstm->got_numruns = 1;
-    }
-    action ExecTimeEn {
-        hstm->exectime = atoi(hstm->st);
-        hstm->got_exectime = 1;
-    }
-    action IdEn { hstm->id = atoi(hstm->st); }
+    action St { hst.st = p; }
+    action LastTimeEn { hst.h.lasttime = atoi(hst.st); }
+    action NumRunsEn { hst.h.numruns = atoi(hst.st); }
+    action ExecTimeEn { hst.h.exectime = atoi(hst.st); }
+    action IdEn { hst.id = atoi(hst.st); }
 
     lasttime = '|' digit+ > St % LastTimeEn;
     numruns = ':' digit+ > St % NumRunsEn;
@@ -164,7 +159,7 @@ struct hstm {
 
 %% write data;
 
-static int do_get_history(struct hstm *hstm, char *buf, size_t blen)
+static int do_parse_history(hstm &hst, char *buf, size_t blen)
 {
     char *p = buf;
     const char *pe = buf + blen;
@@ -172,27 +167,20 @@ static int do_get_history(struct hstm *hstm, char *buf, size_t blen)
     %% write init;
     %% write exec;
 
-    if (hstm->cs >= history_m_first_final)
+    if (hst.cs >= history_m_first_final)
         return 1;
-    if (hstm->cs == history_m_error)
+    if (hst.cs == history_m_error)
         return -1;
     return -2;
 }
 
-static void get_history(cronentry_t *item, const char *path,
-                        int ignore_exectime)
+static std::unordered_map<unsigned int, item_history> history_map;
+
+static void parse_history(const char *path)
 {
-    struct hstm hstm;
-    time_t exectm = 0;
-    time_t lasttm = 0;
-
-    assert(item);
-
     FILE *f = fopen(path, "r");
     if (!f) {
         log_line("failed to open history file \"%s\" for read", path);
-        if (!ignore_exectime)
-            item->exectime = (time_t)0; /* gracefully fail */
         return;
     }
 
@@ -203,8 +191,8 @@ static void get_history(cronentry_t *item, const char *path,
         size_t buflen = strlen(buf);
         if (buflen <= 0)
             continue;
-        memset(&hstm, 0, sizeof hstm);
-        int r = do_get_history(&hstm, buf, buflen);
+        hstm h;
+        int r = do_parse_history(h, buf, buflen);
         if (r < 0) {
             if (r == -2)
                 log_error("%s: Incomplete configuration at line %zu; ignoring",
@@ -214,26 +202,36 @@ static void get_history(cronentry_t *item, const char *path,
                           __func__, linenum);
             continue;
         }
-        if (hstm.id == item->id) {
-            if (hstm.got_lasttime)
-                lasttm = hstm.lasttime;
-            if (hstm.got_numruns) {
-                item->numruns = hstm.numruns;
-                log_line("[%d]->numruns = %u", item->id, item->numruns);
-            }
-            if (hstm.got_exectime)
-                exectm = hstm.exectime;
-            break;
-        }
+        history_map.emplace(std::make_pair(
+            h.id, item_history(h.h.exectime, h.h.lasttime, h.h.numruns)));
     }
     if (fclose(f))
         suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
+}
+
+static void get_history(cronentry_t *item, int ignore_exectime)
+{
+    assert(item);
+    time_t exectm = 0;
+    time_t lasttm = 0;
+
+    auto i = history_map.find(item->id);
+    if (i == history_map.end())
+        return;
+    if (i->second.exectime)
+        exectm = *i->second.exectime;
+    if (i->second.lasttime)
+        lasttm = *i->second.lasttime;
+    if (i->second.numruns) {
+        item->numruns = *i->second.numruns;
+        log_line("[%u]->numruns = %u", item->id, item->numruns);
+    }
 
     if (!ignore_exectime) {
         item->lasttime = lasttm > 0 ? lasttm : 0;
-        log_line("[%d]->lasttime = %u", item->id, item->lasttime);
+        log_line("[%u]->lasttime = %u", item->id, item->lasttime);
         item->exectime = exectm > 0 ? exectm : 0;
-        log_line("[%d]->exectime = %u", item->id, item->exectime);
+        log_line("[%u]->exectime = %u", item->id, item->exectime);
     }
 }
 
@@ -488,7 +486,7 @@ static void finish_ce(struct ParseCfgState *ncs)
 
     /* we have a job to insert */
     if (ncs->ce->exectime != 0) { /* runat task */
-        get_history(ncs->ce, ncs->execfile, 1);
+        get_history(ncs->ce, 1);
 
         /* insert iif we haven't exceeded maxruns */
         if (ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
@@ -496,7 +494,7 @@ static void finish_ce(struct ParseCfgState *ncs)
         else
             ncs->deadstack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
     } else { /* interval task */
-        get_history(ncs->ce, ncs->execfile, ncs->noextime && !cfg_reload);
+        get_history(ncs->ce, ncs->noextime && !cfg_reload);
         set_initial_exectime(ncs->ce);
 
         /* insert iif numruns < maxruns and no constr error */
@@ -680,6 +678,8 @@ void parse_config(const char *path, const char *execfile,
     char buf[MAXLINE];
     struct ParseCfgState ncs(execfile, stk, deadstk);
 
+    parse_history(ncs.execfile);
+
     FILE *f = fopen(path, "r");
     if (!f)
         suicide("%s: fopen(%s) failed: %s", __func__, path, strerror(errno));
@@ -695,6 +695,7 @@ void parse_config(const char *path, const char *execfile,
 
     std::make_heap(stk.begin(), stk.end(), GtCronEntry);
 
+    history_map.clear();
     if (ncs.ce)
         free_cronentry(&ncs.ce); // Free partially built unused item.
     cfg_reload = 1;

@@ -68,7 +68,7 @@ public:
 
 struct cronentry_t
 {
-    int id;
+    unsigned int id;
     uid_t user;
     gid_t group;
     time_t exectime;        /* time at which we will execute in the future */
