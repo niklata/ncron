@@ -153,19 +153,20 @@ static void fail_on_fdne(const char *file, const char *mode)
         exit(EXIT_FAILURE);
 }
 
-static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
-                          char *chroot, rlimits *limits)
+static void exec_and_fork(uid_t uid, gid_t gid, const std::string &command,
+                          const std::string &args, const std::string &chroot,
+                          rlimits *limits)
 {
     switch ((int)fork()) {
         case 0:
-            if (chroot)
-                nk_set_chroot(chroot);
+            if (!chroot.empty())
+                nk_set_chroot(chroot.c_str());
             if (enforce_limits(limits, uid, gid, command))
                 suicide("%s: enforce_limits failed", __func__);
             if (gid) {
                 if (setresgid(gid, gid, gid))
                     suicide("%s: setgid(%i) failed for \"%s\": %s",
-                            __func__, gid, command, strerror(errno));
+                            __func__, gid, command.c_str(), strerror(errno));
                 if (getgid() == 0)
                     suicide("%s: child is still gid=root after setgid()",
                             __func__);
@@ -173,13 +174,13 @@ static void exec_and_fork(uid_t uid, gid_t gid, char *command, char *args,
             if (uid) {
                 if (setresuid(uid, uid, uid))
                     suicide("%s: setuid(%i) failed for \"%s\": %s",
-                            __func__, uid, command, strerror(errno));
+                            __func__, uid, command.c_str(), strerror(errno));
                 if (getuid() == 0)
                     suicide("%s: child is still uid=root after setuid()",
                             __func__);
                 nk_fix_env(uid, true);
             }
-            nk_execute(command, args);
+            nk_execute(command.c_str(), args.c_str());
         case -1:
             suicide("%s: fork failed: %s", __func__, strerror(errno));
         default:
@@ -237,8 +238,9 @@ static void do_work(unsigned int initial_sleep)
             auto &i = *stack.front();
             log_line("%s: DISPATCH", __func__);
 
-            exec_and_fork((uid_t)i.user, (gid_t)i.group, i.command, i.args,
-                          i.chroot, i.limits ? i.limits.get() : nullptr);
+            exec_and_fork((uid_t)i.user, (gid_t)i.group,
+                          i.command, i.args, i.chroot,
+                          i.limits ? i.limits.get() : nullptr);
 
             i.numruns++;
             i.lasttime = ts.tv_sec;

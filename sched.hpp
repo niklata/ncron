@@ -28,6 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <string>
 #include <vector>
 #include <memory>
 #include <sys/time.h>
@@ -66,9 +67,9 @@ struct cronentry_t
     unsigned int numruns;   /* number of times a job has run */
     unsigned int maxruns;   /* max # of times a job will run, 0 = nolim */
     int journal;
-    char *command;
-    char *args;
-    char *chroot;
+    std::string command;
+    std::string args;
+    std::string chroot;
 
     cst_list month;       /* 1-12, l=0  is wildcard, h=l is no range */
     cst_list day;         /* 1-31, l=0  is wildcard, h=l is no range */

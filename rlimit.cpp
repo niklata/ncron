@@ -42,7 +42,8 @@ static int do_limit(int resource, const boost::optional<struct rlimit> &rlim)
     return setrlimit(resource, &*rlim);
 }
 
-int enforce_limits(rlimits *limits, int uid, int gid, char *command)
+int enforce_limits(rlimits *limits, int uid, int gid,
+                   const std::string &command)
 {
     if (!limits)
         return 0;
@@ -80,15 +81,15 @@ rlimit_failed:
     switch (errno) {
     case EFAULT:
         log_error("setrlimit given bad value for job: uid=%u gid=%u command='%s'",
-                  uid, gid, command);
+                  uid, gid, command.c_str());
         break;
     case EINVAL:
         log_error("setrlimit given invalid RLIMIT for job: uid=%u gid=%u command='%s'",
-                  uid, gid, command);
+                  uid, gid, command.c_str());
         break;
     case EPERM:
         log_error("setrlimit denied permission to set limit for job: uid=%u gid=%u command='%s'",
-                  uid, gid, command);
+                  uid, gid, command.c_str());
     default:
         break;
     }

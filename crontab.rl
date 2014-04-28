@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <utility>
 #include <unordered_map>
+#include <boost/algorithm/string/replace.hpp>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,9 +106,9 @@ static void nullify_item(cronentry_t *item)
     if (!item)
         return;
     item->id = 0;
-    item->command = nullptr;
-    item->args = nullptr;
-    item->chroot = nullptr;
+    item->command.clear();
+    item->args.clear();
+    item->chroot.clear();
     item->numruns = 0;
     item->maxruns = 0;
     item->journal = 0;
@@ -301,20 +302,6 @@ static void setuserv(struct ParseCfgState *ncs)
         suicide("%s: nonexistent user specified at line %zu", ncs->linenum);
 }
 
-static void parse_assign_str(char **dest, char *src, size_t srclen,
-                             size_t linenum)
-{
-    if (srclen > INT_MAX)
-        suicide("%s: srclen would overflow int at line %zu",
-                __func__, linenum);
-    delete *dest;
-    *dest = new char[srclen+1];
-    ssize_t l = snprintf(*dest, srclen+1, "%.*s", (int)srclen, src);
-    if (l < 0 || (size_t)l >= srclen+1)
-        suicide("%s: snprintf failed l=%u srclen+1=%u at line %zu",
-                __func__, l, srclen+1, linenum);
-}
-
 struct pckm {
     pckm() : st(nullptr), cs(0) {}
     char *st;
@@ -327,26 +314,11 @@ struct pckm {
 
     action St { pckm.st = p; }
     action CmdEn {
-        size_t cmdlen = p - pckm.st;
-        parse_assign_str(&ncs->ce->command, pckm.st, cmdlen, ncs->linenum);
-        // Unescape "\\" and "\ ".
-        int prevsl = 0;
-        size_t i = 0;
-        while (ncs->ce->command[i]) {
-            if (prevsl && (ncs->ce->command[i] == '\\'
-                           || ncs->ce->command[i] == ' ')) {
-                memmove(ncs->ce->command + i - 1,
-                        ncs->ce->command + i, cmdlen--);
-                continue;
-            }
-            if (ncs->ce->command[i] == '\\')
-                prevsl = 1;
-            ++i;
-        }
+        ncs->ce->command = std::string(pckm.st, p - pckm.st);
+        boost::algorithm::replace_all(ncs->ce->command, "\\\\", "\\");
+        boost::algorithm::replace_all(ncs->ce->command, "\\ ", " ");
     }
-    action ArgEn {
-        parse_assign_str(&ncs->ce->args, pckm.st, p - pckm.st, ncs->linenum);
-    }
+    action ArgEn { ncs->ce->args = std::string(pckm.st, p - pckm.st); }
 
     sptab = [ \t];
     cmdstr = ([^\0 \t] | '\\\\' | '\\ ')+;
@@ -404,9 +376,9 @@ static void debug_print_ce(struct ParseCfgState *ncs)
 {
     printf("\nfinish_ce:\n");
     printf("id: %u\n", ncs->ce->id);
-    printf("command: %s\n", ncs->ce->command);
-    printf("args: %s\n", ncs->ce->args);
-    printf("chroot: %s\n", ncs->ce->chroot);
+    printf("command: %s\n", ncs->ce->command.c_str());
+    printf("args: %s\n", ncs->ce->args.c_str());
+    printf("chroot: %s\n", ncs->ce->chroot.c_str());
     printf("numruns: %u\n", ncs->ce->numruns);
     printf("maxruns: %u\n", ncs->ce->maxruns);
     printf("journal: %d\n", ncs->ce->journal);
@@ -451,7 +423,7 @@ static void finish_ce(struct ParseCfgState *ncs)
 
     if (ncs->ce->id <= 0
         || (ncs->ce->interval <= 0 && ncs->ce->exectime <= 0)
-        || !ncs->ce->command || ncs->cmdret < 1) {
+        || ncs->ce->command.empty() || ncs->cmdret < 1) {
         debug_print_ce_ignore(ncs);
         free_cronentry(&ncs->ce);
         ncs->ce = NULL;
@@ -605,8 +577,7 @@ static void finish_ce(struct ParseCfgState *ncs)
     action GroupEn { setgroupv(ncs); }
     action UserEn { setuserv(ncs); }
     action ChrootEn {
-        parse_assign_str(&ncs->ce->chroot, ncs->v_str, ncs->v_strlen,
-                         ncs->linenum);
+        ncs->ce->chroot = std::string(ncs->v_str, ncs->v_strlen);
     }
     action CommandEn { parse_command_key(ncs); }
 

@@ -28,6 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "sched.hpp"
-int enforce_limits(rlimits *limits, int uid, int gid, char *command);
+int enforce_limits(rlimits *limits, int uid, int gid,
+                   const std::string &command);
 #endif
 
