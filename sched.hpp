@@ -65,6 +65,9 @@ struct cronentry_t
     inline bool operator<(const cronentry_t &o) {
         return exectime < o.exectime;
     }
+    void exec_and_fork(const struct timespec &ts);
+private:
+    void set_next_time();
 };
 
 static inline bool GtCronEntry(const std::unique_ptr<cronentry_t> &a,

@@ -26,6 +26,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -36,6 +37,8 @@
 #include <assert.h>
 extern "C" {
 #include "nk/log.h"
+#include "nk/exec.h"
+#include "nk/privilege.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -283,12 +286,12 @@ void set_initial_exectime(cronentry_t &entry)
 }
 
 /* stupidly advances to next time of execution; performs constraint.  */
-time_t get_next_time(const cronentry_t &entry)
+void cronentry_t::set_next_time()
 {
     struct timespec ts;
     clock_or_die(&ts);
-    time_t etime = constrain_time(entry, ts.tv_sec + entry.interval);
-    return etime > ts.tv_sec ? etime : 0;
+    auto etime = constrain_time(*this, ts.tv_sec + interval);
+    exectime = etime > ts.tv_sec ? etime : 0;
 }
 
 void save_stack(const char *file,
@@ -331,5 +334,43 @@ void save_stack(const char *file,
     }
 fail:
     fclose(f);
+}
+
+void cronentry_t::exec_and_fork(const struct timespec &ts)
+{
+    switch ((int)fork()) {
+        case 0:
+            if (!chroot.empty())
+                nk_set_chroot(chroot.c_str());
+            if (limits && limits->enforce(user, group, command))
+                suicide("%s: rlimits::enforce failed", __func__);
+            if (group) {
+                if (setresgid(group, group, group))
+                    suicide("%s: setgid(%i) failed for \"%s\": %s",
+                            __func__, group, command.c_str(),
+                            strerror(errno));
+                if (getgid() == 0)
+                    suicide("%s: child is still gid=root after setgid()",
+                            __func__);
+            }
+            if (user) {
+                if (setresuid(user, user, user))
+                    suicide("%s: setuid(%i) failed for \"%s\": %s",
+                            __func__, user, command.c_str(),
+                            strerror(errno));
+                if (getuid() == 0)
+                    suicide("%s: child is still uid=root after setuid()",
+                            __func__);
+                nk_fix_env(user, true);
+            }
+            nk_execute(command.c_str(), args.c_str());
+        case -1:
+            suicide("%s: fork failed: %s", __func__, strerror(errno));
+        default:
+            ++numruns;
+            lasttime = ts.tv_sec;
+            set_next_time();
+            break;
+    }
 }
 
