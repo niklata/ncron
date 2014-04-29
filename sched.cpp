@@ -294,15 +294,16 @@ void cronentry_t::set_next_time()
     exectime = etime > ts.tv_sec ? etime : 0;
 }
 
-void save_stack(const char *file,
+void save_stack(const std::string &file,
                 const std::vector<std::unique_ptr<cronentry_t>> &stack,
                 const std::vector<std::unique_ptr<cronentry_t>> &deadstack)
 {
     char buf[MAXLINE];
 
-    FILE *f = fopen(file, "w");
+    FILE *f = fopen(file.c_str(), "w");
     if (!f)
-        suicide("%s: failed to open history file %s for write", __func__, file);
+        suicide("%s: failed to open history file %s for write",
+                __func__, file.c_str());
 
     for (auto &i: stack) {
         auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i->id,

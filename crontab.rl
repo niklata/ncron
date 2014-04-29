@@ -62,7 +62,7 @@ static int cfg_reload;    /* 0 on first call, 1 on subsequent calls */
 
 struct ParseCfgState
 {
-    ParseCfgState(const char *ef,
+    ParseCfgState(const std::string &ef,
                   std::vector<std::unique_ptr<cronentry_t>> &stk,
                   std::vector<std::unique_ptr<cronentry_t>> &dstk) :
         stack(stk), deadstack(dstk), ce(nullptr), execfile(ef),
@@ -78,7 +78,7 @@ struct ParseCfgState
     std::vector<std::unique_ptr<cronentry_t>> &deadstack;
     std::unique_ptr<cronentry_t> ce;
 
-    const char *execfile;
+    const std::string execfile;
 
     char *jobid_st;
     char *time_st;
@@ -155,11 +155,11 @@ static int do_parse_history(hstm &hst, char *buf, size_t blen)
 
 static std::unordered_map<unsigned int, item_history> history_map;
 
-static void parse_history(const char *path)
+static void parse_history(const std::string &path)
 {
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen(path.c_str(), "r");
     if (!f) {
-        log_line("failed to open history file \"%s\" for read", path);
+        log_error("failed to open history file \"%s\" for read", path.c_str());
         return;
     }
 
@@ -185,7 +185,8 @@ static void parse_history(const char *path)
             h.id, item_history(h.h.exectime, h.h.lasttime, h.h.numruns)));
     }
     if (fclose(f))
-        suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
+        suicide("%s: fclose(%s) failed: %s",
+                __func__, path.c_str(), strerror(errno));
 }
 
 static void get_history(std::unique_ptr<cronentry_t> &item,
@@ -415,7 +416,6 @@ static void finish_ce(struct ParseCfgState *ncs)
     /* we have a job to insert */
     if (ncs->ce->exectime != 0) { /* runat task */
         get_history(ncs->ce, 1);
-
         /* insert iif we haven't exceeded maxruns */
         if (ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
             ncs->stack.emplace_back(std::move(ncs->ce));
@@ -604,7 +604,7 @@ static int do_parse_config(struct ParseCfgState *ncs, char *data, size_t len)
     return 0;
 }
 
-void parse_config(const char *path, const char *execfile,
+void parse_config(const std::string &path, const std::string &execfile,
                   std::vector<std::unique_ptr<cronentry_t>> &stk,
                   std::vector<std::unique_ptr<cronentry_t>> &deadstk)
 {
@@ -613,18 +613,20 @@ void parse_config(const char *path, const char *execfile,
 
     parse_history(ncs.execfile);
 
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen(path.c_str(), "r");
     if (!f)
-        suicide("%s: fopen(%s) failed: %s", __func__, path, strerror(errno));
+        suicide("%s: fopen(%s) failed: %s",
+                __func__, path.c_str(), strerror(errno));
 
     while (++ncs.linenum, fgets(buf, sizeof buf, f)) {
         int r = do_parse_config(&ncs, buf, strlen(buf));
         if (r < 0)
             suicide("%s: do_parse_config(%s) failed at line %u",
-                    __func__, path, ncs.linenum);
+                    __func__, path.c_str(), ncs.linenum);
     }
     if (fclose(f))
-        suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
+        suicide("%s: fclose(%s) failed: %s",
+                __func__, path.c_str(), strerror(errno));
 
     std::make_heap(stk.begin(), stk.end(), GtCronEntry);
 

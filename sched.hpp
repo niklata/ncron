@@ -77,7 +77,7 @@ static inline bool GtCronEntry(const std::unique_ptr<cronentry_t> &a,
 
 void set_initial_exectime(cronentry_t &entry);
 time_t get_next_time(const cronentry_t &entry);
-void save_stack(const char *file,
+void save_stack(const std::string &file,
                 const std::vector<std::unique_ptr<cronentry_t>> &stack,
                 const std::vector<std::unique_ptr<cronentry_t>> &deadstack);
 

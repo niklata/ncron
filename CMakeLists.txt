@@ -121,8 +121,11 @@ endif()
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/ncmlib")
 add_subdirectory(ncmlib)
 
+find_package( Boost COMPONENTS program_options )
+link_directories ( ${Boost_LIBRARY_DIRS} )
+include_directories ( ${Boost_INCLUDE_DIRS} )
+
 set(RAGEL_CRONTAB ${CMAKE_CURRENT_BINARY_DIR}/crontab.cpp)
-set(RAGEL_CFG_PARSE ${CMAKE_CURRENT_BINARY_DIR}/cfg.cpp)
 
 find_program(RAGEL ragel)
 add_custom_command(
@@ -133,15 +136,7 @@ add_custom_command(
   COMMENT "Compiling Ragel state machine: crontab.rl"
   VERBATIM
   )
-add_custom_command(
-  OUTPUT ${RAGEL_CFG_PARSE}
-  COMMAND ${RAGEL} -G2 -o ${RAGEL_CFG_PARSE} cfg.rl
-  DEPENDS cfg.rl
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  COMMENT "Compiling Ragel state machine: cfg.rl"
-  VERBATIM
-  )
 
 file(GLOB NCRON_SRCS "*.cpp")
-add_executable(ncron ${RAGEL_CFG_PARSE} ${RAGEL_CRONTAB} ${NCRON_SRCS})
-target_link_libraries(ncron ncmlib)
+add_executable(ncron ${RAGEL_CRONTAB} ${NCRON_SRCS})
+target_link_libraries(ncron ncmlib ${Boost_LIBRARIES})

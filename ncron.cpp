@@ -28,6 +28,8 @@
 
 #include <memory>
 #include <algorithm>
+#include <fstream>
+#include <boost/program_options.hpp>
 
 #include <unistd.h>
 #include <stdio.h>
@@ -59,9 +61,10 @@ extern "C" {
 
 #include "ncron.hpp"
 #include "sched.hpp"
-#include "cfg.hpp"
 #include "crontab.hpp"
 #include "rlimit.hpp"
+
+namespace po = boost::program_options;
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
@@ -77,12 +80,12 @@ static volatile sig_atomic_t pending_free_children;
 /* Time (in msec) to sleep before dispatching events at startup.
    Set to a nonzero value so as not to compete for cpu with init scripts at
    boot time. */
-int g_initial_sleep = 0;
+static int g_initial_sleep = 0;
 
-char g_ncron_conf[PATH_MAX] = CONFIG_FILE_DEFAULT;
-char g_ncron_execfile[PATH_MAX] = EXEC_FILE_DEFAULT;
-char g_ncron_pidfile[PATH_MAX] = PID_FILE_DEFAULT;
-int g_ncron_execmode = 0;
+static std::string g_ncron_conf(CONFIG_FILE_DEFAULT);
+static std::string g_ncron_execfile(EXEC_FILE_DEFAULT);
+static std::string pidfile(PID_FILE_DEFAULT);
+static int g_ncron_execmode = 0;
 
 static std::vector<std::unique_ptr<cronentry_t>> stack;
 static std::vector<std::unique_ptr<cronentry_t>> deadstack;
@@ -95,7 +98,7 @@ static void reload_config(void)
     stack.clear();
     deadstack.clear();
     parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack); // XXX
-    log_line("SIGHUP - Reloading config: %s.", g_ncron_conf);
+    log_line("SIGHUP - Reloading config: %s.", g_ncron_conf.c_str());
     pending_reload_config = 0;
 }
 
@@ -103,7 +106,7 @@ static void save_and_exit(void)
 {
     if (g_ncron_execmode != 2) {
         save_stack(g_ncron_execfile, stack, deadstack);
-        log_line("Saving stack to %s.", g_ncron_execfile);
+        log_line("Saving stack to %s.", g_ncron_execfile.c_str());
     }
     log_line("Exited.");
     exit(EXIT_SUCCESS);
@@ -145,9 +148,9 @@ static void fix_signals(void)
     hook_signal(SIGTERM, sighandler, 0);
 }
 
-static void fail_on_fdne(const char *file, const char *mode)
+static void fail_on_fdne(const std::string &file, const char *mode)
 {
-    if (file_exists(file, mode))
+    if (file_exists(file.c_str(), mode))
         exit(EXIT_FAILURE);
 }
 
@@ -234,31 +237,9 @@ static void do_work(unsigned int initial_sleep)
     }
 }
 
-void show_usage(void)
+static void print_version(void)
 {
-    printf("ncron %s, secure cron/at daemon.\n", NCRON_VERSION);
-    printf(
-"Copyright (C) 2003-2014 Nicholas J. Kain\n"
-"Usage: ncron [OPTIONS]\n"
-"  -c, --config=FILE    use FILE as the configuration file\n"
-"  -b, --background     fork to the background\n"
-"  -s, --sleep=MSEC     time to wait in msec to wait before processing\n"
-"                       jobs at startup\n");
-    printf(
-"  -0, --noexecsave     don't save execution history at all\n"
-"  -j, --journal        saves exectimes at each job invocation\n"
-"  -t, --crontab=FILE   use FILE for crontab info\n"
-"  -H, --history=FILE   save execution history in FILE\n"
-"  -p, --pidfile=FILE   write pid to FILE\n"
-"  -q, --quiet          don't log to syslog\n"
-"  -h, --help           print this help and exit\n"
-"  -v, --version        print version information and exit\n"
-          );
-}
-
-void print_version(void)
-{
-    printf("ncron %s, secure single-user cron.\n", NCRON_VERSION);
+    printf("ncron %s, cron/at daemon.\n", NCRON_VERSION);
     printf(
 "Copyright (c) 2003-2014 Nicholas J. Kain\n"
 "All rights reserved.\n\n"
@@ -283,34 +264,118 @@ void print_version(void)
            );
 }
 
+static po::variables_map fetch_options(int ac, char *av[])
+{
+    std::string config_file;
+
+    po::options_description cli_opts("Command-line-exclusive options");
+    cli_opts.add_options()
+        ("config,c", po::value<std::string>(&config_file),
+         "path to configuration file")
+        ("background,b", "run as a background daemon")
+        ("help,h", "print help message")
+        ("version,v", "print version information")
+        ;
+
+    po::options_description gopts("Options");
+    gopts.add_options()
+        ("sleep,s", po::value<int>(), "initial sleep time")
+        ("noexecsave,0", "don't save execution history at all")
+        ("journal,j", "save exectimes at each job invocation")
+        ("crontab,t", po::value<std::string>(), "path to crontab file")
+        ("history,H", po::value<std::string>(),
+         "path to execution history file")
+        ("pidfile,f", po::value<std::string>(), "path to process id file")
+        ("quiet,q", "don't log to syslog")
+        ;
+
+    po::options_description cmdline_options;
+    cmdline_options.add(cli_opts).add(gopts);
+    po::options_description cfgfile_options;
+    cfgfile_options.add(gopts);
+
+    po::positional_options_description p;
+    po::variables_map vm;
+    try {
+        po::store(po::command_line_parser(ac, av).
+                  options(cmdline_options).positional(p).run(), vm);
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
+    po::notify(vm);
+
+    if (config_file.size()) {
+        std::ifstream ifs(config_file.c_str());
+        if (!ifs) {
+            std::cerr << "Could not open config file: " << config_file << "\n";
+            std::exit(EXIT_FAILURE);
+        }
+        po::store(po::parse_config_file(ifs, cfgfile_options), vm);
+        po::notify(vm);
+    }
+
+    if (vm.count("help")) {
+        std::cout << "ncron " << NCRON_VERSION << ", cron/at daemon.\n"
+                  << "Copyright (c) 2003-2014 Nicholas J. Kain\n"
+                  << av[0] << " [options]...\n"
+                  << cmdline_options << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+    if (vm.count("version")) {
+        print_version();
+        std::exit(EXIT_FAILURE);
+    }
+    return vm;
+}
+
+static void process_options(int ac, char *av[]) {
+    auto vm(fetch_options(ac, av));
+
+    if (vm.count("background"))
+        gflags_detach = 1;
+    if (vm.count("sleep"))
+        g_initial_sleep = vm["sleep"].as<int>();
+    if (vm.count("noexecsave"))
+        g_ncron_execmode = 2;
+    if (vm.count("journal"))
+        g_ncron_execmode = 1;
+    if (vm.count("quiet"))
+        gflags_quiet = 1;
+    if (vm.count("crontab"))
+        g_ncron_conf = vm["crontab"].as<std::string>();
+    if (vm.count("history"))
+        g_ncron_execfile = vm["history"].as<std::string>();
+    if (vm.count("pidfile"))
+        pidfile = vm["pidfile"].as<std::string>();
+
+}
+
 int main(int argc, char* argv[])
 {
-    parse_cmdline(argc, argv);
-
+    process_options(argc, argv);
     fail_on_fdne(g_ncron_conf, "r");
     fail_on_fdne(g_ncron_execfile, "rw");
-    fail_on_fdne(g_ncron_pidfile, "w");
+    parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
 
-    if (gflags_detach != 0) {
+    if (stack.empty())
+        suicide("%s: no jobs, exiting", __func__);
+
+    if (gflags_detach) {
         if (daemon(0,0))
             suicide("%s: daemon failed: %s", __func__, strerror(errno));
     }
 
+    if (pidfile.size() && file_exists(pidfile.c_str(), "w"))
+        write_pid(pidfile.c_str());
+
     umask(077);
+    fix_signals();
 
 #ifdef __linux__
     prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);
     prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0);
     prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);
 #endif
-
-    fix_signals();
-    parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
-
-    if (stack.empty())
-        suicide("%s: no jobs, exiting", __func__);
-
-    write_pid(g_ncron_pidfile);
 
     do_work(g_initial_sleep);
     exit(EXIT_SUCCESS);
