@@ -425,8 +425,8 @@ static void finish_ce(struct ParseCfgState *ncs)
         || (ncs->ce->interval <= 0 && ncs->ce->exectime <= 0)
         || ncs->ce->command.empty() || ncs->cmdret < 1) {
         debug_print_ce_ignore(ncs);
-        free_cronentry(&ncs->ce);
-        ncs->ce = NULL;
+        delete ncs->ce;
+        ncs->ce = nullptr;
         return;
     }
     debug_print_ce_add(ncs);
@@ -454,7 +454,7 @@ static void finish_ce(struct ParseCfgState *ncs)
         else
             ncs->deadstack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
     }
-    ncs->ce = NULL;
+    ncs->ce = nullptr;
 }
 
 %%{
@@ -645,8 +645,10 @@ void parse_config(const char *path, const char *execfile,
     std::make_heap(stk.begin(), stk.end(), GtCronEntry);
 
     history_map.clear();
-    if (ncs.ce)
-        free_cronentry(&ncs.ce); // Free partially built unused item.
+    if (ncs.ce) {
+        delete ncs.ce;
+        ncs.ce = nullptr;
+    }
     cfg_reload = 1;
 }
 

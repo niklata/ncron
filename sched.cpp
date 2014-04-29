@@ -336,18 +336,3 @@ fail:
     fclose(f);
 }
 
-void free_cronentry (cronentry_t **p)
-{
-    cronentry_t *q;
-
-    if (!p)
-        return;
-    q = *p;
-    if (!q)
-        return;
-
-    delete q;
-
-    q = NULL;
-}
-

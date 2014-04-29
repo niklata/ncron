@@ -93,6 +93,5 @@ time_t get_next_time(const cronentry_t &entry);
 void save_stack(const char *file,
                 const std::vector<std::unique_ptr<cronentry_t>> &stack,
                 const std::vector<std::unique_ptr<cronentry_t>> &deadstack);
-void free_cronentry (cronentry_t **p);
 
 #endif
