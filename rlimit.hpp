@@ -56,6 +56,7 @@ public:
     boost::optional<rlimit> msgqueue;
     boost::optional<rlimit> nice;
     boost::optional<rlimit> rttime;
+    boost::optional<rlimit> rtprio;
     boost::optional<rlimit> sigpending;
 
     int enforce(uid_t uid, gid_t gid, const std::string &command);

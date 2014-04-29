@@ -90,6 +90,8 @@ int rlimits::enforce(uid_t uid, gid_t gid, const std::string &command)
         return -1;
     if (do_limit(RLIMIT_RTTIME, rttime, "rttime", ppr))
         return -1;
+    if (do_limit(RLIMIT_RTPRIO, rtprio, "rtprio", ppr))
+        return -1;
     if (do_limit(RLIMIT_SIGPENDING, sigpending, "sigpending", ppr))
         return -1;
     return 0;

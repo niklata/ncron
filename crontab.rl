@@ -239,6 +239,7 @@ static void setlim(struct ParseCfgState *ncs, int type)
     case RLIMIT_MSGQUEUE: ncs->ce->limits->msgqueue = rli; break;
     case RLIMIT_NICE: ncs->ce->limits->nice = rli; break;
     case RLIMIT_RTTIME: ncs->ce->limits->rttime = rli; break;
+    case RLIMIT_RTPRIO: ncs->ce->limits->rtprio = rli; break;
     case RLIMIT_SIGPENDING: ncs->ce->limits->sigpending = rli; break;
 #endif /* BSD */
     default: suicide("%s: Bad RLIMIT_type specified.", __func__);
@@ -521,6 +522,7 @@ static void finish_ce(struct ParseCfgState *ncs)
     action LimMsgQueueEn { setlim(ncs, RLIMIT_MSGQUEUE); }
     action LimNiceEn { setlim(ncs, RLIMIT_NICE); }
     action LimRtTimeEn { setlim(ncs, RLIMIT_RTTIME); }
+    action LimRtPrioEn { setlim(ncs, RLIMIT_RTPRIO); }
     action LimSigPendingEn { setlim(ncs, RLIMIT_SIGPENDING); }
 
     lim_as = 'l_as'i eqsep intrangeval % LimAsEn;
@@ -536,6 +538,7 @@ static void finish_ce(struct ParseCfgState *ncs)
     lim_msgqueue = 'l_msgqueue'i eqsep intrangeval % LimMsgQueueEn;
     lim_nice = 'l_nice'i eqsep intrangeval % LimNiceEn;
     lim_rttime = 'l_rttime'i eqsep intrangeval % LimRtTimeEn;
+    lim_rtprio = 'l_rtprio'i eqsep intrangeval % LimRtPrioEn;
     lim_sigpending = 'l_sigpending'i eqsep intrangeval % LimSigPendingEn;
 
     action IntervalEn { ncs->ce->interval = ncs->v_time; }
@@ -569,6 +572,7 @@ static void finish_ce(struct ParseCfgState *ncs)
     cmds = command | chroot | user | group | minute | hour | weekday | day |
            month | interval | lim_cpu | lim_fsize | lim_data | lim_stack |
            lim_core | lim_rss | lim_nproc | lim_nofile | lim_memlock | lim_as |
+           lim_msgqueue | lim_nice | lim_rttime | lim_rtprio | lim_sigpending |
            maxruns | runat | noexectime | journal;
 
     action JobIdSt { ncs->jobid_st = p; }
