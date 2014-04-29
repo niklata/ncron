@@ -30,6 +30,7 @@
 #include <utility>
 #include <unordered_map>
 #include <boost/algorithm/string/replace.hpp>
+#include <fstream>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,11 +81,11 @@ struct ParseCfgState
 
     const std::string execfile;
 
-    char *jobid_st;
-    char *time_st;
-    char *intv_st;
-    char *intv2_st;
-    char *strv_st;
+    const char *jobid_st;
+    const char *time_st;
+    const char *intv_st;
+    const char *intv2_st;
+    const char *strv_st;
 
     size_t v_strlen;
     size_t linenum;
@@ -444,7 +445,6 @@ static void finish_ce(struct ParseCfgState *ncs)
 
     spc = [ \t];
     eqsep = spc* '=' spc*;
-    cmdterm = [\0\n];
 
     action TUnitSt { ncs->time_st = p; ncs->v_time = 0; }
     action TSecEn  { ncs->v_time +=          atoi(ncs->time_st); }
@@ -484,17 +484,17 @@ static void finish_ce(struct ParseCfgState *ncs)
     t_week = (digit+ > TUnitSt) 'w' % TWeekEn;
     t_any = (t_sec | t_min | t_hr | t_day | t_week);
 
-    intval = (digit+ > IntValSt % IntValEn) cmdterm;
-    timeval = t_any (spc* t_any)* cmdterm;
+    intval = (digit+ > IntValSt % IntValEn);
+    timeval = t_any (spc* t_any)*;
     intrangeval = (digit+ > IntValSt % IntValEn)
-                  (',' (digit+ > IntVal2St % IntVal2En))? cmdterm;
-    stringval = ([^\0\n]+ > StrValSt % StrValEn) cmdterm;
+                  (',' (digit+ > IntVal2St % IntVal2En))?;
+    stringval = ([^\0\n]+ > StrValSt % StrValEn);
 
     action JournalEn { ncs->ce->journal = 1; }
     action NoExecTimeEn { ncs->noextime = 1; }
 
-    journal = 'journal'i cmdterm % JournalEn;
-    noexectime = 'noexectime'i cmdterm % NoExecTimeEn;
+    journal = 'journal'i % JournalEn;
+    noexectime = 'noexectime'i % NoExecTimeEn;
 
     action RunAtEn {
         ncs->ce->exectime = ncs->v_int;
@@ -579,19 +579,17 @@ static void finish_ce(struct ParseCfgState *ncs)
     action JobIdEn { ncs->ce->id = atoi(ncs->jobid_st); }
     action CreateCe { finish_ce(ncs); create_ce(ncs); }
 
-    jobid = ('!' > CreateCe) (digit+ > JobIdSt) cmdterm % JobIdEn;
+    jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;
 
-    emptyline = '\n';
-
-    main := jobid | cmds | emptyline;
+    main := jobid | cmds;
 }%%
 
 %% write data;
 
-static int do_parse_config(struct ParseCfgState *ncs, char *data, size_t len)
+static int do_parse_config(struct ParseCfgState *ncs, const std::string &l)
 {
-    char *p = data;
-    const char *pe = data + len;
+    const char *p = l.c_str();
+    const char *pe = p + l.size();
     const char *eof = pe;
 
     %% write init;
@@ -608,25 +606,28 @@ void parse_config(const std::string &path, const std::string &execfile,
                   std::vector<std::unique_ptr<cronentry_t>> &stk,
                   std::vector<std::unique_ptr<cronentry_t>> &deadstk)
 {
-    char buf[MAXLINE];
     struct ParseCfgState ncs(execfile, stk, deadstk);
-
     parse_history(ncs.execfile);
 
-    FILE *f = fopen(path.c_str(), "r");
-    if (!f)
-        suicide("%s: fopen(%s) failed: %s",
-                __func__, path.c_str(), strerror(errno));
-
-    while (++ncs.linenum, fgets(buf, sizeof buf, f)) {
-        int r = do_parse_config(&ncs, buf, strlen(buf));
+    std::string l;
+    std::ifstream f(path, std::ifstream::in);
+    if (f.fail() || f.bad() || f.eof())
+        suicide("%s: failed to open file: '%s'", path.c_str());
+    while (1) {
+        std::getline(f, l);
+        ++ncs.linenum;
+        if (f.eof())
+            break;
+        else if (f.bad() || f.fail())
+            suicide("%s: io error fetching line of '%s'", path.c_str());
+        if (l.empty())
+            continue;
+        auto r = do_parse_config(&ncs, l);
         if (r < 0)
             suicide("%s: do_parse_config(%s) failed at line %u",
                     __func__, path.c_str(), ncs.linenum);
     }
-    if (fclose(f))
-        suicide("%s: fclose(%s) failed: %s",
-                __func__, path.c_str(), strerror(errno));
+    f.close();
 
     std::make_heap(stk.begin(), stk.end(), GtCronEntry);
 
