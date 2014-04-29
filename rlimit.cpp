@@ -35,63 +35,63 @@ extern "C" {
 }
 #include "rlimit.hpp"
 
-static int do_limit(int resource, const boost::optional<struct rlimit> &rlim)
+int rlimits::do_limit(int resource, const boost::optional<struct rlimit> &rlim,
+                      const std::string &rstr, const pprargs &ppr)
 {
     if (!rlim)
         return 0;
-    return setrlimit(resource, &*rlim);
-}
-
-int enforce_limits(rlimits *limits, int uid, int gid,
-                   const std::string &command)
-{
-    if (!limits)
-        return 0;
-
-    if (do_limit(RLIMIT_CPU, limits->cpu))
-        goto rlimit_failed;
-    if (do_limit(RLIMIT_FSIZE, limits->fsize))
-        goto rlimit_failed;
-    if (do_limit(RLIMIT_DATA, limits->data))
-        goto rlimit_failed;
-    if (do_limit(RLIMIT_STACK, limits->stack))
-        goto rlimit_failed;
-    if (do_limit(RLIMIT_CORE, limits->core))
-        goto rlimit_failed;
-    if (do_limit(RLIMIT_RSS, limits->rss))
-        goto rlimit_failed;
-    if (do_limit(RLIMIT_NPROC, limits->nproc))
-        goto rlimit_failed;
-#ifndef RLIMIT_NOFILE
-    if (do_limit(RLIMIT_OFILE, limits->nofile))
-        goto rlimit_failed;
-#else
-    if (do_limit(RLIMIT_NOFILE, limits->nofile))
-        goto rlimit_failed;
-#endif
-    if (do_limit(RLIMIT_MEMLOCK, limits->memlock))
-        goto rlimit_failed;
-#ifndef BSD
-    if (do_limit(RLIMIT_AS, limits->as))
-        goto rlimit_failed;
-#endif
-
-    return 0;
-rlimit_failed:
-    switch (errno) {
-    case EFAULT:
-        log_error("setrlimit given bad value for job: uid=%u gid=%u command='%s'",
-                  uid, gid, command.c_str());
-        break;
-    case EINVAL:
-        log_error("setrlimit given invalid RLIMIT for job: uid=%u gid=%u command='%s'",
-                  uid, gid, command.c_str());
-        break;
-    case EPERM:
-        log_error("setrlimit denied permission to set limit for job: uid=%u gid=%u command='%s'",
-                  uid, gid, command.c_str());
-    default:
-        break;
+    auto r = setrlimit(resource, &*rlim);
+    if (r < 0) {
+        switch (errno) {
+        case EFAULT:
+            log_error("setrlimit(%s) given bad value for job: uid=%u gid=%u command='%s'",
+                      rstr.c_str(), ppr.uid_, ppr.gid_, ppr.cmd_.c_str());
+            break;
+        case EINVAL:
+            log_error("setrlimit(%s) given invalid RLIMIT for job: uid=%u gid=%u command='%s'",
+                      rstr.c_str(), ppr.uid_, ppr.gid_, ppr.cmd_.c_str());
+            break;
+        case EPERM:
+            log_error("setrlimit(%s) denied permission to set limit for job: uid=%u gid=%u command='%s'",
+                      rstr.c_str(), ppr.uid_, ppr.gid_, ppr.cmd_.c_str());
+        default:
+            break;
+        }
     }
-    return -1;
+    return r;
 }
+
+int rlimits::enforce(uid_t uid, gid_t gid, const std::string &command)
+{
+    auto ppr = pprargs(uid, gid, command);
+    if (do_limit(RLIMIT_CPU, cpu, "cpu", ppr))
+        return -1;
+    if (do_limit(RLIMIT_FSIZE, fsize, "fsize", ppr))
+        return -1;
+    if (do_limit(RLIMIT_DATA, data, "data", ppr))
+        return -1;
+    if (do_limit(RLIMIT_STACK, stack, "stack", ppr))
+        return -1;
+    if (do_limit(RLIMIT_CORE, core, "core", ppr))
+        return -1;
+    if (do_limit(RLIMIT_RSS, rss, "rss", ppr))
+        return -1;
+    if (do_limit(RLIMIT_NPROC, nproc, "nproc", ppr))
+        return -1;
+    if (do_limit(RLIMIT_NOFILE, nofile, "nofile", ppr))
+        return -1;
+    if (do_limit(RLIMIT_MEMLOCK, memlock, "memlock", ppr))
+        return -1;
+    if (do_limit(RLIMIT_AS, as, "as", ppr))
+        return -1;
+    if (do_limit(RLIMIT_MSGQUEUE, msgqueue, "msgqueue", ppr))
+        return -1;
+    if (do_limit(RLIMIT_NICE, nice, "nice", ppr))
+        return -1;
+    if (do_limit(RLIMIT_RTTIME, rttime, "rttime", ppr))
+        return -1;
+    if (do_limit(RLIMIT_SIGPENDING, sigpending, "sigpending", ppr))
+        return -1;
+    return 0;
+}
+

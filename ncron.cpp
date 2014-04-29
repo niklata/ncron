@@ -161,8 +161,8 @@ static void exec_and_fork(uid_t uid, gid_t gid, const std::string &command,
         case 0:
             if (!chroot.empty())
                 nk_set_chroot(chroot.c_str());
-            if (enforce_limits(limits, uid, gid, command))
-                suicide("%s: enforce_limits failed", __func__);
+            if (limits && limits->enforce(uid, gid, command))
+                suicide("%s: rlimits::enforce failed", __func__);
             if (gid) {
                 if (setresgid(gid, gid, gid))
                     suicide("%s: setgid(%i) failed for \"%s\": %s",

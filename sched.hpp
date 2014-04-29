@@ -35,25 +35,7 @@
 #include <sys/resource.h>
 #include <boost/optional.hpp>
 #include <boost/utility.hpp>
-
-class rlimits : boost::noncopyable
-{
-public:
-    boost::optional<rlimit> cpu;
-    boost::optional<rlimit> fsize;
-    boost::optional<rlimit> data;
-    boost::optional<rlimit> stack;
-    boost::optional<rlimit> core;
-    boost::optional<rlimit> rss;
-    boost::optional<rlimit> nproc;
-    boost::optional<rlimit> nofile;
-    boost::optional<rlimit> memlock;
-    boost::optional<rlimit> as;
-    boost::optional<rlimit> msgqueue;
-    boost::optional<rlimit> nice;
-    boost::optional<rlimit> rttime;
-    boost::optional<rlimit> sigpending;
-};
+#include "rlimit.hpp"
 
 struct cronentry_t
 {
