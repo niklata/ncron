@@ -234,14 +234,11 @@ static std::pair<int,int> valid_day_of_month(int month, int year)
 
 /* entry is obvious, stime is the time we're constraining
  * returns a time value that has been appropriately constrained */
-static time_t constrain_time(const cronentry_t *entry, time_t stime)
+static time_t constrain_time(const cronentry_t &entry, time_t stime)
 {
     struct tm *rtime;
     time_t t;
     int count = 0;
-
-    if (!entry)
-        return 0;
 
     rtime = localtime(&stime);
 
@@ -249,20 +246,20 @@ static time_t constrain_time(const cronentry_t *entry, time_t stime)
         t = mktime(rtime);
         rtime = localtime(&t);
 
-        if (compare_list_range(entry->minute, &(rtime->tm_min),
+        if (compare_list_range(entry.minute, &(rtime->tm_min),
                     &(rtime->tm_hour), 60))
             continue;
-        if (compare_list_range(entry->hour, &(rtime->tm_hour),
+        if (compare_list_range(entry.hour, &(rtime->tm_hour),
                     &(rtime->tm_mday), 24))
             continue;
-        if (compare_list_range_v(entry->day, &(rtime->tm_mday),
+        if (compare_list_range_v(entry.day, &(rtime->tm_mday),
                     &(rtime->tm_mon), valid_day_of_month(rtime->tm_mon,
                         rtime->tm_year), 0))
             continue;
-        if (compare_wday_range(entry->weekday, &(rtime->tm_wday),
+        if (compare_wday_range(entry.weekday, &(rtime->tm_wday),
                     &(rtime->tm_mday)))
             continue;
-        if (compare_list_range(entry->month, &(rtime->tm_mon),
+        if (compare_list_range(entry.month, &(rtime->tm_mon),
                     &(rtime->tm_year), 0))
             continue;
         return mktime(rtime);
@@ -272,17 +269,17 @@ static time_t constrain_time(const cronentry_t *entry, time_t stime)
 }
 
 /* Used when jobs without exectimes are first loaded. */
-void set_initial_exectime(cronentry_t *entry)
+void set_initial_exectime(cronentry_t &entry)
 {
     struct timespec ts;
     clock_or_die(&ts);
     time_t ttm = constrain_time(entry, ts.tv_sec);
-    time_t ttd = ttm - entry->lasttime;
-    if (ttd < entry->interval) {
-        ttm += entry->interval - ttd;
+    time_t ttd = ttm - entry.lasttime;
+    if (ttd < entry.interval) {
+        ttm += entry.interval - ttd;
         ttm = constrain_time(entry, ttm);
     }
-    entry->exectime = ttm;
+    entry.exectime = ttm;
 }
 
 /* stupidly advances to next time of execution; performs constraint.  */
@@ -290,7 +287,7 @@ time_t get_next_time(const cronentry_t &entry)
 {
     struct timespec ts;
     clock_or_die(&ts);
-    time_t etime = constrain_time(&entry, ts.tv_sec + entry.interval);
+    time_t etime = constrain_time(entry, ts.tv_sec + entry.interval);
     return etime > ts.tv_sec ? etime : 0;
 }
 

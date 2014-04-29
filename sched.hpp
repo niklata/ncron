@@ -57,6 +57,8 @@ public:
 
 struct cronentry_t
 {
+    cronentry_t() : id(0), user(0), group(0), exectime(0), lasttime(0),
+                    interval(0), numruns(0), maxruns(0) {}
     typedef std::vector<std::pair<int,int>> cst_list;
     unsigned int id;
     uid_t user;
@@ -88,7 +90,7 @@ static inline bool GtCronEntry(const std::unique_ptr<cronentry_t> &a,
     return a->exectime > b->exectime;
 }
 
-void set_initial_exectime(cronentry_t *entry);
+void set_initial_exectime(cronentry_t &entry);
 time_t get_next_time(const cronentry_t &entry);
 void save_stack(const char *file,
                 const std::vector<std::unique_ptr<cronentry_t>> &stack,

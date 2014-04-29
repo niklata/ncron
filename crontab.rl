@@ -76,7 +76,7 @@ struct ParseCfgState
 
     std::vector<std::unique_ptr<cronentry_t>> &stack;
     std::vector<std::unique_ptr<cronentry_t>> &deadstack;
-    cronentry_t *ce;
+    std::unique_ptr<cronentry_t> ce;
 
     const char *execfile;
 
@@ -100,25 +100,6 @@ struct ParseCfgState
 
     bool intv2_exist;
 };
-
-static void nullify_item(cronentry_t *item)
-{
-    if (!item)
-        return;
-    item->id = 0;
-    item->command.clear();
-    item->args.clear();
-    item->chroot.clear();
-    item->numruns = 0;
-    item->maxruns = 0;
-    item->journal = 0;
-    item->user = 0;
-    item->group = 0;
-    item->interval = 0;
-    item->exectime = 0;
-    item->lasttime = 0;
-    item->limits = nullptr;
-}
 
 struct item_history {
     item_history() {}
@@ -207,7 +188,8 @@ static void parse_history(const char *path)
         suicide("%s: fclose(%s) failed: %s", __func__, path, strerror(errno));
 }
 
-static void get_history(cronentry_t *item, int ignore_exectime)
+static void get_history(std::unique_ptr<cronentry_t> &item,
+                        int ignore_exectime)
 {
     assert(item);
     time_t exectm = 0;
@@ -364,8 +346,7 @@ static void parse_command_key(struct ParseCfgState *ncs)
 static void create_ce(struct ParseCfgState *ncs)
 {
     assert(!ncs->ce);
-    ncs->ce = new cronentry_t;
-    nullify_item(ncs->ce);
+    ncs->ce = nk::make_unique<cronentry_t>();
     ncs->cmdret = 0;
     ncs->noextime = 0;
 }
@@ -425,8 +406,7 @@ static void finish_ce(struct ParseCfgState *ncs)
         || (ncs->ce->interval <= 0 && ncs->ce->exectime <= 0)
         || ncs->ce->command.empty() || ncs->cmdret < 1) {
         debug_print_ce_ignore(ncs);
-        delete ncs->ce;
-        ncs->ce = nullptr;
+        ncs->ce.reset();
         return;
     }
     debug_print_ce_add(ncs);
@@ -437,12 +417,12 @@ static void finish_ce(struct ParseCfgState *ncs)
 
         /* insert iif we haven't exceeded maxruns */
         if (ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
-            ncs->stack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
+            ncs->stack.emplace_back(std::move(ncs->ce));
         else
-            ncs->deadstack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
+            ncs->deadstack.emplace_back(std::move(ncs->ce));
     } else { /* interval task */
         get_history(ncs->ce, ncs->noextime && !cfg_reload);
-        set_initial_exectime(ncs->ce);
+        set_initial_exectime(*ncs->ce);
 
         if (ncs->ce->exectime == 0)
             printf("Zero exectime!\n");
@@ -450,11 +430,11 @@ static void finish_ce(struct ParseCfgState *ncs)
         /* insert iif numruns < maxruns and no constr error */
         if ((ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
             && ncs->ce->exectime != 0)
-            ncs->stack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
+            ncs->stack.emplace_back(std::move(ncs->ce));
         else
-            ncs->deadstack.push_back(std::unique_ptr<cronentry_t>(ncs->ce));
+            ncs->deadstack.emplace_back(std::move(ncs->ce));
     }
-    ncs->ce = nullptr;
+    ncs->ce.reset();
 }
 
 %%{
@@ -645,10 +625,6 @@ void parse_config(const char *path, const char *execfile,
     std::make_heap(stk.begin(), stk.end(), GtCronEntry);
 
     history_map.clear();
-    if (ncs.ce) {
-        delete ncs.ce;
-        ncs.ce = nullptr;
-    }
     cfg_reload = 1;
 }
 
