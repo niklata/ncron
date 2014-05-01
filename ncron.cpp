@@ -186,6 +186,23 @@ void clock_or_die(struct timespec *ts)
         suicide("%s: clock_gettime failed: %s", __func__, strerror(errno));
 }
 
+#ifdef NCRON_DO_WORK_DEBUG
+    void debug_dispatch_print() { log_line("do_work: DISPATCH"); }
+    void debug_stack_print(const struct timespec &ts) {
+        log_line("do_work: ts.tv_sec = %lu  stack.front()->exectime = %lu",
+                 ts.tv_sec, stack.front()->exectime);
+        for (const auto &i: stack)
+            log_line("do_work: job %u exectime = %lu", i->id, i->exectime);
+    }
+    void debug_sleep_print(const struct timespec &ts) {
+            log_line("do_work: SLEEP %lu seconds", ts.tv_sec);
+    }
+#else
+    void debug_dispatch_print() {}
+    void debug_stack_print(const struct timespec &ts) { (void)ts; }
+    void debug_sleep_print(const struct timespec &ts) { (void)ts; }
+#endif
+
 static void do_work(unsigned int initial_sleep)
 {
     struct timespec ts;
@@ -195,14 +212,13 @@ static void do_work(unsigned int initial_sleep)
     sleep_or_die(&ts, false);
 
     while (1) {
-        log_line("%s: LOOP", __func__);
         bool pending_save = false;
 
         clock_or_die(&ts);
 
         while (stack.front()->exectime <= ts.tv_sec) {
             auto &i = *stack.front();
-            log_line("%s: DISPATCH", __func__);
+            debug_dispatch_print();
 
             i.exec_and_fork(ts);
             if (i.journal)
@@ -222,16 +238,12 @@ static void do_work(unsigned int initial_sleep)
             clock_or_die(&ts);
         }
 
-        log_line("%s: ts.tv_sec = %lu  stack.front()->exectime = %lu",
-                 __func__, ts.tv_sec, stack.front()->exectime);
-        for (const auto &i: stack)
-            log_line("%s: job %u exectime = %lu", __func__,
-                     i->id, i->exectime);
+        debug_stack_print(ts);
         if (ts.tv_sec <= stack.front()->exectime) {
             struct timespec sts;
             sts.tv_sec = stack.front()->exectime - ts.tv_sec;
             sts.tv_nsec = 0;
-            log_line("%s: SLEEP %lu seconds", __func__, sts.tv_sec);
+            debug_sleep_print(sts);
             sleep_or_die(&sts, pending_save);
         }
     }

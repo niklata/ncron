@@ -203,16 +203,13 @@ static void get_history(std::unique_ptr<cronentry_t> &item)
     if (i->second.exectime) {
         auto exectm = *i->second.exectime;
         item->exectime = exectm > 0 ? exectm : 0;
-        log_line("[%u]->exectime = %u", item->id, item->exectime);
     }
     if (i->second.lasttime) {
         auto lasttm = *i->second.lasttime;
         item->lasttime = lasttm > 0 ? lasttm : 0;
-        log_line("[%u]->lasttime = %u", item->id, item->lasttime);
     }
     if (i->second.numruns) {
         item->numruns = *i->second.numruns;
-        log_line("[%u]->numruns = %u", item->id, item->numruns);
     }
 }
 
@@ -353,7 +350,6 @@ static void create_ce(struct ParseCfgState *ncs)
     ncs->runat = false;
 }
 
-#define CONFIG_RL_DEBUG
 #ifdef CONFIG_RL_DEBUG
 static void debug_print_ce(struct ParseCfgState *ncs)
 {
@@ -391,17 +387,23 @@ static void debug_print_ce_add(struct ParseCfgState *ncs)
     (void)ncs;
     printf("===> ADD\n");
 }
+static void debug_print_ce_history(struct ParseCfgState *ncs)
+{
+    printf("[%u]->numruns = %u", ncs->ce->id, ncs->ce->numruns);
+    printf("[%u]->exectime = %u", ncs->ce->id, ncs->ce->exectime);
+    printf("[%u]->lasttime = %u", ncs->ce->id, ncs->ce->lasttime);
+}
 #else
 static void debug_print_ce(struct ParseCfgState *ncs) {(void)ncs;}
 static void debug_print_ce_ignore(struct ParseCfgState *ncs) {(void)ncs;}
 static void debug_print_ce_add(struct ParseCfgState *ncs) {(void)ncs;}
+static void debug_print_ce_history(struct ParseCfgState *ncs) {(void)ncs;}
 #endif
 
 static void finish_ce(struct ParseCfgState *ncs)
 {
     if (!ncs->ce)
         return;
-
     debug_print_ce(ncs);
 
     if (ncs->ce->id <= 0
@@ -418,6 +420,7 @@ static void finish_ce(struct ParseCfgState *ncs)
         auto forced_exectime = ncs->ce->exectime;
         get_history(ncs->ce);
         ncs->ce->exectime = forced_exectime;
+        debug_print_ce_history(ncs);
 
         /* insert iif we haven't exceeded maxruns */
         if (!ncs->ce->numruns)
@@ -426,6 +429,7 @@ static void finish_ce(struct ParseCfgState *ncs)
             ncs->deadstack.emplace_back(std::move(ncs->ce));
     } else { /* interval task */
         get_history(ncs->ce);
+        debug_print_ce_history(ncs);
         set_initial_exectime(*ncs->ce);
 
         /* insert iif numruns < maxruns and no constr error */
