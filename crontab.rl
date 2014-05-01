@@ -213,44 +213,44 @@ static void get_history(std::unique_ptr<cronentry_t> &item)
     }
 }
 
-static void setlim(struct ParseCfgState *ncs, int type)
+static void setlim(ParseCfgState &ncs, int type)
 {
     struct rlimit rli;
-    rli.rlim_cur = ncs->v_int == 0 ? RLIM_INFINITY : ncs->v_int;
-    rli.rlim_max = ncs->v_int2 == 0 ? RLIM_INFINITY : ncs->v_int2;
+    rli.rlim_cur = ncs.v_int == 0 ? RLIM_INFINITY : ncs.v_int;
+    rli.rlim_max = ncs.v_int2 == 0 ? RLIM_INFINITY : ncs.v_int2;
 
-    if (!ncs->ce->limits)
-        ncs->ce->limits = nk::make_unique<rlimits>();
+    if (!ncs.ce->limits)
+        ncs.ce->limits = nk::make_unique<rlimits>();
 
     switch (type) {
-    case RLIMIT_CPU: ncs->ce->limits->cpu = rli; break;
-    case RLIMIT_FSIZE: ncs->ce->limits->fsize = rli; break;
-    case RLIMIT_DATA: ncs->ce->limits->data = rli; break;
-    case RLIMIT_STACK: ncs->ce->limits->stack = rli; break;
-    case RLIMIT_CORE: ncs->ce->limits->core = rli; break;
-    case RLIMIT_RSS: ncs->ce->limits->rss = rli; break;
-    case RLIMIT_NPROC: ncs->ce->limits->nproc = rli; break;
-    case RLIMIT_NOFILE: ncs->ce->limits->nofile = rli; break;
-    case RLIMIT_MEMLOCK: ncs->ce->limits->memlock = rli; break;
+    case RLIMIT_CPU: ncs.ce->limits->cpu = rli; break;
+    case RLIMIT_FSIZE: ncs.ce->limits->fsize = rli; break;
+    case RLIMIT_DATA: ncs.ce->limits->data = rli; break;
+    case RLIMIT_STACK: ncs.ce->limits->stack = rli; break;
+    case RLIMIT_CORE: ncs.ce->limits->core = rli; break;
+    case RLIMIT_RSS: ncs.ce->limits->rss = rli; break;
+    case RLIMIT_NPROC: ncs.ce->limits->nproc = rli; break;
+    case RLIMIT_NOFILE: ncs.ce->limits->nofile = rli; break;
+    case RLIMIT_MEMLOCK: ncs.ce->limits->memlock = rli; break;
 #ifndef BSD
-    case RLIMIT_AS: ncs->ce->limits->as = rli; break;
-    case RLIMIT_MSGQUEUE: ncs->ce->limits->msgqueue = rli; break;
-    case RLIMIT_NICE: ncs->ce->limits->nice = rli; break;
-    case RLIMIT_RTTIME: ncs->ce->limits->rttime = rli; break;
-    case RLIMIT_RTPRIO: ncs->ce->limits->rtprio = rli; break;
-    case RLIMIT_SIGPENDING: ncs->ce->limits->sigpending = rli; break;
+    case RLIMIT_AS: ncs.ce->limits->as = rli; break;
+    case RLIMIT_MSGQUEUE: ncs.ce->limits->msgqueue = rli; break;
+    case RLIMIT_NICE: ncs.ce->limits->nice = rli; break;
+    case RLIMIT_RTTIME: ncs.ce->limits->rttime = rli; break;
+    case RLIMIT_RTPRIO: ncs.ce->limits->rtprio = rli; break;
+    case RLIMIT_SIGPENDING: ncs.ce->limits->sigpending = rli; break;
 #endif /* BSD */
     default: suicide("%s: Bad RLIMIT_type specified.", __func__);
     }
 }
 
-static void addcstlist(struct ParseCfgState *ncs, cronentry_t::cst_list &list,
+static void addcstlist(ParseCfgState &ncs, cronentry_t::cst_list &list,
                        int wildcard, int min, int max)
 {
-    int low = ncs->v_int;
+    int low = ncs.v_int;
     int high = wildcard;
-    if (ncs->intv2_exist)
-        high = ncs->v_int2;
+    if (ncs.intv2_exist)
+        high = ncs.v_int2;
 
     if (low > max || low < min)
         low = wildcard;
@@ -271,16 +271,16 @@ static void addcstlist(struct ParseCfgState *ncs, cronentry_t::cst_list &list,
     }
 }
 
-static void setgroupv(struct ParseCfgState *ncs)
+static void setgroupv(ParseCfgState &ncs)
 {
-    if (nk_gidbyname(ncs->v_str, &ncs->ce->group))
-        suicide("%s: nonexistent group specified at line %zu", ncs->linenum);
+    if (nk_gidbyname(ncs.v_str, &ncs.ce->group))
+        suicide("%s: nonexistent group specified at line %zu", ncs.linenum);
 }
 
-static void setuserv(struct ParseCfgState *ncs)
+static void setuserv(ParseCfgState &ncs)
 {
-    if (nk_uidgidbyname(ncs->v_str, &ncs->ce->user, &ncs->ce->group))
-        suicide("%s: nonexistent user specified at line %zu", ncs->linenum);
+    if (nk_uidgidbyname(ncs.v_str, &ncs.ce->user, &ncs.ce->group))
+        suicide("%s: nonexistent user specified at line %zu", ncs.linenum);
 }
 
 struct pckm {
@@ -295,11 +295,11 @@ struct pckm {
 
     action St { pckm.st = p; }
     action CmdEn {
-        ncs->ce->command = std::string(pckm.st, p - pckm.st);
-        boost::algorithm::replace_all(ncs->ce->command, "\\\\", "\\");
-        boost::algorithm::replace_all(ncs->ce->command, "\\ ", " ");
+        ncs.ce->command = std::string(pckm.st, p - pckm.st);
+        boost::algorithm::replace_all(ncs.ce->command, "\\\\", "\\");
+        boost::algorithm::replace_all(ncs.ce->command, "\\ ", " ");
     }
-    action ArgEn { ncs->ce->args = std::string(pckm.st, p - pckm.st); }
+    action ArgEn { ncs.ce->args = std::string(pckm.st, p - pckm.st); }
 
     sptab = [ \t];
     cmdstr = ([^\0 \t] | '\\\\' | '\\ ')+;
@@ -315,168 +315,168 @@ struct pckm {
 // cmdret = -1: Error: malformed command key.
 // cmdret = -2: Error: incomplete command key.
 // cmdret = -3: Error: duplicate command key.
-static void parse_command_key(struct ParseCfgState *ncs)
+static void parse_command_key(ParseCfgState &ncs)
 {
-    char *p = ncs->v_str;
-    const char *pe = ncs->v_str + ncs->v_strlen;
+    char *p = ncs.v_str;
+    const char *pe = ncs.v_str + ncs.v_strlen;
     const char *eof = pe;
 
     struct pckm pckm;
 
-    if (ncs->cmdret != 0) {
-        ncs->cmdret = -3;
-        suicide("Duplicate 'command' value at line %zu", ncs->linenum);
+    if (ncs.cmdret != 0) {
+        ncs.cmdret = -3;
+        suicide("Duplicate 'command' value at line %zu", ncs.linenum);
     }
 
     %% write init;
     %% write exec;
 
     if (pckm.cs == parse_cmd_key_m_error) {
-        ncs->cmdret = -1;
-        suicide("Malformed 'command' value at line %zu", ncs->linenum);
+        ncs.cmdret = -1;
+        suicide("Malformed 'command' value at line %zu", ncs.linenum);
     } else if (pckm.cs >= parse_cmd_key_m_first_final)
-        ncs->cmdret = 1;
+        ncs.cmdret = 1;
     else {
-        ncs->cmdret = -2;
-        suicide("Incomplete 'command' value at line %zu", ncs->linenum);
+        ncs.cmdret = -2;
+        suicide("Incomplete 'command' value at line %zu", ncs.linenum);
     }
 }
 
-static void create_ce(struct ParseCfgState *ncs)
+static void create_ce(ParseCfgState &ncs)
 {
-    assert(!ncs->ce);
-    ncs->ce = nk::make_unique<cronentry_t>();
-    ncs->cmdret = 0;
-    ncs->runat = false;
+    assert(!ncs.ce);
+    ncs.ce = nk::make_unique<cronentry_t>();
+    ncs.cmdret = 0;
+    ncs.runat = false;
 }
 
 #ifdef CONFIG_RL_DEBUG
-static void debug_print_ce(struct ParseCfgState *ncs)
+static void debug_print_ce(const ParseCfgState &ncs)
 {
     printf("\nfinish_ce:\n");
-    printf("id: %u\n", ncs->ce->id);
-    printf("command: %s\n", ncs->ce->command.c_str());
-    printf("args: %s\n", ncs->ce->args.c_str());
-    printf("chroot: %s\n", ncs->ce->chroot.c_str());
-    printf("numruns: %u\n", ncs->ce->numruns);
-    printf("maxruns: %u\n", ncs->ce->maxruns);
-    printf("journal: %d\n", ncs->ce->journal);
-    printf("user: %u\n", ncs->ce->user);
-    printf("group: %u\n", ncs->ce->group);
-    for (const auto &i: ncs->ce->month)
+    printf("id: %u\n", ncs.ce->id);
+    printf("command: %s\n", ncs.ce->command.c_str());
+    printf("args: %s\n", ncs.ce->args.c_str());
+    printf("chroot: %s\n", ncs.ce->chroot.c_str());
+    printf("numruns: %u\n", ncs.ce->numruns);
+    printf("maxruns: %u\n", ncs.ce->maxruns);
+    printf("journal: %d\n", ncs.ce->journal);
+    printf("user: %u\n", ncs.ce->user);
+    printf("group: %u\n", ncs.ce->group);
+    for (const auto &i: ncs.ce->month)
         printf("month: [%d,%d]\n", i.first, i.second);
-    for (const auto &i: ncs->ce->day)
+    for (const auto &i: ncs.ce->day)
         printf("day: [%d,%d]\n", i.first, i.second);
-    for (const auto &i: ncs->ce->weekday)
+    for (const auto &i: ncs.ce->weekday)
         printf("weekday: [%d,%d]\n", i.first, i.second);
-    for (const auto &i: ncs->ce->hour)
+    for (const auto &i: ncs.ce->hour)
         printf("hour: [%d,%d]\n", i.first, i.second);
-    for (const auto &i: ncs->ce->minute)
+    for (const auto &i: ncs.ce->minute)
         printf("minute: [%d,%d]\n", i.first, i.second);
-    printf("interval: %u\n", ncs->ce->interval);
-    printf("exectime: %lu\n", ncs->ce->exectime);
-    printf("lasttime: %lu\n", ncs->ce->lasttime);
+    printf("interval: %u\n", ncs.ce->interval);
+    printf("exectime: %lu\n", ncs.ce->exectime);
+    printf("lasttime: %lu\n", ncs.ce->lasttime);
 }
-static void debug_print_ce_ignore(struct ParseCfgState *ncs)
+static void debug_print_ce_ignore(const ParseCfgState &ncs)
 {
     (void)ncs;
     printf("===> IGNORE\n");
 }
-static void debug_print_ce_add(struct ParseCfgState *ncs)
+static void debug_print_ce_add(const ParseCfgState &ncs)
 {
     (void)ncs;
     printf("===> ADD\n");
 }
-static void debug_print_ce_history(struct ParseCfgState *ncs)
+static void debug_print_ce_history(const ParseCfgState &ncs)
 {
-    printf("[%u]->numruns = %u", ncs->ce->id, ncs->ce->numruns);
-    printf("[%u]->exectime = %u", ncs->ce->id, ncs->ce->exectime);
-    printf("[%u]->lasttime = %u", ncs->ce->id, ncs->ce->lasttime);
+    printf("[%u]->numruns = %u", ncs.ce->id, ncs.ce->numruns);
+    printf("[%u]->exectime = %u", ncs.ce->id, ncs.ce->exectime);
+    printf("[%u]->lasttime = %u", ncs.ce->id, ncs.ce->lasttime);
 }
 #else
-static void debug_print_ce(struct ParseCfgState *ncs) {(void)ncs;}
-static void debug_print_ce_ignore(struct ParseCfgState *ncs) {(void)ncs;}
-static void debug_print_ce_add(struct ParseCfgState *ncs) {(void)ncs;}
-static void debug_print_ce_history(struct ParseCfgState *ncs) {(void)ncs;}
+static void debug_print_ce(const ParseCfgState &ncs) {(void)ncs;}
+static void debug_print_ce_ignore(const ParseCfgState &ncs) {(void)ncs;}
+static void debug_print_ce_add(const ParseCfgState &ncs) {(void)ncs;}
+static void debug_print_ce_history(const ParseCfgState &ncs) {(void)ncs;}
 #endif
 
-static void finish_ce(struct ParseCfgState *ncs)
+static void finish_ce(ParseCfgState &ncs)
 {
-    if (!ncs->ce)
+    if (!ncs.ce)
         return;
     debug_print_ce(ncs);
 
-    if (ncs->ce->id <= 0
-        || (ncs->ce->interval <= 0 && ncs->ce->exectime <= 0)
-        || ncs->ce->command.empty() || ncs->cmdret < 1) {
+    if (ncs.ce->id <= 0
+        || (ncs.ce->interval <= 0 && ncs.ce->exectime <= 0)
+        || ncs.ce->command.empty() || ncs.cmdret < 1) {
         debug_print_ce_ignore(ncs);
-        ncs->ce.reset();
+        ncs.ce.reset();
         return;
     }
     debug_print_ce_add(ncs);
 
     /* we have a job to insert */
-    if (ncs->runat) { /* runat task */
-        auto forced_exectime = ncs->ce->exectime;
-        get_history(ncs->ce);
-        ncs->ce->exectime = forced_exectime;
+    if (ncs.runat) { /* runat task */
+        auto forced_exectime = ncs.ce->exectime;
+        get_history(ncs.ce);
+        ncs.ce->exectime = forced_exectime;
         debug_print_ce_history(ncs);
 
         /* insert iif we haven't exceeded maxruns */
-        if (!ncs->ce->numruns)
-            ncs->stack.emplace_back(std::move(ncs->ce));
+        if (!ncs.ce->numruns)
+            ncs.stack.emplace_back(std::move(ncs.ce));
         else
-            ncs->deadstack.emplace_back(std::move(ncs->ce));
+            ncs.deadstack.emplace_back(std::move(ncs.ce));
     } else { /* interval task */
-        get_history(ncs->ce);
+        get_history(ncs.ce);
         debug_print_ce_history(ncs);
-        set_initial_exectime(*ncs->ce);
+        set_initial_exectime(*ncs.ce);
 
         /* insert iif numruns < maxruns and no constr error */
-        if ((ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
-            && ncs->ce->exectime != 0)
-            ncs->stack.emplace_back(std::move(ncs->ce));
+        if ((ncs.ce->maxruns == 0 || ncs.ce->numruns < ncs.ce->maxruns)
+            && ncs.ce->exectime != 0)
+            ncs.stack.emplace_back(std::move(ncs.ce));
         else
-            ncs->deadstack.emplace_back(std::move(ncs->ce));
+            ncs.deadstack.emplace_back(std::move(ncs.ce));
     }
-    ncs->ce.reset();
+    ncs.ce.reset();
 }
 
 %%{
     machine ncrontab;
-    access ncs->;
+    access ncs.;
 
     spc = [ \t];
     eqsep = spc* '=' spc*;
 
-    action TUnitSt { ncs->time_st = p; ncs->v_time = 0; }
-    action TSecEn  { ncs->v_time +=          atoi(ncs->time_st); }
-    action TMinEn  { ncs->v_time += 60     * atoi(ncs->time_st); }
-    action THrEn   { ncs->v_time += 3600   * atoi(ncs->time_st); }
-    action TDayEn  { ncs->v_time += 86400  * atoi(ncs->time_st); }
-    action TWeekEn { ncs->v_time += 604800 * atoi(ncs->time_st); }
+    action TUnitSt { ncs.time_st = p; ncs.v_time = 0; }
+    action TSecEn  { ncs.v_time +=          atoi(ncs.time_st); }
+    action TMinEn  { ncs.v_time += 60     * atoi(ncs.time_st); }
+    action THrEn   { ncs.v_time += 3600   * atoi(ncs.time_st); }
+    action TDayEn  { ncs.v_time += 86400  * atoi(ncs.time_st); }
+    action TWeekEn { ncs.v_time += 604800 * atoi(ncs.time_st); }
 
     action IntValSt {
-        ncs->intv_st = p;
-        ncs->v_int = ncs->v_int2 = 0;
-        ncs->intv2_exist = false;
+        ncs.intv_st = p;
+        ncs.v_int = ncs.v_int2 = 0;
+        ncs.intv2_exist = false;
     }
-    action IntValEn { ncs->v_int = atoi(ncs->intv_st); }
-    action IntVal2St { ncs->intv2_st = p; }
+    action IntValEn { ncs.v_int = atoi(ncs.intv_st); }
+    action IntVal2St { ncs.intv2_st = p; }
     action IntVal2En {
-        ncs->v_int2 = atoi(ncs->intv2_st);
-        ncs->intv2_exist = true;
+        ncs.v_int2 = atoi(ncs.intv2_st);
+        ncs.intv2_exist = true;
     }
 
-    action StrValSt { ncs->strv_st = p; ncs->v_strlen = 0; }
+    action StrValSt { ncs.strv_st = p; ncs.v_strlen = 0; }
     action StrValEn {
-        ncs->v_strlen = p - ncs->strv_st;
-        if (ncs->v_strlen <= INT_MAX) {
-            ssize_t snl = snprintf(ncs->v_str, sizeof ncs->v_str,
-                                   "%.*s", (int)ncs->v_strlen, ncs->strv_st);
-            if (snl < 0 || (size_t)snl >= sizeof ncs->v_str)
+        ncs.v_strlen = p - ncs.strv_st;
+        if (ncs.v_strlen <= INT_MAX) {
+            ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
+                                   "%.*s", (int)ncs.v_strlen, ncs.strv_st);
+            if (snl < 0 || (size_t)snl >= sizeof ncs.v_str)
                 suicide("error parsing line %u in crontab; too long?",
-                        ncs->linenum);
+                        ncs.linenum);
         }
     }
 
@@ -493,18 +493,18 @@ static void finish_ce(struct ParseCfgState *ncs)
                   (',' (digit+ > IntVal2St % IntVal2En))?;
     stringval = ([^\0\n]+ > StrValSt % StrValEn);
 
-    action JournalEn { ncs->ce->journal = true; }
+    action JournalEn { ncs.ce->journal = true; }
     journal = 'journal'i % JournalEn;
 
     action RunAtEn {
-        ncs->runat = true;
-        ncs->ce->exectime = ncs->v_int;
-        ncs->ce->maxruns = 1;
-        ncs->ce->journal = true;
+        ncs.runat = true;
+        ncs.ce->exectime = ncs.v_int;
+        ncs.ce->maxruns = 1;
+        ncs.ce->journal = true;
     }
     action MaxRunsEn {
-        if (!ncs->runat)
-            ncs->ce->maxruns = ncs->v_int;
+        if (!ncs.runat)
+            ncs.ce->maxruns = ncs.v_int;
     }
 
     runat = 'runat'i eqsep intval % RunAtEn;
@@ -542,15 +542,15 @@ static void finish_ce(struct ParseCfgState *ncs)
     lim_rtprio = 'l_rtprio'i eqsep intrangeval % LimRtPrioEn;
     lim_sigpending = 'l_sigpending'i eqsep intrangeval % LimSigPendingEn;
 
-    action IntervalEn { ncs->ce->interval = ncs->v_time; }
+    action IntervalEn { ncs.ce->interval = ncs.v_time; }
 
     interval = 'interval'i eqsep timeval % IntervalEn;
 
-    action MonthEn { addcstlist(ncs, ncs->ce->month, 0, 1, 12); }
-    action DayEn { addcstlist(ncs, ncs->ce->day, 0, 1, 31); }
-    action WeekdayEn { addcstlist(ncs, ncs->ce->weekday, 0, 1, 7); }
-    action HourEn { addcstlist(ncs, ncs->ce->hour, 24, 0, 23); }
-    action MinuteEn { addcstlist(ncs, ncs->ce->minute, 60, 0, 59); }
+    action MonthEn { addcstlist(ncs, ncs.ce->month, 0, 1, 12); }
+    action DayEn { addcstlist(ncs, ncs.ce->day, 0, 1, 31); }
+    action WeekdayEn { addcstlist(ncs, ncs.ce->weekday, 0, 1, 7); }
+    action HourEn { addcstlist(ncs, ncs.ce->hour, 24, 0, 23); }
+    action MinuteEn { addcstlist(ncs, ncs.ce->minute, 60, 0, 59); }
 
     month = 'month'i eqsep intrangeval % MonthEn;
     day = 'day'i eqsep intrangeval % DayEn;
@@ -561,7 +561,7 @@ static void finish_ce(struct ParseCfgState *ncs)
     action GroupEn { setgroupv(ncs); }
     action UserEn { setuserv(ncs); }
     action ChrootEn {
-        ncs->ce->chroot = std::string(ncs->v_str, ncs->v_strlen);
+        ncs.ce->chroot = std::string(ncs.v_str, ncs.v_strlen);
     }
     action CommandEn { parse_command_key(ncs); }
 
@@ -576,8 +576,8 @@ static void finish_ce(struct ParseCfgState *ncs)
            lim_msgqueue | lim_nice | lim_rttime | lim_rtprio | lim_sigpending |
            maxruns | runat | journal;
 
-    action JobIdSt { ncs->jobid_st = p; }
-    action JobIdEn { ncs->ce->id = atoi(ncs->jobid_st); }
+    action JobIdSt { ncs.jobid_st = p; }
+    action JobIdEn { ncs.ce->id = atoi(ncs.jobid_st); }
     action CreateCe { finish_ce(ncs); create_ce(ncs); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;
@@ -587,7 +587,7 @@ static void finish_ce(struct ParseCfgState *ncs)
 
 %% write data;
 
-static int do_parse_config(struct ParseCfgState *ncs, const std::string &l)
+static int do_parse_config(ParseCfgState &ncs, const std::string &l)
 {
     const char *p = l.c_str();
     const char *pe = p + l.size();
@@ -596,9 +596,9 @@ static int do_parse_config(struct ParseCfgState *ncs, const std::string &l)
     %% write init;
     %% write exec;
 
-    if (ncs->cs == ncrontab_error)
+    if (ncs.cs == ncrontab_error)
         return -1;
-    if (ncs->cs >= ncrontab_first_final)
+    if (ncs.cs >= ncrontab_first_final)
         return 1;
     return 0;
 }
@@ -623,7 +623,7 @@ void parse_config(const std::string &path, const std::string &execfile,
             suicide("%s: io error fetching line of '%s'", path.c_str());
         if (l.empty())
             continue;
-        auto r = do_parse_config(&ncs, l);
+        auto r = do_parse_config(ncs, l);
         if (r < 0)
             suicide("%s: do_parse_config(%s) failed at line %u",
                     __func__, path.c_str(), ncs.linenum);
