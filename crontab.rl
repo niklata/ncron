@@ -114,7 +114,7 @@ struct item_history {
 
 struct hstm {
     hstm() : st(nullptr), cs(0), id(0) {}
-    char *st;
+    const char *st;
     int cs;
     unsigned int id;
     item_history h;
@@ -134,15 +134,16 @@ struct hstm {
     numruns = ':' digit+ > St % NumRunsEn;
     exectime = '=' digit+ > St % ExecTimeEn;
     id = digit+ > St % IdEn;
-    main := id (numruns | exectime | lasttime)+ '\n';
+    main := id (numruns | exectime | lasttime)+;
 }%%
 
 %% write data;
 
-static int do_parse_history(hstm &hst, char *buf, size_t blen)
+static int do_parse_history(hstm &hst, const std::string &l)
 {
-    char *p = buf;
-    const char *pe = buf + blen;
+    const char *p = l.c_str();
+    const char *pe = p + l.size();
+    const char *eof = pe;
 
     %% write init;
     %% write exec;
@@ -158,21 +159,26 @@ static std::unordered_map<unsigned int, item_history> history_map;
 
 static void parse_history(const std::string &path)
 {
-    FILE *f = fopen(path.c_str(), "r");
-    if (!f) {
+    std::string l;
+    std::ifstream f(path, std::ifstream::in);
+    if (f.fail() || f.bad() || f.eof()) {
         log_error("failed to open history file \"%s\" for read", path.c_str());
         return;
     }
-
     size_t linenum = 0;
-    char buf[MAXLINE];
-    while (fgets(buf, sizeof buf, f)) {
+    while (1) {
+        std::getline(f, l);
         ++linenum;
-        size_t buflen = strlen(buf);
-        if (buflen <= 0)
+        if (f.eof())
+            break;
+        else if (f.bad() || f.fail()) {
+            log_error("%s: io error fetching line of '%s'", path.c_str());
+            return;
+        }
+        if (l.empty())
             continue;
         hstm h;
-        int r = do_parse_history(h, buf, buflen);
+        auto r = do_parse_history(h, l);
         if (r < 0) {
             if (r == -2)
                 log_error("%s: Incomplete configuration at line %zu; ignoring",
@@ -185,9 +191,6 @@ static void parse_history(const std::string &path)
         history_map.emplace(std::make_pair(
             h.id, item_history(h.h.exectime, h.h.lasttime, h.h.numruns)));
     }
-    if (fclose(f))
-        suicide("%s: fclose(%s) failed: %s",
-                __func__, path.c_str(), strerror(errno));
 }
 
 static void get_history(std::unique_ptr<cronentry_t> &item,
