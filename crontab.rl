@@ -69,7 +69,7 @@ struct ParseCfgState
         stack(stk), deadstack(dstk), ce(nullptr), execfile(ef),
         jobid_st(nullptr), time_st(nullptr), intv_st(nullptr),
         intv2_st(nullptr), strv_st(nullptr), v_strlen(0), linenum(0), v_int(0),
-        v_int2(0), cs(0), noextime(0), cmdret(0), intv2_exist(false)
+        v_int2(0), cs(0), cmdret(0), intv2_exist(false), runat(false)
     {
         memset(v_str, 0, sizeof v_str);
     }
@@ -96,10 +96,10 @@ struct ParseCfgState
     int v_int2;
 
     int cs;
-    int noextime;
     int cmdret;
 
     bool intv2_exist;
+    bool runat;
 };
 
 struct item_history {
@@ -193,30 +193,26 @@ static void parse_history(const std::string &path)
     }
 }
 
-static void get_history(std::unique_ptr<cronentry_t> &item,
-                        int ignore_exectime)
+static void get_history(std::unique_ptr<cronentry_t> &item)
 {
     assert(item);
-    time_t exectm = 0;
-    time_t lasttm = 0;
 
     auto i = history_map.find(item->id);
     if (i == history_map.end())
         return;
-    if (i->second.exectime)
-        exectm = *i->second.exectime;
-    if (i->second.lasttime)
-        lasttm = *i->second.lasttime;
+    if (i->second.exectime) {
+        auto exectm = *i->second.exectime;
+        item->exectime = exectm > 0 ? exectm : 0;
+        log_line("[%u]->exectime = %u", item->id, item->exectime);
+    }
+    if (i->second.lasttime) {
+        auto lasttm = *i->second.lasttime;
+        item->lasttime = lasttm > 0 ? lasttm : 0;
+        log_line("[%u]->lasttime = %u", item->id, item->lasttime);
+    }
     if (i->second.numruns) {
         item->numruns = *i->second.numruns;
         log_line("[%u]->numruns = %u", item->id, item->numruns);
-    }
-
-    if (!ignore_exectime) {
-        item->lasttime = lasttm > 0 ? lasttm : 0;
-        log_line("[%u]->lasttime = %u", item->id, item->lasttime);
-        item->exectime = exectm > 0 ? exectm : 0;
-        log_line("[%u]->exectime = %u", item->id, item->exectime);
     }
 }
 
@@ -354,7 +350,7 @@ static void create_ce(struct ParseCfgState *ncs)
     assert(!ncs->ce);
     ncs->ce = nk::make_unique<cronentry_t>();
     ncs->cmdret = 0;
-    ncs->noextime = 0;
+    ncs->runat = false;
 }
 
 #define CONFIG_RL_DEBUG
@@ -418,19 +414,19 @@ static void finish_ce(struct ParseCfgState *ncs)
     debug_print_ce_add(ncs);
 
     /* we have a job to insert */
-    if (ncs->ce->exectime != 0) { /* runat task */
-        get_history(ncs->ce, 1);
+    if (ncs->runat) { /* runat task */
+        auto forced_exectime = ncs->ce->exectime;
+        get_history(ncs->ce);
+        ncs->ce->exectime = forced_exectime;
+
         /* insert iif we haven't exceeded maxruns */
-        if (ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
+        if (!ncs->ce->numruns)
             ncs->stack.emplace_back(std::move(ncs->ce));
         else
             ncs->deadstack.emplace_back(std::move(ncs->ce));
     } else { /* interval task */
-        get_history(ncs->ce, ncs->noextime && !cfg_reload);
+        get_history(ncs->ce);
         set_initial_exectime(*ncs->ce);
-
-        if (ncs->ce->exectime == 0)
-            printf("Zero exectime!\n");
 
         /* insert iif numruns < maxruns and no constr error */
         if ((ncs->ce->maxruns == 0 || ncs->ce->numruns < ncs->ce->maxruns)
@@ -493,19 +489,17 @@ static void finish_ce(struct ParseCfgState *ncs)
                   (',' (digit+ > IntVal2St % IntVal2En))?;
     stringval = ([^\0\n]+ > StrValSt % StrValEn);
 
-    action JournalEn { ncs->ce->journal = 1; }
-    action NoExecTimeEn { ncs->noextime = 1; }
-
+    action JournalEn { ncs->ce->journal = true; }
     journal = 'journal'i % JournalEn;
-    noexectime = 'noexectime'i % NoExecTimeEn;
 
     action RunAtEn {
+        ncs->runat = true;
         ncs->ce->exectime = ncs->v_int;
         ncs->ce->maxruns = 1;
-        ncs->ce->journal = 1;
+        ncs->ce->journal = true;
     }
     action MaxRunsEn {
-        if (ncs->ce->exectime == 0)
+        if (!ncs->runat)
             ncs->ce->maxruns = ncs->v_int;
     }
 
@@ -576,7 +570,7 @@ static void finish_ce(struct ParseCfgState *ncs)
            month | interval | lim_cpu | lim_fsize | lim_data | lim_stack |
            lim_core | lim_rss | lim_nproc | lim_nofile | lim_memlock | lim_as |
            lim_msgqueue | lim_nice | lim_rttime | lim_rtprio | lim_sigpending |
-           maxruns | runat | noexectime | journal;
+           maxruns | runat | journal;
 
     action JobIdSt { ncs->jobid_st = p; }
     action JobIdEn { ncs->ce->id = atoi(ncs->jobid_st); }

@@ -40,7 +40,7 @@
 struct cronentry_t
 {
     cronentry_t() : id(0), user(0), group(0), exectime(0), lasttime(0),
-                    interval(0), numruns(0), maxruns(0) {}
+                    interval(0), numruns(0), maxruns(0), journal(false) {}
     typedef std::vector<std::pair<int,int>> cst_list;
     unsigned int id;
     uid_t user;
@@ -50,7 +50,7 @@ struct cronentry_t
     unsigned int interval;  /* min interval between executions in seconds */
     unsigned int numruns;   /* number of times a job has run */
     unsigned int maxruns;   /* max # of times a job will run, 0 = nolim */
-    int journal;
+    bool journal;
     std::string command;
     std::string args;
     std::string chroot;
@@ -62,7 +62,7 @@ struct cronentry_t
     cst_list minute;      /* 0-59, l=60 is wildcard, h=l is no range */
     std::unique_ptr<rlimits> limits;
 
-    inline bool operator<(const cronentry_t &o) {
+    inline bool operator<(const cronentry_t &o) const {
         return exectime < o.exectime;
     }
     void exec_and_fork(const struct timespec &ts);
