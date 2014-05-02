@@ -63,9 +63,8 @@ static int cfg_reload;    /* 0 on first call, 1 on subsequent calls */
 
 struct ParseCfgState
 {
-    ParseCfgState(const std::string &ef,
-                  std::vector<std::unique_ptr<cronentry_t>> &stk,
-                  std::vector<std::unique_ptr<cronentry_t>> &dstk) :
+    ParseCfgState(const std::string &ef, std::vector<StackItem> &stk,
+                  std::vector<StackItem> &dstk) :
         stack(stk), deadstack(dstk), ce(nullptr), execfile(ef),
         jobid_st(nullptr), time_st(nullptr), intv_st(nullptr),
         intv2_st(nullptr), strv_st(nullptr), v_strlen(0), linenum(0), v_int(0),
@@ -75,8 +74,8 @@ struct ParseCfgState
     }
     char v_str[1024];
 
-    std::vector<std::unique_ptr<cronentry_t>> &stack;
-    std::vector<std::unique_ptr<cronentry_t>> &deadstack;
+    std::vector<StackItem> &stack;
+    std::vector<StackItem> &deadstack;
     std::unique_ptr<cronentry_t> ce;
 
     const std::string execfile;
@@ -604,8 +603,8 @@ static int do_parse_config(ParseCfgState &ncs, const std::string &l)
 }
 
 void parse_config(const std::string &path, const std::string &execfile,
-                  std::vector<std::unique_ptr<cronentry_t>> &stk,
-                  std::vector<std::unique_ptr<cronentry_t>> &deadstk)
+                  std::vector<StackItem> &stk,
+                  std::vector<StackItem> &deadstk)
 {
     struct ParseCfgState ncs(execfile, stk, deadstk);
     parse_history(ncs.execfile);

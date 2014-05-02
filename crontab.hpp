@@ -30,6 +30,6 @@
 #include <memory>
 #include "sched.hpp"
 void parse_config(const std::string &path, const std::string &execfile,
-                  std::vector<std::unique_ptr<cronentry_t>> &stack,
-                  std::vector<std::unique_ptr<cronentry_t>> &deadstack);
+                  std::vector<StackItem> &stack,
+                  std::vector<StackItem> &deadstack);
 #endif

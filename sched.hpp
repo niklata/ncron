@@ -70,15 +70,23 @@ private:
     void set_next_time();
 };
 
-static inline bool GtCronEntry(const std::unique_ptr<cronentry_t> &a,
-                               const std::unique_ptr<cronentry_t> &b) {
-    return a->exectime > b->exectime;
+struct StackItem {
+    StackItem(std::unique_ptr<cronentry_t> &&v) : ce(std::move(v)) {
+        exectime = ce ? ce->exectime : 0;
+    }
+    time_t exectime;
+    std::unique_ptr<cronentry_t> ce;
+};
+
+static inline bool GtCronEntry(const StackItem &a,
+                               const StackItem &b) {
+    return a.exectime > b.exectime;
 }
 
 void set_initial_exectime(cronentry_t &entry);
 time_t get_next_time(const cronentry_t &entry);
 void save_stack(const std::string &file,
-                const std::vector<std::unique_ptr<cronentry_t>> &stack,
-                const std::vector<std::unique_ptr<cronentry_t>> &deadstack);
+                const std::vector<StackItem> &stack,
+                const std::vector<StackItem> &deadstack);
 
 #endif

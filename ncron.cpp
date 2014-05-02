@@ -87,8 +87,8 @@ static std::string g_ncron_execfile(EXEC_FILE_DEFAULT);
 static std::string pidfile(PID_FILE_DEFAULT);
 static int g_ncron_execmode = 0;
 
-static std::vector<std::unique_ptr<cronentry_t>> stack;
-static std::vector<std::unique_ptr<cronentry_t>> deadstack;
+static std::vector<StackItem> stack;
+static std::vector<StackItem> deadstack;
 
 static void reload_config(void)
 {
@@ -97,7 +97,7 @@ static void reload_config(void)
 
     stack.clear();
     deadstack.clear();
-    parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack); // XXX
+    parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
     log_line("SIGHUP - Reloading config: %s.", g_ncron_conf.c_str());
     pending_reload_config = 0;
 }
@@ -189,8 +189,8 @@ void clock_or_die(struct timespec *ts)
 #ifdef NCRON_DO_WORK_DEBUG
     void debug_dispatch_print() { log_line("do_work: DISPATCH"); }
     void debug_stack_print(const struct timespec &ts) {
-        log_line("do_work: ts.tv_sec = %lu  stack.front()->exectime = %lu",
-                 ts.tv_sec, stack.front()->exectime);
+        log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu",
+                 ts.tv_sec, stack.front().exectime);
         for (const auto &i: stack)
             log_line("do_work: job %u exectime = %lu", i->id, i->exectime);
     }
@@ -216,11 +216,12 @@ static void do_work(unsigned int initial_sleep)
 
         clock_or_die(&ts);
 
-        while (stack.front()->exectime <= ts.tv_sec) {
-            auto &i = *stack.front();
+        while (stack.front().exectime <= ts.tv_sec) {
+            auto &i = *stack.front().ce;
             debug_dispatch_print();
 
             i.exec_and_fork(ts);
+            stack.front().exectime = i.exectime;
             if (i.journal)
                 pending_save = true;
 
@@ -239,9 +240,9 @@ static void do_work(unsigned int initial_sleep)
         }
 
         debug_stack_print(ts);
-        if (ts.tv_sec <= stack.front()->exectime) {
+        if (ts.tv_sec <= stack.front().exectime) {
             struct timespec sts;
-            sts.tv_sec = stack.front()->exectime - ts.tv_sec;
+            sts.tv_sec = stack.front().exectime - ts.tv_sec;
             sts.tv_nsec = 0;
             debug_sleep_print(sts);
             sleep_or_die(&sts, pending_save);
