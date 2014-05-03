@@ -349,55 +349,43 @@ static void create_ce(ParseCfgState &ncs)
     ncs.runat = false;
 }
 
-#ifdef CONFIG_RL_DEBUG
-static void debug_print_ce(const ParseCfgState &ncs)
+static inline void debug_print_ce(const ParseCfgState &ncs)
 {
-    printf("\nfinish_ce:\n");
-    printf("id: %u\n", ncs.ce->id);
-    printf("command: %s\n", ncs.ce->command.c_str());
-    printf("args: %s\n", ncs.ce->args.c_str());
-    printf("chroot: %s\n", ncs.ce->chroot.c_str());
-    printf("numruns: %u\n", ncs.ce->numruns);
-    printf("maxruns: %u\n", ncs.ce->maxruns);
-    printf("journal: %d\n", ncs.ce->journal);
-    printf("user: %u\n", ncs.ce->user);
-    printf("group: %u\n", ncs.ce->group);
+    if (!gflags_debug)
+        return;
+    log_debug("-=- finish_ce -=-");
+    log_debug("id: %u", ncs.ce->id);
+    log_debug("command: %s", ncs.ce->command.c_str());
+    log_debug("args: %s", ncs.ce->args.c_str());
+    log_debug("chroot: %s", ncs.ce->chroot.c_str());
+    log_debug("numruns: %u", ncs.ce->numruns);
+    log_debug("maxruns: %u", ncs.ce->maxruns);
+    log_debug("journal: %d", ncs.ce->journal);
+    log_debug("user: %u", ncs.ce->user);
+    log_debug("group: %u", ncs.ce->group);
     for (const auto &i: ncs.ce->month)
-        printf("month: [%d,%d]\n", i.first, i.second);
+        log_debug("month: [%d,%d]", i.first, i.second);
     for (const auto &i: ncs.ce->day)
-        printf("day: [%d,%d]\n", i.first, i.second);
+        log_debug("day: [%d,%d]", i.first, i.second);
     for (const auto &i: ncs.ce->weekday)
-        printf("weekday: [%d,%d]\n", i.first, i.second);
+        log_debug("weekday: [%d,%d]", i.first, i.second);
     for (const auto &i: ncs.ce->hour)
-        printf("hour: [%d,%d]\n", i.first, i.second);
+        log_debug("hour: [%d,%d]", i.first, i.second);
     for (const auto &i: ncs.ce->minute)
-        printf("minute: [%d,%d]\n", i.first, i.second);
-    printf("interval: %u\n", ncs.ce->interval);
-    printf("exectime: %lu\n", ncs.ce->exectime);
-    printf("lasttime: %lu\n", ncs.ce->lasttime);
+        log_debug("minute: [%d,%d]", i.first, i.second);
+    log_debug("interval: %u", ncs.ce->interval);
+    log_debug("exectime: %lu", ncs.ce->exectime);
+    log_debug("lasttime: %lu", ncs.ce->lasttime);
 }
-static void debug_print_ce_ignore(const ParseCfgState &ncs)
+
+static inline void debug_print_ce_history(const ParseCfgState &ncs)
 {
-    (void)ncs;
-    printf("===> IGNORE\n");
+    if (!gflags_debug)
+        return;
+    log_debug("[%u]->numruns = %u", ncs.ce->id, ncs.ce->numruns);
+    log_debug("[%u]->exectime = %u", ncs.ce->id, ncs.ce->exectime);
+    log_debug("[%u]->lasttime = %u", ncs.ce->id, ncs.ce->lasttime);
 }
-static void debug_print_ce_add(const ParseCfgState &ncs)
-{
-    (void)ncs;
-    printf("===> ADD\n");
-}
-static void debug_print_ce_history(const ParseCfgState &ncs)
-{
-    printf("[%u]->numruns = %u", ncs.ce->id, ncs.ce->numruns);
-    printf("[%u]->exectime = %u", ncs.ce->id, ncs.ce->exectime);
-    printf("[%u]->lasttime = %u", ncs.ce->id, ncs.ce->lasttime);
-}
-#else
-static void debug_print_ce(const ParseCfgState &ncs) {(void)ncs;}
-static void debug_print_ce_ignore(const ParseCfgState &ncs) {(void)ncs;}
-static void debug_print_ce_add(const ParseCfgState &ncs) {(void)ncs;}
-static void debug_print_ce_history(const ParseCfgState &ncs) {(void)ncs;}
-#endif
 
 static void finish_ce(ParseCfgState &ncs)
 {
@@ -408,11 +396,11 @@ static void finish_ce(ParseCfgState &ncs)
     if (ncs.ce->id <= 0
         || (ncs.ce->interval <= 0 && ncs.ce->exectime <= 0)
         || ncs.ce->command.empty() || ncs.cmdret < 1) {
-        debug_print_ce_ignore(ncs);
+        log_debug("===> IGNORE");
         ncs.ce.reset();
         return;
     }
-    debug_print_ce_add(ncs);
+    log_debug("===> ADD");
 
     /* we have a job to insert */
     if (ncs.runat) { /* runat task */

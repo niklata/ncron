@@ -186,22 +186,14 @@ void clock_or_die(struct timespec *ts)
         suicide("%s: clock_gettime failed: %s", __func__, strerror(errno));
 }
 
-#ifdef NCRON_DO_WORK_DEBUG
-    void debug_dispatch_print() { log_line("do_work: DISPATCH"); }
-    void debug_stack_print(const struct timespec &ts) {
-        log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu",
-                 ts.tv_sec, stack.front().exectime);
-        for (const auto &i: stack)
-            log_line("do_work: job %u exectime = %lu", i->id, i->exectime);
-    }
-    void debug_sleep_print(const struct timespec &ts) {
-            log_line("do_work: SLEEP %lu seconds", ts.tv_sec);
-    }
-#else
-    void debug_dispatch_print() {}
-    void debug_stack_print(const struct timespec &ts) { (void)ts; }
-    void debug_sleep_print(const struct timespec &ts) { (void)ts; }
-#endif
+static inline void debug_stack_print(const struct timespec &ts) {
+    if (!gflags_debug)
+        return;
+    log_debug("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu",
+              ts.tv_sec, stack.front().exectime);
+    for (const auto &i: stack)
+        log_debug("do_work: job %u exectime = %lu", i.ce->id, i.ce->exectime);
+}
 
 static void do_work(unsigned int initial_sleep)
 {
@@ -218,7 +210,7 @@ static void do_work(unsigned int initial_sleep)
 
         while (stack.front().exectime <= ts.tv_sec) {
             auto &i = *stack.front().ce;
-            debug_dispatch_print();
+            log_debug("do_work: DISPATCH");
 
             i.exec_and_fork(ts);
             stack.front().exectime = i.exectime;
@@ -244,7 +236,7 @@ static void do_work(unsigned int initial_sleep)
             struct timespec sts;
             sts.tv_sec = stack.front().exectime - ts.tv_sec;
             sts.tv_nsec = 0;
-            debug_sleep_print(sts);
+            log_debug("do_work: SLEEP %lu seconds", sts.tv_sec);
             sleep_or_die(&sts, pending_save);
         }
     }
@@ -300,6 +292,7 @@ static po::variables_map fetch_options(int ac, char *av[])
          "path to execution history file")
         ("pidfile,f", po::value<std::string>(), "path to process id file")
         ("quiet,q", "don't log to syslog")
+        ("verbose", "log diagnostic information")
         ;
 
     po::options_description cmdline_options;
@@ -354,6 +347,8 @@ static void process_options(int ac, char *av[]) {
         g_ncron_execmode = 1;
     if (vm.count("quiet"))
         gflags_quiet = 1;
+    if (vm.count("verbose"))
+        gflags_debug = 1;
     if (vm.count("crontab"))
         g_ncron_conf = vm["crontab"].as<std::string>();
     if (vm.count("history"))
