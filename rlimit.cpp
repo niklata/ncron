@@ -30,9 +30,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <errno.h>
-extern "C" {
-#include "nk/log.h"
-}
+#include <nk/format.hpp>
 #include "rlimit.hpp"
 
 int rlimits::do_limit(int resource, const boost::optional<struct rlimit> &rlim,
@@ -44,16 +42,16 @@ int rlimits::do_limit(int resource, const boost::optional<struct rlimit> &rlim,
     if (r < 0) {
         switch (errno) {
         case EFAULT:
-            log_error("setrlimit(%s) given bad value for job: uid=%u gid=%u command='%s'",
-                      rstr.c_str(), ppr.uid_, ppr.gid_, ppr.cmd_.c_str());
+            fmt::print(stderr, "setrlimit({}) given bad value for job: uid={} gid={} command='{}'\n",
+                       rstr, ppr.uid_, ppr.gid_, ppr.cmd_);
             break;
         case EINVAL:
-            log_error("setrlimit(%s) given invalid RLIMIT for job: uid=%u gid=%u command='%s'",
-                      rstr.c_str(), ppr.uid_, ppr.gid_, ppr.cmd_.c_str());
+            fmt::print(stderr, "setrlimit({}) given invalid RLIMIT for job: uid={} gid={} command='{}'\n",
+                       rstr, ppr.uid_, ppr.gid_, ppr.cmd_);
             break;
         case EPERM:
-            log_error("setrlimit(%s) denied permission to set limit for job: uid=%u gid=%u command='%s'",
-                      rstr.c_str(), ppr.uid_, ppr.gid_, ppr.cmd_.c_str());
+            fmt::print(stderr, "setrlimit({}) denied permission to set limit for job: uid={} gid={} command='{}'\n",
+                       rstr, ppr.uid_, ppr.gid_, ppr.cmd_);
         default:
             break;
         }

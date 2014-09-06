@@ -1,6 +1,6 @@
 /* sched.c - ncron job scheduling
  *
- * (c) 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,8 +35,8 @@
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
+#include <nk/format.hpp>
 extern "C" {
-#include "nk/log.h"
 #include "nk/exec.h"
 #include "nk/privilege.h"
 }
@@ -301,16 +301,18 @@ void save_stack(const std::string &file,
     char buf[MAXLINE];
 
     FILE *f = fopen(file.c_str(), "w");
-    if (!f)
-        suicide("%s: failed to open history file %s for write",
-                __func__, file.c_str());
+    if (!f) {
+        fmt::print(stderr, "{}: failed to open history file {} for write\n",
+                   __func__, file);
+        std::exit(EXIT_FAILURE);
+    }
 
     for (auto &i: stack) {
         auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
                               i.ce->exectime, i.ce->numruns, i.ce->lasttime);
         if (snlen < 0 || static_cast<std::size_t>(snlen) >= sizeof buf) {
-            log_error("%s: Would truncate history entry for job %u; skipping.",
-                      __func__, i.ce->id);
+            fmt::print(stderr, "{}: Would truncate history entry for job {}; skipping.\n",
+                       __func__, i.ce->id);
             continue;
         }
         auto bsize = strlen(buf);
@@ -323,8 +325,8 @@ void save_stack(const std::string &file,
         auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
                               i.ce->exectime, i.ce->numruns, i.ce->lasttime);
         if (snlen < 0 || static_cast<std::size_t>(snlen) >= sizeof buf) {
-            log_error("%s: Would truncate history entry for job %u; skipping.",
-                      __func__, i.ce->id);
+            fmt::print(stderr, "{}: Would truncate history entry for job {}; skipping.\n",
+                       __func__, i.ce->id);
             continue;
         }
         auto bsize = strlen(buf);
@@ -343,30 +345,39 @@ void cronentry_t::exec_and_fork(const struct timespec &ts)
         case 0:
             if (!chroot.empty())
                 nk_set_chroot(chroot.c_str());
-            if (limits && limits->enforce(user, group, command))
-                suicide("%s: rlimits::enforce failed", __func__);
+            if (limits && limits->enforce(user, group, command)) {
+                fmt::print(stderr, "{}: rlimits::enforce failed\n", __func__);
+                std::exit(EXIT_FAILURE);
+            }
             if (group) {
-                if (setresgid(group, group, group))
-                    suicide("%s: setgid(%i) failed for \"%s\": %s",
-                            __func__, group, command.c_str(),
-                            strerror(errno));
-                if (getgid() == 0)
-                    suicide("%s: child is still gid=root after setgid()",
-                            __func__);
+                if (setresgid(group, group, group)) {
+                    fmt::print(stderr, "{}: setgid({}) failed for \"{}\": {}\n",
+                               __func__, group, command, strerror(errno));
+                    std::exit(EXIT_FAILURE);
+                }
+                if (getgid() == 0) {
+                    fmt::print(stderr, "{}: child is still gid=root after setgid()\n",
+                               __func__);
+                    std::exit(EXIT_FAILURE);
+                }
             }
             if (user) {
-                if (setresuid(user, user, user))
-                    suicide("%s: setuid(%i) failed for \"%s\": %s",
-                            __func__, user, command.c_str(),
-                            strerror(errno));
-                if (getuid() == 0)
-                    suicide("%s: child is still uid=root after setuid()",
-                            __func__);
+                if (setresuid(user, user, user)) {
+                    fmt::print(stderr, "{}: setuid({}) failed for \"{}\": {}\n",
+                               __func__, user, command, strerror(errno));
+                    std::exit(EXIT_FAILURE);
+                }
+                if (getuid() == 0) {
+                    fmt::print(stderr, "{}: child is still uid=root after setuid()\n", __func__);
+                    std::exit(EXIT_FAILURE);
+                }
                 nk_fix_env(user, true);
             }
             nk_execute(command.c_str(), args.c_str());
         case -1:
-            suicide("%s: fork failed: %s", __func__, strerror(errno));
+            fmt::print(stderr, "{}: fork failed: {}\n",
+                       __func__, strerror(errno));
+            std::exit(EXIT_FAILURE);
         default:
             ++numruns;
             lasttime = ts.tv_sec;

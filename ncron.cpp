@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <fstream>
 #include <boost/program_options.hpp>
+#include <nk/format.hpp>
 
 #include <unistd.h>
 #include <stdio.h>
@@ -53,7 +54,6 @@
 #endif
 
 extern "C" {
-#include "nk/log.h"
 #include "nk/pidfile.h"
 #include "nk/signals.h"
 #include "nk/copy_cmdarg.h"
@@ -76,6 +76,7 @@ namespace po = boost::program_options;
 static volatile sig_atomic_t pending_save_and_exit;
 static volatile sig_atomic_t pending_reload_config;
 static volatile sig_atomic_t pending_free_children;
+extern int gflags_debug;
 
 /* Time (in msec) to sleep before dispatching events at startup.
    Set to a nonzero value so as not to compete for cpu with init scripts at
@@ -98,7 +99,7 @@ static void reload_config(void)
     stack.clear();
     deadstack.clear();
     parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
-    log_line("SIGHUP - Reloading config: %s.", g_ncron_conf.c_str());
+    fmt::print("SIGHUP - Reloading config: {}.\n", g_ncron_conf);
     pending_reload_config = 0;
 }
 
@@ -106,9 +107,9 @@ static void save_and_exit(void)
 {
     if (g_ncron_execmode != 2) {
         save_stack(g_ncron_execfile, stack, deadstack);
-        log_line("Saving stack to %s.", g_ncron_execfile.c_str());
+        fmt::print("Saving stack to {}.\n", g_ncron_execfile);
     }
-    log_line("Exited.");
+    fmt::print("Exited.\n");
     exit(EXIT_SUCCESS);
 }
 
@@ -175,24 +176,30 @@ sleep:
                 memcpy(ts, &rem, sizeof(struct timespec));
                 goto sleep;
             default:
-                suicide("%s: nanosleep failed: %s", __func__, strerror(errno));
+                fmt::print(stderr, "{}: nanosleep failed: {}\n",
+                           __func__, strerror(errno));
+                std::exit(EXIT_FAILURE);
         }
     }
 }
 
 void clock_or_die(struct timespec *ts)
 {
-    if (clock_gettime(CLOCK_REALTIME, ts))
-        suicide("%s: clock_gettime failed: %s", __func__, strerror(errno));
+    if (clock_gettime(CLOCK_REALTIME, ts)) {
+        fmt::print(stderr, "{}: clock_gettime failed: {}\n",
+                   __func__, strerror(errno));
+        std::exit(EXIT_FAILURE);
+    }
 }
 
 static inline void debug_stack_print(const struct timespec &ts) {
     if (!gflags_debug)
         return;
-    log_debug("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu",
-              ts.tv_sec, stack.front().exectime);
+    fmt::print(stderr, "do_work: ts.tv_sec = {}  stack.front().exectime = {}",
+               ts.tv_sec, stack.front().exectime);
     for (const auto &i: stack)
-        log_debug("do_work: job %u exectime = %lu", i.ce->id, i.ce->exectime);
+        fmt::print(stderr, "do_work: job {} exectime = {}",
+                   i.ce->id, i.ce->exectime);
 }
 
 static void do_work(unsigned int initial_sleep)
@@ -210,7 +217,8 @@ static void do_work(unsigned int initial_sleep)
 
         while (stack.front().exectime <= ts.tv_sec) {
             auto &i = *stack.front().ce;
-            log_debug("do_work: DISPATCH");
+            if (gflags_debug)
+                fmt::print(stderr, "do_work: DISPATCH\n");
 
             i.exec_and_fork(ts);
             stack.front().exectime = i.exectime;
@@ -236,7 +244,8 @@ static void do_work(unsigned int initial_sleep)
             struct timespec sts;
             sts.tv_sec = stack.front().exectime - ts.tv_sec;
             sts.tv_nsec = 0;
-            log_debug("do_work: SLEEP %lu seconds", sts.tv_sec);
+            if (gflags_debug)
+                fmt::print(stderr, "do_work: SLEEP {} seconds\n", sts.tv_sec);
             sleep_or_die(&sts, pending_save);
         }
     }
@@ -306,14 +315,14 @@ static po::variables_map fetch_options(int ac, char *av[])
         po::store(po::command_line_parser(ac, av).
                   options(cmdline_options).positional(p).run(), vm);
     } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        fmt::print(stderr, "{}\n", e.what());
     }
     po::notify(vm);
 
     if (config_file.size()) {
         std::ifstream ifs(config_file.c_str());
         if (!ifs) {
-            std::cerr << "Could not open config file: " << config_file << "\n";
+            fmt::print(stderr, "Could not open config file: {}\n", config_file);
             std::exit(EXIT_FAILURE);
         }
         po::store(po::parse_config_file(ifs, cfgfile_options), vm);
@@ -321,10 +330,9 @@ static po::variables_map fetch_options(int ac, char *av[])
     }
 
     if (vm.count("help")) {
-        std::cout << "ncron " << NCRON_VERSION << ", cron/at daemon.\n"
-                  << "Copyright (c) 2003-2014 Nicholas J. Kain\n"
-                  << av[0] << " [options]...\n"
-                  << cmdline_options << std::endl;
+        fmt::print("ncron " NCRON_VERSION ", cron/at daemon.\n"
+                   "Copyright (c) 2003-2014 Nicholas J. Kain\n"
+                   "{} [options]...\n{}\n", av[0], cmdline_options);
         std::exit(EXIT_FAILURE);
     }
     if (vm.count("version")) {
@@ -365,12 +373,17 @@ int main(int argc, char* argv[])
     fail_on_fdne(g_ncron_execfile, "rw");
     parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
 
-    if (stack.empty())
-        suicide("%s: no jobs, exiting", __func__);
+    if (stack.empty()) {
+        fmt::print(stderr, "{}: no jobs, exiting\n", __func__);
+        std::exit(EXIT_FAILURE);
+    }
 
     if (gflags_detach) {
-        if (daemon(0,0))
-            suicide("%s: daemon failed: %s", __func__, strerror(errno));
+        if (daemon(0,0)) {
+            fmt::print(stderr, "{}: daemon failed: {}\n",
+                       __func__, strerror(errno));
+            std::exit(EXIT_FAILURE);
+        }
     }
 
     if (pidfile.size() && file_exists(pidfile.c_str(), "w"))

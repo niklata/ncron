@@ -118,8 +118,11 @@ if (${OSNAME} STREQUAL "Linux")
   endif()
 endif()
 
-include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/ncmlib")
+include_directories("${PROJECT_SOURCE_DIR}"
+                    "${PROJECT_SOURCE_DIR}/ncmlib"
+                    "${PROJECT_SOURCE_DIR}/cppformat")
 add_subdirectory(ncmlib)
+add_subdirectory(cppformat)
 
 find_package( Boost COMPONENTS program_options )
 link_directories ( ${Boost_LIBRARY_DIRS} )
@@ -139,4 +142,4 @@ add_custom_command(
 
 file(GLOB NCRON_SRCS "*.cpp")
 add_executable(ncron ${RAGEL_CRONTAB} ${NCRON_SRCS})
-target_link_libraries(ncron ncmlib ${Boost_LIBRARIES})
+target_link_libraries(ncron ncmlib cppformat ${Boost_LIBRARIES})
