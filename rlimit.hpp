@@ -28,6 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <boost/optional.hpp>
 #include <boost/utility.hpp>
 
