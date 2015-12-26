@@ -398,8 +398,8 @@ struct pckm {
     action St { pckm.st = p; }
     action CmdEn {
         ncs.ce->command = std::string(pckm.st, p - pckm.st);
-        boost::algorithm::replace_all(ncs.ce->command, "\\\\", "\\");
         boost::algorithm::replace_all(ncs.ce->command, "\\ ", " ");
+        boost::algorithm::replace_all(ncs.ce->command, "\\\\", "\\");
     }
     action ArgEn { ncs.ce->args = std::string(pckm.st, p - pckm.st); }
 
