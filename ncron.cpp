@@ -363,7 +363,6 @@ static void process_options(int ac, char *av[]) {
         g_ncron_execfile = vm["history"].as<std::string>();
     if (vm.count("pidfile"))
         pidfile = vm["pidfile"].as<std::string>();
-
 }
 
 int main(int argc, char* argv[])
