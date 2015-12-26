@@ -62,6 +62,8 @@ extern "C" {
 static int cfg_reload;    /* 0 on first call, 1 on subsequent calls */
 extern int gflags_debug;
 
+static void get_history(std::unique_ptr<cronentry_t> &item);
+
 struct ParseCfgState
 {
     ParseCfgState(const std::string &ef, std::vector<StackItem> &stk,
@@ -100,6 +102,147 @@ struct ParseCfgState
 
     bool intv2_exist;
     bool runat;
+
+    void create_ce()
+    {
+        assert(!ce);
+        ce = nk::make_unique<cronentry_t>();
+        cmdret = 0;
+        runat = false;
+    }
+
+    inline void debug_print_ce() const
+    {
+        if (!gflags_debug)
+            return;
+        fmt::print(stderr, "-=- finish_ce -=-\n");
+        fmt::print(stderr, "id: {}\n", ce->id);
+        fmt::print(stderr, "command: {}\n", ce->command);
+        fmt::print(stderr, "args: {}\n", ce->args);
+        fmt::print(stderr, "chroot: {}\n", ce->chroot);
+        fmt::print(stderr, "numruns: {}\n", ce->numruns);
+        fmt::print(stderr, "maxruns: {}\n", ce->maxruns);
+        fmt::print(stderr, "journal: {}\n", ce->journal);
+        fmt::print(stderr, "user: {}\n", ce->user);
+        fmt::print(stderr, "group: {}\n", ce->group);
+        for (const auto &i: ce->month)
+            fmt::print(stderr, "month: [{},{}]\n", i.first, i.second);
+        for (const auto &i: ce->day)
+            fmt::print(stderr, "day: [{},{}]\n", i.first, i.second);
+        for (const auto &i: ce->weekday)
+            fmt::print(stderr, "weekday: [{},{}]\n", i.first, i.second);
+        for (const auto &i: ce->hour)
+            fmt::print(stderr, "hour: [{},{}]\n", i.first, i.second);
+        for (const auto &i: ce->minute)
+            fmt::print(stderr, "minute: [{},{}]\n", i.first, i.second);
+        fmt::print(stderr, "interval: {}\n", ce->interval);
+        fmt::print(stderr, "exectime: {}\n", ce->exectime);
+        fmt::print(stderr, "lasttime: {}\n", ce->lasttime);
+    }
+
+    inline void debug_print_ce_history() const
+    {
+        if (!gflags_debug)
+            return;
+        fmt::print(stderr, "[{}]->numruns = {}\n", ce->id, ce->numruns);
+        fmt::print(stderr, "[{}]->exectime = {}\n", ce->id, ce->exectime);
+        fmt::print(stderr, "[{}]->lasttime = {}\n", ce->id, ce->lasttime);
+    }
+
+    void finish_ce()
+    {
+        if (!ce)
+            return;
+        debug_print_ce();
+
+        if (ce->id <= 0
+            || (ce->interval <= 0 && ce->exectime <= 0)
+            || ce->command.empty() || cmdret < 1) {
+            if (gflags_debug)
+                fmt::print(stderr, "===> IGNORE\n");
+            ce.reset();
+            return;
+        }
+        if (gflags_debug)
+            fmt::print(stderr, "===> ADD\n");
+
+        /* we have a job to insert */
+        if (runat) { /* runat task */
+            auto forced_exectime = ce->exectime;
+            get_history(ce);
+            ce->exectime = forced_exectime;
+            debug_print_ce_history();
+
+            /* insert iif we haven't exceeded maxruns */
+            if (!ce->numruns)
+                stack.emplace_back(std::move(ce));
+            else
+                deadstack.emplace_back(std::move(ce));
+        } else { /* interval task */
+            get_history(ce);
+            debug_print_ce_history();
+            set_initial_exectime(*ce);
+
+            /* insert iif numruns < maxruns and no constr error */
+            if ((ce->maxruns == 0 || ce->numruns < ce->maxruns)
+                && ce->exectime != 0)
+                stack.emplace_back(std::move(ce));
+            else
+                deadstack.emplace_back(std::move(ce));
+        }
+        ce.reset();
+    }
+
+    void setgroupv()
+    {
+        if (nk_gidbyname(v_str, &ce->group)) {
+            fmt::print(stderr, "{}: nonexistent group specified at line {}\n",
+                       __func__, linenum);
+            std::exit(EXIT_FAILURE);
+        }
+    }
+
+    void setuserv()
+    {
+        if (nk_uidgidbyname(v_str, &ce->user, &ce->group)) {
+            fmt::print(stderr, "{}: nonexistent user specified at line {}\n",
+                       __func__, linenum);
+            std::exit(EXIT_FAILURE);
+        }
+    }
+
+    void setlim(int type)
+    {
+        struct rlimit rli;
+        rli.rlim_cur = v_int == 0 ? RLIM_INFINITY : v_int;
+        rli.rlim_max = v_int2 == 0 ? RLIM_INFINITY : v_int2;
+
+        if (!ce->limits)
+            ce->limits = nk::make_unique<rlimits>();
+
+        switch (type) {
+        case RLIMIT_CPU: ce->limits->cpu = rli; break;
+        case RLIMIT_FSIZE: ce->limits->fsize = rli; break;
+        case RLIMIT_DATA: ce->limits->data = rli; break;
+        case RLIMIT_STACK: ce->limits->stack = rli; break;
+        case RLIMIT_CORE: ce->limits->core = rli; break;
+        case RLIMIT_RSS: ce->limits->rss = rli; break;
+        case RLIMIT_NPROC: ce->limits->nproc = rli; break;
+        case RLIMIT_NOFILE: ce->limits->nofile = rli; break;
+        case RLIMIT_MEMLOCK: ce->limits->memlock = rli; break;
+    #ifndef BSD
+        case RLIMIT_AS: ce->limits->as = rli; break;
+        case RLIMIT_MSGQUEUE: ce->limits->msgqueue = rli; break;
+        case RLIMIT_NICE: ce->limits->nice = rli; break;
+        case RLIMIT_RTTIME: ce->limits->rttime = rli; break;
+        case RLIMIT_RTPRIO: ce->limits->rtprio = rli; break;
+        case RLIMIT_SIGPENDING: ce->limits->sigpending = rli; break;
+    #endif /* BSD */
+        default: fmt::print(stderr, "{}: Bad RLIMIT_type specified.\n", __func__);
+                 std::exit(EXIT_FAILURE);
+        }
+    }
+
 };
 
 struct item_history {
@@ -215,38 +358,6 @@ static void get_history(std::unique_ptr<cronentry_t> &item)
     }
 }
 
-static void setlim(ParseCfgState &ncs, int type)
-{
-    struct rlimit rli;
-    rli.rlim_cur = ncs.v_int == 0 ? RLIM_INFINITY : ncs.v_int;
-    rli.rlim_max = ncs.v_int2 == 0 ? RLIM_INFINITY : ncs.v_int2;
-
-    if (!ncs.ce->limits)
-        ncs.ce->limits = nk::make_unique<rlimits>();
-
-    switch (type) {
-    case RLIMIT_CPU: ncs.ce->limits->cpu = rli; break;
-    case RLIMIT_FSIZE: ncs.ce->limits->fsize = rli; break;
-    case RLIMIT_DATA: ncs.ce->limits->data = rli; break;
-    case RLIMIT_STACK: ncs.ce->limits->stack = rli; break;
-    case RLIMIT_CORE: ncs.ce->limits->core = rli; break;
-    case RLIMIT_RSS: ncs.ce->limits->rss = rli; break;
-    case RLIMIT_NPROC: ncs.ce->limits->nproc = rli; break;
-    case RLIMIT_NOFILE: ncs.ce->limits->nofile = rli; break;
-    case RLIMIT_MEMLOCK: ncs.ce->limits->memlock = rli; break;
-#ifndef BSD
-    case RLIMIT_AS: ncs.ce->limits->as = rli; break;
-    case RLIMIT_MSGQUEUE: ncs.ce->limits->msgqueue = rli; break;
-    case RLIMIT_NICE: ncs.ce->limits->nice = rli; break;
-    case RLIMIT_RTTIME: ncs.ce->limits->rttime = rli; break;
-    case RLIMIT_RTPRIO: ncs.ce->limits->rtprio = rli; break;
-    case RLIMIT_SIGPENDING: ncs.ce->limits->sigpending = rli; break;
-#endif /* BSD */
-    default: fmt::print(stderr, "{}: Bad RLIMIT_type specified.\n", __func__);
-             std::exit(EXIT_FAILURE);
-    }
-}
-
 static void addcstlist(ParseCfgState &ncs, cronentry_t::cst_list &list,
                        int wildcard, int min, int max)
 {
@@ -271,24 +382,6 @@ static void addcstlist(ParseCfgState &ncs, cronentry_t::cst_list &list,
     } else {
         /* handle continuous ranges normally */
         list.emplace_back(std::make_pair(low, high));
-    }
-}
-
-static void setgroupv(ParseCfgState &ncs)
-{
-    if (nk_gidbyname(ncs.v_str, &ncs.ce->group)) {
-        fmt::print(stderr, "{}: nonexistent group specified at line {}\n",
-                   __func__, ncs.linenum);
-        std::exit(EXIT_FAILURE);
-    }
-}
-
-static void setuserv(ParseCfgState &ncs)
-{
-    if (nk_uidgidbyname(ncs.v_str, &ncs.ce->user, &ncs.ce->group)) {
-        fmt::print(stderr, "{}: nonexistent user specified at line {}\n",
-                   __func__, ncs.linenum);
-        std::exit(EXIT_FAILURE);
     }
 }
 
@@ -355,96 +448,6 @@ static void parse_command_key(ParseCfgState &ncs)
                    ncs.linenum);
         std::exit(EXIT_FAILURE);
     }
-}
-
-static void create_ce(ParseCfgState &ncs)
-{
-    assert(!ncs.ce);
-    ncs.ce = nk::make_unique<cronentry_t>();
-    ncs.cmdret = 0;
-    ncs.runat = false;
-}
-
-static inline void debug_print_ce(const ParseCfgState &ncs)
-{
-    if (!gflags_debug)
-        return;
-    fmt::print(stderr, "-=- finish_ce -=-\n");
-    fmt::print(stderr, "id: {}\n", ncs.ce->id);
-    fmt::print(stderr, "command: {}\n", ncs.ce->command);
-    fmt::print(stderr, "args: {}\n", ncs.ce->args);
-    fmt::print(stderr, "chroot: {}\n", ncs.ce->chroot);
-    fmt::print(stderr, "numruns: {}\n", ncs.ce->numruns);
-    fmt::print(stderr, "maxruns: {}\n", ncs.ce->maxruns);
-    fmt::print(stderr, "journal: {}\n", ncs.ce->journal);
-    fmt::print(stderr, "user: {}\n", ncs.ce->user);
-    fmt::print(stderr, "group: {}\n", ncs.ce->group);
-    for (const auto &i: ncs.ce->month)
-        fmt::print(stderr, "month: [{},{}]\n", i.first, i.second);
-    for (const auto &i: ncs.ce->day)
-        fmt::print(stderr, "day: [{},{}]\n", i.first, i.second);
-    for (const auto &i: ncs.ce->weekday)
-        fmt::print(stderr, "weekday: [{},{}]\n", i.first, i.second);
-    for (const auto &i: ncs.ce->hour)
-        fmt::print(stderr, "hour: [{},{}]\n", i.first, i.second);
-    for (const auto &i: ncs.ce->minute)
-        fmt::print(stderr, "minute: [{},{}]\n", i.first, i.second);
-    fmt::print(stderr, "interval: {}\n", ncs.ce->interval);
-    fmt::print(stderr, "exectime: {}\n", ncs.ce->exectime);
-    fmt::print(stderr, "lasttime: {}\n", ncs.ce->lasttime);
-}
-
-static inline void debug_print_ce_history(const ParseCfgState &ncs)
-{
-    if (!gflags_debug)
-        return;
-    fmt::print(stderr, "[{}]->numruns = {}\n", ncs.ce->id, ncs.ce->numruns);
-    fmt::print(stderr, "[{}]->exectime = {}\n", ncs.ce->id, ncs.ce->exectime);
-    fmt::print(stderr, "[{}]->lasttime = {}\n", ncs.ce->id, ncs.ce->lasttime);
-}
-
-static void finish_ce(ParseCfgState &ncs)
-{
-    if (!ncs.ce)
-        return;
-    debug_print_ce(ncs);
-
-    if (ncs.ce->id <= 0
-        || (ncs.ce->interval <= 0 && ncs.ce->exectime <= 0)
-        || ncs.ce->command.empty() || ncs.cmdret < 1) {
-        if (gflags_debug)
-            fmt::print(stderr, "===> IGNORE\n");
-        ncs.ce.reset();
-        return;
-    }
-    if (gflags_debug)
-        fmt::print(stderr, "===> ADD\n");
-
-    /* we have a job to insert */
-    if (ncs.runat) { /* runat task */
-        auto forced_exectime = ncs.ce->exectime;
-        get_history(ncs.ce);
-        ncs.ce->exectime = forced_exectime;
-        debug_print_ce_history(ncs);
-
-        /* insert iif we haven't exceeded maxruns */
-        if (!ncs.ce->numruns)
-            ncs.stack.emplace_back(std::move(ncs.ce));
-        else
-            ncs.deadstack.emplace_back(std::move(ncs.ce));
-    } else { /* interval task */
-        get_history(ncs.ce);
-        debug_print_ce_history(ncs);
-        set_initial_exectime(*ncs.ce);
-
-        /* insert iif numruns < maxruns and no constr error */
-        if ((ncs.ce->maxruns == 0 || ncs.ce->numruns < ncs.ce->maxruns)
-            && ncs.ce->exectime != 0)
-            ncs.stack.emplace_back(std::move(ncs.ce));
-        else
-            ncs.deadstack.emplace_back(std::move(ncs.ce));
-    }
-    ncs.ce.reset();
 }
 
 %%{
@@ -517,21 +520,21 @@ static void finish_ce(ParseCfgState &ncs)
     runat = 'runat'i eqsep intval % RunAtEn;
     maxruns = 'maxruns'i eqsep intval % MaxRunsEn;
 
-    action LimAsEn { setlim(ncs, RLIMIT_AS); }
-    action LimMemlockEn { setlim(ncs, RLIMIT_MEMLOCK); }
-    action LimNofileEn { setlim(ncs, RLIMIT_NOFILE); }
-    action LimNprocEn { setlim(ncs, RLIMIT_NPROC); }
-    action LimRssEn { setlim(ncs, RLIMIT_RSS); }
-    action LimCoreEn { setlim(ncs, RLIMIT_CORE); }
-    action LimStackEn { setlim(ncs, RLIMIT_STACK); }
-    action LimDataEn { setlim(ncs, RLIMIT_DATA); }
-    action LimFsizeEn { setlim(ncs, RLIMIT_FSIZE); }
-    action LimCpuEn { setlim(ncs, RLIMIT_CPU); }
-    action LimMsgQueueEn { setlim(ncs, RLIMIT_MSGQUEUE); }
-    action LimNiceEn { setlim(ncs, RLIMIT_NICE); }
-    action LimRtTimeEn { setlim(ncs, RLIMIT_RTTIME); }
-    action LimRtPrioEn { setlim(ncs, RLIMIT_RTPRIO); }
-    action LimSigPendingEn { setlim(ncs, RLIMIT_SIGPENDING); }
+    action LimAsEn { ncs.setlim(RLIMIT_AS); }
+    action LimMemlockEn { ncs.setlim(RLIMIT_MEMLOCK); }
+    action LimNofileEn { ncs.setlim(RLIMIT_NOFILE); }
+    action LimNprocEn { ncs.setlim(RLIMIT_NPROC); }
+    action LimRssEn { ncs.setlim(RLIMIT_RSS); }
+    action LimCoreEn { ncs.setlim(RLIMIT_CORE); }
+    action LimStackEn { ncs.setlim(RLIMIT_STACK); }
+    action LimDataEn { ncs.setlim(RLIMIT_DATA); }
+    action LimFsizeEn { ncs.setlim(RLIMIT_FSIZE); }
+    action LimCpuEn { ncs.setlim(RLIMIT_CPU); }
+    action LimMsgQueueEn { ncs.setlim(RLIMIT_MSGQUEUE); }
+    action LimNiceEn { ncs.setlim(RLIMIT_NICE); }
+    action LimRtTimeEn { ncs.setlim(RLIMIT_RTTIME); }
+    action LimRtPrioEn { ncs.setlim(RLIMIT_RTPRIO); }
+    action LimSigPendingEn { ncs.setlim(RLIMIT_SIGPENDING); }
 
     lim_as = 'l_as'i eqsep intrangeval % LimAsEn;
     lim_memlock = 'l_memlock'i eqsep intrangeval % LimMemlockEn;
@@ -565,8 +568,8 @@ static void finish_ce(ParseCfgState &ncs)
     hour = 'hour'i eqsep intrangeval % HourEn;
     minute = 'minute'i eqsep intrangeval % MinuteEn;
 
-    action GroupEn { setgroupv(ncs); }
-    action UserEn { setuserv(ncs); }
+    action GroupEn { ncs.setgroupv(); }
+    action UserEn { ncs.setuserv(); }
     action ChrootEn {
         ncs.ce->chroot = std::string(ncs.v_str, ncs.v_strlen);
     }
@@ -585,7 +588,7 @@ static void finish_ce(ParseCfgState &ncs)
 
     action JobIdSt { ncs.jobid_st = p; }
     action JobIdEn { ncs.ce->id = atoi(ncs.jobid_st); }
-    action CreateCe { finish_ce(ncs); create_ce(ncs); }
+    action CreateCe { ncs.finish_ce(); ncs.create_ce(); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;
 
