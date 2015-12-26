@@ -48,7 +48,6 @@
 extern "C" {
 #include "nk/privilege.h"
 }
-#include "make_unique.hpp"
 
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -106,7 +105,7 @@ struct ParseCfgState
     void create_ce()
     {
         assert(!ce);
-        ce = nk::make_unique<cronentry_t>();
+        ce = std::make_unique<cronentry_t>();
         cmdret = 0;
         runat = false;
     }
@@ -218,7 +217,7 @@ struct ParseCfgState
         rli.rlim_max = v_int2 == 0 ? RLIM_INFINITY : v_int2;
 
         if (!ce->limits)
-            ce->limits = nk::make_unique<rlimits>();
+            ce->limits = std::make_unique<rlimits>();
 
         switch (type) {
         case RLIMIT_CPU: ce->limits->cpu = rli; break;
