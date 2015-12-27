@@ -30,7 +30,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <errno.h>
-#include <nk/format.hpp>
+#include <format.hpp>
 #include "rlimit.hpp"
 
 int rlimits::do_limit(int resource, const boost::optional<struct rlimit> &rlim,

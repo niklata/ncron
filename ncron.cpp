@@ -30,7 +30,7 @@
 #include <algorithm>
 #include <fstream>
 #include <boost/program_options.hpp>
-#include <nk/format.hpp>
+#include <format.hpp>
 
 #include <unistd.h>
 #include <stdio.h>
