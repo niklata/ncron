@@ -1,6 +1,6 @@
 /* sched.c - ncron job scheduling
  *
- * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2016 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -302,8 +302,7 @@ void save_stack(const std::string &file,
 
     FILE *f = fopen(file.c_str(), "w");
     if (!f) {
-        fmt::print(stderr, "{}: failed to open history file {} for write\n",
-                   __func__, file);
+        fmt::print(stderr, "{}: failed to open history file {} for write\n", __func__, file);
         std::exit(EXIT_FAILURE);
     }
 
@@ -356,8 +355,7 @@ void cronentry_t::exec_and_fork(const struct timespec &ts)
                     std::exit(EXIT_FAILURE);
                 }
                 if (getgid() == 0) {
-                    fmt::print(stderr, "{}: child is still gid=root after setgid()\n",
-                               __func__);
+                    fmt::print(stderr, "{}: child is still gid=root after setgid()\n", __func__);
                     std::exit(EXIT_FAILURE);
                 }
             }
@@ -375,8 +373,7 @@ void cronentry_t::exec_and_fork(const struct timespec &ts)
             }
             nk_execute(command.c_str(), args.c_str());
         case -1:
-            fmt::print(stderr, "{}: fork failed: {}\n",
-                       __func__, strerror(errno));
+            fmt::print(stderr, "{}: fork failed: {}\n", __func__, strerror(errno));
             std::exit(EXIT_FAILURE);
         default:
             ++numruns;

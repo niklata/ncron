@@ -1,6 +1,6 @@
 /* ncron.cpp - secure, minimally-sleeping cron daemon
  *
- * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2016 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -100,6 +100,7 @@ static void reload_config(void)
     deadstack.clear();
     parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
     fmt::print("SIGHUP - Reloading config: {}.\n", g_ncron_conf);
+    std::fflush(stdout);
     pending_reload_config = 0;
 }
 
@@ -255,7 +256,7 @@ static void print_version(void)
 {
     printf("ncron %s, cron/at daemon.\n", NCRON_VERSION);
     printf(
-"Copyright (c) 2003-2014 Nicholas J. Kain\n"
+"Copyright (c) 2003-2016 Nicholas J. Kain\n"
 "All rights reserved.\n\n"
 "Redistribution and use in source and binary forms, with or without\n"
 "modification, are permitted provided that the following conditions are met:\n\n"
@@ -331,7 +332,7 @@ static po::variables_map fetch_options(int ac, char *av[])
 
     if (vm.count("help")) {
         fmt::print("ncron " NCRON_VERSION ", cron/at daemon.\n"
-                   "Copyright (c) 2003-2014 Nicholas J. Kain\n"
+                   "Copyright (c) 2003-2016 Nicholas J. Kain\n"
                    "{} [options]...\n{}\n", av[0], cmdline_options);
         std::exit(EXIT_FAILURE);
     }
@@ -379,8 +380,7 @@ int main(int argc, char* argv[])
 
     if (gflags_detach) {
         if (daemon(0,0)) {
-            fmt::print(stderr, "{}: daemon failed: {}\n",
-                       __func__, strerror(errno));
+            fmt::print(stderr, "{}: daemon failed: {}\n", __func__, strerror(errno));
             std::exit(EXIT_FAILURE);
         }
     }
