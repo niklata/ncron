@@ -43,6 +43,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <limits.h>
+#include <boost/optional.hpp>
 extern "C" {
 #include "nk/privilege.h"
 }
@@ -216,29 +217,11 @@ struct ParseCfgState
         rli.rlim_cur = v_int == 0 ? RLIM_INFINITY : v_int;
         rli.rlim_max = v_int2 == 0 ? RLIM_INFINITY : v_int2;
 
-        if (!ce->limits)
-            ce->limits = std::make_unique<rlimits>();
-
-        switch (type) {
-        case RLIMIT_CPU: ce->limits->cpu = rli; break;
-        case RLIMIT_FSIZE: ce->limits->fsize = rli; break;
-        case RLIMIT_DATA: ce->limits->data = rli; break;
-        case RLIMIT_STACK: ce->limits->stack = rli; break;
-        case RLIMIT_CORE: ce->limits->core = rli; break;
-        case RLIMIT_RSS: ce->limits->rss = rli; break;
-        case RLIMIT_NPROC: ce->limits->nproc = rli; break;
-        case RLIMIT_NOFILE: ce->limits->nofile = rli; break;
-        case RLIMIT_MEMLOCK: ce->limits->memlock = rli; break;
-    #ifndef BSD
-        case RLIMIT_AS: ce->limits->as = rli; break;
-        case RLIMIT_MSGQUEUE: ce->limits->msgqueue = rli; break;
-        case RLIMIT_NICE: ce->limits->nice = rli; break;
-        case RLIMIT_RTTIME: ce->limits->rttime = rli; break;
-        case RLIMIT_RTPRIO: ce->limits->rtprio = rli; break;
-        case RLIMIT_SIGPENDING: ce->limits->sigpending = rli; break;
-    #endif /* BSD */
-        default: fmt::print(stderr, "{}: Bad RLIMIT_type specified.\n", __func__);
-                 std::exit(EXIT_FAILURE);
+        try {
+            ce->limits.add(type, rli);
+        } catch (const std::logic_error&) {
+            fmt::print(stderr, "{}: Bad RLIMIT_type specified.\n", __func__);
+            std::exit(EXIT_FAILURE);
         }
     }
 

@@ -344,7 +344,7 @@ void cronentry_t::exec_and_fork(const struct timespec &ts)
         case 0:
             if (!chroot.empty())
                 nk_set_chroot(chroot.c_str());
-            if (limits && limits->enforce(user, group, command)) {
+            if (limits.exist() && limits.enforce(user, group, command)) {
                 fmt::print(stderr, "{}: rlimits::enforce failed\n", __func__);
                 std::exit(EXIT_FAILURE);
             }

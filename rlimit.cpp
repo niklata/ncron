@@ -33,25 +33,47 @@
 #include <format.hpp>
 #include "rlimit.hpp"
 
-int rlimits::do_limit(int resource, const boost::optional<struct rlimit> &rlim,
-                      const std::string &rstr, const pprargs &ppr)
+static inline const char *resource_to_str(int resource)
 {
-    if (!rlim)
-        return 0;
-    auto r = setrlimit(resource, &*rlim);
+    switch (resource) {
+    case RLIMIT_CPU: return "cpu";
+    case RLIMIT_FSIZE: return "fsize";
+    case RLIMIT_DATA: return "data";
+    case RLIMIT_STACK: return "stack";
+    case RLIMIT_CORE: return "core";
+    case RLIMIT_RSS: return "rss";
+    case RLIMIT_NPROC: return "nproc";
+    case RLIMIT_NOFILE: return "nofile";
+    case RLIMIT_MEMLOCK: return "memlock";
+#ifndef BSD
+    case RLIMIT_AS: return "as";
+    case RLIMIT_MSGQUEUE: return "msgqueue";
+    case RLIMIT_NICE: return "nice";
+    case RLIMIT_RTTIME: return "rttime";
+    case RLIMIT_RTPRIO: return "rtprio";
+    case RLIMIT_SIGPENDING: return "sigpending";
+#endif /* BSD */
+    default: throw std::logic_error("unknown rlimit");
+    }
+}
+
+int rlimits::do_limit(int resource, const rlimit &rlim, uid_t uid, gid_t gid,
+                      const std::string &cmd)
+{
+    auto r = setrlimit(resource, &rlim);
     if (r < 0) {
         switch (errno) {
         case EFAULT:
             fmt::print(stderr, "setrlimit({}) given bad value for job: uid={} gid={} command='{}'\n",
-                       rstr, ppr.uid_, ppr.gid_, ppr.cmd_);
+                       resource_to_str(resource), uid, gid, cmd);
             break;
         case EINVAL:
             fmt::print(stderr, "setrlimit({}) given invalid RLIMIT for job: uid={} gid={} command='{}'\n",
-                       rstr, ppr.uid_, ppr.gid_, ppr.cmd_);
+                       resource_to_str(resource), uid, gid, cmd);
             break;
         case EPERM:
             fmt::print(stderr, "setrlimit({}) denied permission to set limit for job: uid={} gid={} command='{}'\n",
-                       rstr, ppr.uid_, ppr.gid_, ppr.cmd_);
+                       resource_to_str(resource), uid, gid, cmd);
         default:
             break;
         }
@@ -59,39 +81,18 @@ int rlimits::do_limit(int resource, const boost::optional<struct rlimit> &rlim,
     return r;
 }
 
+void rlimits::add(int resource, const rlimit &rli) {
+    resource_to_str(resource);
+    rlims_.emplace_back(resource, rli);
+}
+
 int rlimits::enforce(uid_t uid, gid_t gid, const std::string &command)
 {
-    auto ppr = pprargs(uid, gid, command);
-    if (do_limit(RLIMIT_CPU, cpu, "cpu", ppr))
-        return -1;
-    if (do_limit(RLIMIT_FSIZE, fsize, "fsize", ppr))
-        return -1;
-    if (do_limit(RLIMIT_DATA, data, "data", ppr))
-        return -1;
-    if (do_limit(RLIMIT_STACK, stack, "stack", ppr))
-        return -1;
-    if (do_limit(RLIMIT_CORE, core, "core", ppr))
-        return -1;
-    if (do_limit(RLIMIT_RSS, rss, "rss", ppr))
-        return -1;
-    if (do_limit(RLIMIT_NPROC, nproc, "nproc", ppr))
-        return -1;
-    if (do_limit(RLIMIT_NOFILE, nofile, "nofile", ppr))
-        return -1;
-    if (do_limit(RLIMIT_MEMLOCK, memlock, "memlock", ppr))
-        return -1;
-    if (do_limit(RLIMIT_AS, as, "as", ppr))
-        return -1;
-    if (do_limit(RLIMIT_MSGQUEUE, msgqueue, "msgqueue", ppr))
-        return -1;
-    if (do_limit(RLIMIT_NICE, nice, "nice", ppr))
-        return -1;
-    if (do_limit(RLIMIT_RTTIME, rttime, "rttime", ppr))
-        return -1;
-    if (do_limit(RLIMIT_RTPRIO, rtprio, "rtprio", ppr))
-        return -1;
-    if (do_limit(RLIMIT_SIGPENDING, sigpending, "sigpending", ppr))
-        return -1;
+    for (const auto &i: rlims_) {
+        auto r = do_limit(i.resource, i.limits, uid, gid, command);
+        if (r < 0)
+            return -1;
+    }
     return 0;
 }
 

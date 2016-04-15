@@ -33,8 +33,6 @@
 #include <memory>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <boost/optional.hpp>
-#include <boost/utility.hpp>
 #include "rlimit.hpp"
 
 struct cronentry_t
@@ -60,7 +58,7 @@ struct cronentry_t
     cst_list weekday;     /* 1-7,  l=0  is wildcard, h=l is no range */
     cst_list hour;        /* 0-23, l=24 is wildcard, h=l is no range */
     cst_list minute;      /* 0-59, l=60 is wildcard, h=l is no range */
-    std::unique_ptr<rlimits> limits;
+    rlimits limits;
 
     inline bool operator<(const cronentry_t &o) const {
         return exectime < o.exectime;

@@ -2,7 +2,7 @@
 #define NCRON_RLIMIT_H_
 /* rlimit.c - sets rlimits for ncron jobs
  *
- * (c) 2003-2014 Nicholas J. Kain <njkain at gmail dot com>
+ * (c) 2003-2016 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,41 +27,30 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <vector>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <boost/optional.hpp>
-#include <boost/utility.hpp>
 
-class rlimits : boost::noncopyable
+struct rlimits
 {
-    struct pprargs {
-        pprargs(uid_t uid, gid_t gid, const std::string &cmd) :
-            uid_(uid), gid_(gid), cmd_(cmd) {}
-        uid_t uid_;
-        gid_t gid_;
-        const std::string &cmd_;
-    };
-    int do_limit(int resource, const boost::optional<struct rlimit> &rlim,
-                 const std::string &rstr, const pprargs &ppr);
-public:
-    boost::optional<rlimit> cpu;
-    boost::optional<rlimit> fsize;
-    boost::optional<rlimit> data;
-    boost::optional<rlimit> stack;
-    boost::optional<rlimit> core;
-    boost::optional<rlimit> rss;
-    boost::optional<rlimit> nproc;
-    boost::optional<rlimit> nofile;
-    boost::optional<rlimit> memlock;
-    boost::optional<rlimit> as;
-    boost::optional<rlimit> msgqueue;
-    boost::optional<rlimit> nice;
-    boost::optional<rlimit> rttime;
-    boost::optional<rlimit> rtprio;
-    boost::optional<rlimit> sigpending;
-
+    rlimits(const rlimits&) = delete;
+    rlimits &operator=(const rlimits&) = delete;
+    rlimits() {}
+    inline bool exist() { return rlims_.size() > 0; }
+    void add(int resource, const rlimit &rli);
     int enforce(uid_t uid, gid_t gid, const std::string &command);
+private:
+    struct rlim {
+        rlimit limits;
+        int resource;
+        rlim(int res, const rlimit &rli) : limits(rli), resource(res) {}
+    };
+
+    int do_limit(int resource, const rlimit &rlim, uid_t uid, gid_t gid,
+                 const std::string &cmd);
+
+    std::vector<rlim> rlims_;
 };
 
 #endif
