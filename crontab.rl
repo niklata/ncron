@@ -30,10 +30,9 @@
 #include <utility>
 #include <unordered_map>
 #include <boost/algorithm/string/replace.hpp>
-#include <fstream>
+#include <cstdio>
 #include <format.hpp>
 #include <unistd.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -57,6 +56,8 @@ extern "C" {
 #ifndef RLIMIT_NOFILE
 #  define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
+
+#define MAX_LINE 2048
 
 static int cfg_reload;    /* 0 on first call, 1 on subsequent calls */
 extern int gflags_debug;
@@ -281,10 +282,9 @@ struct hstm {
 
 %% write data;
 
-static int do_parse_history(hstm &hst, const std::string &l)
+static int do_parse_history(hstm &hst, const char *p, size_t plen)
 {
-    const char *p = l.c_str();
-    const char *pe = p + l.size();
+    const char *pe = p + plen;
     const char *eof = pe;
 
     %% write init;
@@ -301,28 +301,29 @@ static std::unordered_map<unsigned int, item_history> history_map;
 
 static void parse_history(const std::string &path)
 {
-    std::string l;
-    std::ifstream f(path, std::ifstream::in);
-    if (f.fail() || f.bad() || f.eof()) {
-        fmt::print(stderr, "{}: failed to open history file \"{}\" for read\n",
-                   __func__, path);
+    char buf[MAX_LINE];
+    auto f = fopen(path.c_str(), "r");
+    if (!f) {
+        fmt::print(stderr, "{}: failed to open history file \"{}\" for read: {}\n",
+                   __func__, path, strerror(errno));
         return;
     }
     size_t linenum = 0;
-    while (1) {
-        std::getline(f, l);
+    while (!feof(f)) {
+        auto fsv = fgets(buf, sizeof buf, f);
+        auto llen = strlen(buf);
+        if (buf[llen-1] == '\n')
+            buf[--llen] = 0;
         ++linenum;
-        if (f.eof())
+        if (!fsv) {
+            if (!feof(f))
+                fmt::print(stderr, "{}: io error fetching line of '{}'\n", __func__, path);
             break;
-        else if (f.bad() || f.fail()) {
-            fmt::print(stderr, "{}: io error fetching line of '{}'\n",
-                       __func__, path);
-            return;
         }
-        if (l.empty())
+        if (llen == 0)
             continue;
         hstm h;
-        auto r = do_parse_history(h, l);
+        auto r = do_parse_history(h, buf, llen);
         if (r < 0) {
             if (r == -2)
                 fmt::print(stderr, "{}: Incomplete configuration at line {}; ignoring\n",
@@ -335,6 +336,7 @@ static void parse_history(const std::string &path)
         history_map.emplace(std::make_pair(
             h.id, item_history(h.h.exectime, h.h.lasttime, h.h.numruns)));
     }
+    fclose(f);
 }
 
 static void get_history(std::unique_ptr<cronentry_t> &item)
@@ -596,10 +598,9 @@ static void parse_command_key(ParseCfgState &ncs)
 
 %% write data;
 
-static int do_parse_config(ParseCfgState &ncs, const std::string &l)
+static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 {
-    const char *p = l.c_str();
-    const char *pe = p + l.size();
+    const char *pe = p + plen;
     const char *eof = pe;
 
     %% write init;
@@ -619,25 +620,27 @@ void parse_config(const std::string &path, const std::string &execfile,
     struct ParseCfgState ncs(execfile, stk, deadstk);
     parse_history(ncs.execfile);
 
-    std::string l;
-    std::ifstream f(path, std::ifstream::in);
-    if (f.fail() || f.bad() || f.eof()) {
-        fmt::print(stderr, "{}: failed to open file: '{}'\n", __func__, path);
+    char buf[MAX_LINE];
+    auto f = fopen(path.c_str(), "r");
+    if (!f) {
+        fmt::print(stderr, "{}: failed to open file: '{}': {}\n",
+                   __func__, path, strerror(errno));
         std::exit(EXIT_FAILURE);
     }
-    while (1) {
-        std::getline(f, l);
+    while (!feof(f)) {
+        auto fsv = fgets(buf, sizeof buf, f);
+        auto llen = strlen(buf);
+        if (buf[llen-1] == '\n')
+            buf[--llen] = 0;
         ++ncs.linenum;
-        if (f.eof())
+        if (!fsv) {
+            if (!feof(f))
+                fmt::print(stderr, "{}: io error fetching line of '{}'\n", __func__, path);
             break;
-        else if (f.bad() || f.fail()) {
-            fmt::print(stderr, "{}: io error fetching line of '{}'\n",
-                       __func__, path);
-            std::exit(EXIT_FAILURE);
         }
-        if (l.empty())
+        if (llen == 0)
             continue;
-        auto r = do_parse_config(ncs, l);
+        auto r = do_parse_config(ncs, buf, llen);
         if (r < 0) {
             fmt::print(stderr, "{}: do_parse_config({}) failed at line {}\n",
                        __func__, path, ncs.linenum);
@@ -647,5 +650,6 @@ void parse_config(const std::string &path, const std::string &execfile,
     std::make_heap(stk.begin(), stk.end(), GtCronEntry);
     history_map.clear();
     cfg_reload = 1;
+    fclose(f);
 }
 
