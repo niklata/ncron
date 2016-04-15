@@ -43,7 +43,6 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <limits.h>
-#include <boost/optional.hpp>
 extern "C" {
 #include "nk/privilege.h"
 }
@@ -228,13 +227,23 @@ struct ParseCfgState
 };
 
 struct item_history {
-    item_history() {}
-    item_history(boost::optional<time_t> e, boost::optional<time_t> l,
-                 boost::optional<unsigned int> n) :
-        exectime(e), lasttime(l), numruns(n) {}
-    boost::optional<time_t> exectime;
-    boost::optional<time_t> lasttime;
-    boost::optional<unsigned int> numruns;
+    item_history() : have_exectime_(false), have_lasttime_(false), have_numruns_(false) {}
+    void set_exectime(time_t v) { exectime_ = v; have_exectime_ = true; }
+    void set_lasttime(time_t v) { lasttime_ = v; have_lasttime_ = true; }
+    void set_numruns(unsigned int v) { numruns_ = v; have_numruns_ = true; }
+    bool exectime_exists() const { return have_exectime_; }
+    bool lasttime_exists() const { return have_lasttime_; }
+    bool numruns_exists() const { return have_numruns_; }
+    time_t exectime() const { if (!have_exectime_) throw std::runtime_error("no exectime"); return exectime_; }
+    time_t lasttime() const { if (!have_lasttime_) throw std::runtime_error("no lasttime"); return lasttime_; }
+    unsigned int numruns() const { if (!have_numruns_) throw std::runtime_error("no numruns"); return numruns_; }
+private:
+    time_t exectime_;
+    time_t lasttime_;
+    unsigned int numruns_;
+    bool have_exectime_:1;
+    bool have_lasttime_:1;
+    bool have_numruns_:1;
 };
 
 struct hstm {
@@ -250,9 +259,9 @@ struct hstm {
     access hst.;
 
     action St { hst.st = p; }
-    action LastTimeEn { hst.h.lasttime = atoi(hst.st); }
-    action NumRunsEn { hst.h.numruns = atoi(hst.st); }
-    action ExecTimeEn { hst.h.exectime = atoi(hst.st); }
+    action LastTimeEn { hst.h.set_lasttime(atoi(hst.st)); }
+    action NumRunsEn { hst.h.set_numruns(atoi(hst.st)); }
+    action ExecTimeEn { hst.h.set_exectime(atoi(hst.st)); }
     action IdEn { hst.id = atoi(hst.st); }
 
     lasttime = '|' digit+ > St % LastTimeEn;
@@ -315,8 +324,7 @@ static void parse_history(const std::string &path)
                            __func__, linenum);
             continue;
         }
-        history_map.emplace(std::make_pair(
-            h.id, item_history(h.h.exectime, h.h.lasttime, h.h.numruns)));
+        history_map.emplace(std::make_pair(h.id, h.h));
     }
     fclose(f);
 }
@@ -328,16 +336,16 @@ static void get_history(std::unique_ptr<cronentry_t> &item)
     auto i = history_map.find(item->id);
     if (i == history_map.end())
         return;
-    if (i->second.exectime) {
-        auto exectm = *i->second.exectime;
+    if (i->second.exectime_exists()) {
+        const auto exectm = i->second.exectime();
         item->exectime = exectm > 0 ? exectm : 0;
     }
-    if (i->second.lasttime) {
-        auto lasttm = *i->second.lasttime;
+    if (i->second.lasttime_exists()) {
+        const auto lasttm = i->second.lasttime();
         item->lasttime = lasttm > 0 ? lasttm : 0;
     }
-    if (i->second.numruns) {
-        item->numruns = *i->second.numruns;
+    if (i->second.numruns_exists()) {
+        item->numruns = i->second.numruns();
     }
 }
 
