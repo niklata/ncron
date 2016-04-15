@@ -29,7 +29,6 @@
 #include <algorithm>
 #include <utility>
 #include <unordered_map>
-#include <boost/algorithm/string/replace.hpp>
 #include <cstdio>
 #include <format.hpp>
 #include <unistd.h>
@@ -386,6 +385,16 @@ static void addcstlist(ParseCfgState &ncs, cronentry_t::cst_list &list,
     }
 }
 
+static inline void string_replace_all(std::string &s, const char *from,
+                                      size_t fromlen, const char *to)
+{
+    size_t pos{0};
+    while ((pos = s.find(from, pos)) != std::string::npos) {
+        s.replace(pos, fromlen, to);
+        pos += fromlen;
+    }
+}
+
 struct pckm {
     pckm() : st(nullptr), cs(0) {}
     char *st;
@@ -399,8 +408,8 @@ struct pckm {
     action St { pckm.st = p; }
     action CmdEn {
         ncs.ce->command = std::string(pckm.st, p - pckm.st);
-        boost::algorithm::replace_all(ncs.ce->command, "\\ ", " ");
-        boost::algorithm::replace_all(ncs.ce->command, "\\\\", "\\");
+        string_replace_all(ncs.ce->command, "\\ ", 2, " ");
+        string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
     }
     action ArgEn { ncs.ce->args = std::string(pckm.st, p - pckm.st); }
 
