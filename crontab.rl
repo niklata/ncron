@@ -50,6 +50,7 @@ extern "C" {
 #include "ncron.hpp"
 #include "sched.hpp"
 #include "crontab.hpp"
+#include "scopeguard.hpp"
 
 /* BSD uses OFILE rather than NOFILE... */
 #ifndef RLIMIT_NOFILE
@@ -299,6 +300,7 @@ static void parse_history(const std::string &path)
                    __func__, path, strerror(errno));
         return;
     }
+    SCOPE_EXIT{ fclose(f); };
     size_t linenum = 0;
     while (!feof(f)) {
         auto fsv = fgets(buf, sizeof buf, f);
@@ -326,7 +328,6 @@ static void parse_history(const std::string &path)
         }
         history_map.emplace(std::make_pair(h.id, h.h));
     }
-    fclose(f);
 }
 
 static void get_history(std::unique_ptr<cronentry_t> &item)
@@ -627,6 +628,7 @@ void parse_config(const std::string &path, const std::string &execfile,
                    __func__, path, strerror(errno));
         std::exit(EXIT_FAILURE);
     }
+    SCOPE_EXIT{ fclose(f); };
     while (!feof(f)) {
         auto fsv = fgets(buf, sizeof buf, f);
         auto llen = strlen(buf);
@@ -650,6 +652,5 @@ void parse_config(const std::string &path, const std::string &execfile,
     std::make_heap(stk.begin(), stk.end(), GtCronEntry);
     history_map.clear();
     cfg_reload = 1;
-    fclose(f);
 }
 

@@ -42,6 +42,7 @@ extern "C" {
 }
 #include "ncron.hpp"
 #include "sched.hpp"
+#include "scopeguard.hpp"
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
 
@@ -300,12 +301,12 @@ void save_stack(const std::string &file,
 {
     char buf[MAXLINE];
 
-    FILE *f = fopen(file.c_str(), "w");
+    auto f = fopen(file.c_str(), "w");
     if (!f) {
         fmt::print(stderr, "{}: failed to open history file {} for write\n", __func__, file);
         std::exit(EXIT_FAILURE);
     }
-
+    SCOPE_EXIT{ fclose(f); };
     for (auto &i: stack) {
         auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
                               i.ce->exectime, i.ce->numruns, i.ce->lasttime);
@@ -317,7 +318,7 @@ void save_stack(const std::string &file,
         auto bsize = strlen(buf);
         while (!fwrite(buf, bsize, 1, f)) {
             if (ferror(f))
-                goto fail;
+                return;
         }
     }
     for (auto &i: deadstack) {
@@ -331,11 +332,9 @@ void save_stack(const std::string &file,
         auto bsize = strlen(buf);
         while (!fwrite(buf, bsize, 1, f)) {
             if (ferror(f))
-                goto fail;
+                return;
         }
     }
-fail:
-    fclose(f);
 }
 
 void cronentry_t::exec_and_fork(const struct timespec &ts)
