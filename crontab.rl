@@ -43,14 +43,14 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <limits.h>
+#include <nk/string_replace_all.hpp>
+#include <nk/scopeguard.hpp>
 extern "C" {
 #include "nk/privilege.h"
 }
-
 #include "ncron.hpp"
 #include "sched.hpp"
 #include "crontab.hpp"
-#include "scopeguard.hpp"
 
 /* BSD uses OFILE rather than NOFILE... */
 #ifndef RLIMIT_NOFILE
@@ -374,16 +374,6 @@ static void addcstlist(ParseCfgState &ncs, cronentry_t::cst_list &list,
     } else {
         /* handle continuous ranges normally */
         list.emplace_back(std::make_pair(low, high));
-    }
-}
-
-static inline void string_replace_all(std::string &s, const char *from,
-                                      size_t fromlen, const char *to)
-{
-    size_t pos{0};
-    while ((pos = s.find(from, pos)) != std::string::npos) {
-        s.replace(pos, fromlen, to);
-        pos += fromlen;
     }
 }
 

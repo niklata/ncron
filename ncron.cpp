@@ -51,17 +51,16 @@
 #include <sys/prctl.h>
 #endif
 
+#include <nk/optionarg.hpp>
 extern "C" {
 #include "nk/pidfile.h"
 #include "nk/signals.h"
-#include "nk/copy_cmdarg.h"
+#include "nk/log.h"
 }
-
 #include "ncron.hpp"
 #include "sched.hpp"
 #include "crontab.hpp"
 #include "rlimit.hpp"
-#include "optionarg.hpp"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"

@@ -36,13 +36,13 @@
 #include <limits.h>
 #include <assert.h>
 #include <format.hpp>
+#include <nk/scopeguard.hpp>
 extern "C" {
 #include "nk/exec.h"
 #include "nk/privilege.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
-#include "scopeguard.hpp"
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
 
