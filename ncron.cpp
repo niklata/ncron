@@ -55,7 +55,6 @@
 extern "C" {
 #include "nk/pidfile.h"
 #include "nk/signals.h"
-#include "nk/log.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -73,6 +72,7 @@ static volatile sig_atomic_t pending_save_and_exit;
 static volatile sig_atomic_t pending_reload_config;
 static volatile sig_atomic_t pending_free_children;
 extern int gflags_debug;
+static bool gflags_background{false};
 
 /* Time (in msec) to sleep before dispatching events at startup.
    Set to a nonzero value so as not to compete for cpu with init scripts at
@@ -276,7 +276,7 @@ static void print_version(void)
 enum OpIdx {
     OPT_UNKNOWN, OPT_HELP, OPT_VERSION, OPT_BACKGROUND, OPT_SLEEP,
     OPT_NOEXECSAVE, OPT_JOURNAL, OPT_CRONTAB, OPT_HISTORY, OPT_PIDFILE,
-    OPT_QUIET, OPT_VERBOSE
+    OPT_VERBOSE
 };
 static const option::Descriptor usage[] = {
     { OPT_UNKNOWN,    0,  "",           "", Arg::Unknown,
@@ -292,7 +292,6 @@ static const option::Descriptor usage[] = {
     { OPT_CRONTAB,    0, "t",    "crontab",  Arg::String, "\t-t, \t--crontab  \tPath to crontab file." },
     { OPT_HISTORY,    0, "H",    "history",  Arg::String, "\t-H, \t--history  \tPath to execution history file." },
     { OPT_PIDFILE,    0, "f",    "pidfile",  Arg::String, "\t-f, \t--pidfile  \tPath to process id file." },
-    { OPT_QUIET,      0, "q",      "quiet",    Arg::None, "\t-q, \t--quiet  \tDon't log to syslog." },
     { OPT_VERBOSE,    0,  "",    "verbose",    Arg::None, "\t    \t--verbose  \tLog diagnostic information." },
     {0,0,0,0,0,0}
 };
@@ -325,14 +324,13 @@ static void process_options(int ac, char *av[]) {
     for (int i = 0; i < parse.optionsCount(); ++i) {
         option::Option &opt = buffer[i];
         switch (opt.index()) {
-            case OPT_BACKGROUND: gflags_detach = 1; break;
+            case OPT_BACKGROUND: gflags_background = true; break;
             case OPT_SLEEP: g_initial_sleep = atoi(opt.arg); break;
             case OPT_NOEXECSAVE: g_ncron_execmode = 2; break;
             case OPT_JOURNAL: g_ncron_execmode = 1; break;
             case OPT_CRONTAB: g_ncron_conf = std::string(opt.arg); break;
             case OPT_HISTORY: g_ncron_execfile = std::string(opt.arg); break;
             case OPT_PIDFILE: pidfile = std::string(opt.arg); break;
-            case OPT_QUIET: gflags_quiet = 1; break;
             case OPT_VERBOSE: gflags_debug = 1; break;
         }
     }
@@ -350,7 +348,7 @@ int main(int argc, char* argv[])
         std::exit(EXIT_FAILURE);
     }
 
-    if (gflags_detach) {
+    if (gflags_background) {
         if (daemon(0,0)) {
             fmt::print(stderr, "{}: daemon failed: {}\n", __func__, strerror(errno));
             std::exit(EXIT_FAILURE);
