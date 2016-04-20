@@ -61,7 +61,7 @@ extern "C" {
 #include "sched.hpp"
 #include "crontab.hpp"
 #include "rlimit.hpp"
-#include "optionparser.hpp"
+#include "optionarg.hpp"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
@@ -274,34 +274,6 @@ static void print_version(void)
                "POSSIBILITY OF SUCH DAMAGE.\n");
 }
 
-struct Arg : public option::Arg
-{
-    static void print_error(const char *head, const option::Option &opt, const char *tail)
-    {
-        fmt::fprintf(stderr, "%s%.*s%s", head, opt.namelen, opt.name, tail);
-    }
-    static option::ArgStatus Unknown(const option::Option &opt, bool msg)
-    {
-        if (msg) print_error("Unknown option '", opt, "'\n");
-        return option::ARG_ILLEGAL;
-    }
-    static option::ArgStatus String(const option::Option &opt, bool msg)
-    {
-        if (opt.arg && opt.arg[0])
-            return option::ARG_OK;
-        if (msg) print_error("Option '", opt, "' requires an argument\n");
-        return option::ARG_ILLEGAL;
-    }
-    static option::ArgStatus Integer(const option::Option &opt, bool msg)
-    {
-        char *endptr{nullptr};
-        if (opt.arg && strtol(opt.arg, &endptr, 10)){}
-        if (endptr != opt.arg && !*endptr)
-            return option::ARG_OK;
-        if (msg) print_error("Option '", opt, "' requires an integer argument\n");
-        return option::ARG_ILLEGAL;
-    }
-};
 enum OpIdx {
     OPT_UNKNOWN, OPT_HELP, OPT_VERSION, OPT_BACKGROUND, OPT_SLEEP,
     OPT_NOEXECSAVE, OPT_JOURNAL, OPT_CRONTAB, OPT_HISTORY, OPT_PIDFILE,
