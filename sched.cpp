@@ -45,6 +45,8 @@ extern "C" {
 #include "sched.hpp"
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
+#define MAX_CENV 50
+#define MAX_ENVBUF 2048
 
 /*
  * returns -1 if below range
@@ -337,43 +339,57 @@ void save_stack(const std::string &file,
     }
 }
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+#endif
 void cronentry_t::exec_and_fork(const struct timespec &ts)
 {
+    char *env[MAX_CENV];
+    char envbuf[MAX_ENVBUF];
     switch ((int)fork()) {
         case 0:
-            if (!chroot.empty())
-                nk_set_chroot(chroot.c_str());
+            if (nk_generate_env(user, chroot.empty() ? nullptr : chroot.c_str(),
+                                env, MAX_CENV, envbuf, sizeof envbuf) < 0) {
+                const char errstr[] = "exec_and_fork: failed to generate environment\n";
+                write(STDERR_FILENO, errstr, sizeof errstr);
+                std::exit(EXIT_FAILURE);
+            }
             if (limits.exist() && limits.enforce(user, group, command)) {
-                fmt::print(stderr, "{}: rlimits::enforce failed\n", __func__);
+                const char errstr[] = "exec_and_fork: rlimits::enforce failed\n";
+                write(STDERR_FILENO, errstr, sizeof errstr);
                 std::exit(EXIT_FAILURE);
             }
             if (group) {
                 if (setresgid(group, group, group)) {
-                    fmt::print(stderr, "{}: setgid({}) failed for \"{}\": {}\n",
-                               __func__, group, command, strerror(errno));
+                    const char errstr[] = "exec_and_fork: setresgid failed\n";
+                    write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
                 if (getgid() == 0) {
-                    fmt::print(stderr, "{}: child is still gid=root after setgid()\n", __func__);
+                    const char errstr[] = "exec_and_fork: child is still gid=root after setgid()\n";
+                    write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
             }
             if (user) {
                 if (setresuid(user, user, user)) {
-                    fmt::print(stderr, "{}: setuid({}) failed for \"{}\": {}\n",
-                               __func__, user, command, strerror(errno));
+                    const char errstr[] = "exec_and_fork: setresuid failed\n";
+                    write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
                 if (getuid() == 0) {
-                    fmt::print(stderr, "{}: child is still uid=root after setuid()\n", __func__);
+                    const char errstr[] = "exec_and_fork: child is still uid=root after setuid()\n";
+                    write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
-                nk_fix_env(user, true);
             }
-            nk_execute(command.c_str(), args.c_str());
-        case -1:
-            fmt::print(stderr, "{}: fork failed: {}\n", __func__, strerror(errno));
+            nk_execute(command.c_str(), args.c_str(), env);
+        case -1: {
+            const char errstr[] = "exec_and_fork: fork failed\n";
+            write(STDERR_FILENO, errstr, sizeof errstr);
             std::exit(EXIT_FAILURE);
+        }
         default:
             ++numruns;
             lasttime = ts.tv_sec;
@@ -381,4 +397,7 @@ void cronentry_t::exec_and_fork(const struct timespec &ts)
             break;
     }
 }
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
