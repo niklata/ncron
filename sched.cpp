@@ -350,6 +350,7 @@ void cronentry_t::exec(const struct timespec &ts)
     switch ((int)fork()) {
         case 0:
             if (nk_generate_env(user, chroot.empty() ? nullptr : chroot.c_str(),
+                                path.empty() ? nullptr : path.c_str(),
                                 env, MAX_CENV, envbuf, sizeof envbuf) < 0) {
                 const char errstr[] = "exec: failed to generate environment\n";
                 write(STDERR_FILENO, errstr, sizeof errstr);

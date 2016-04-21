@@ -120,6 +120,7 @@ struct ParseCfgState
         fmt::print(stderr, "command: {}\n", ce->command);
         fmt::print(stderr, "args: {}\n", ce->args);
         fmt::print(stderr, "chroot: {}\n", ce->chroot);
+        fmt::print(stderr, "path: {}\n", ce->path);
         fmt::print(stderr, "numruns: {}\n", ce->numruns);
         fmt::print(stderr, "maxruns: {}\n", ce->maxruns);
         fmt::print(stderr, "journal: {}\n", ce->journal);
@@ -566,13 +567,17 @@ static void parse_command_key(ParseCfgState &ncs)
         ncs.ce->chroot = std::string(ncs.v_str, ncs.v_strlen);
     }
     action CommandEn { parse_command_key(ncs); }
+    action PathEn {
+        ncs.ce->path = std::string(ncs.v_str, ncs.v_strlen);
+    }
 
     group = 'group'i eqsep stringval % GroupEn;
     user = 'user'i eqsep stringval % UserEn;
     chroot = 'chroot'i eqsep stringval % ChrootEn;
     command = 'command'i eqsep stringval % CommandEn;
+    path = 'path'i eqsep stringval % PathEn;
 
-    cmds = command | chroot | user | group | minute | hour | weekday | day |
+    cmds = command | chroot | path | user | group | minute | hour | weekday | day |
            month | interval | lim_cpu | lim_fsize | lim_data | lim_stack |
            lim_core | lim_rss | lim_nproc | lim_nofile | lim_memlock | lim_as |
            lim_msgqueue | lim_nice | lim_rttime | lim_rtprio | lim_sigpending |

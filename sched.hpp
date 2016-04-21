@@ -52,6 +52,7 @@ struct cronentry_t
     std::string command;
     std::string args;
     std::string chroot;
+    std::string path;
 
     cst_list month;       /* 1-12, l=0  is wildcard, h=l is no range */
     cst_list day;         /* 1-31, l=0  is wildcard, h=l is no range */
