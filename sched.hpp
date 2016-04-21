@@ -63,7 +63,7 @@ struct cronentry_t
     inline bool operator<(const cronentry_t &o) const {
         return exectime < o.exectime;
     }
-    void exec_and_fork(const struct timespec &ts);
+    void exec(const struct timespec &ts);
 private:
     void set_next_time();
 };

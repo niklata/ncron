@@ -343,7 +343,7 @@ void save_stack(const std::string &file,
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-result"
 #endif
-void cronentry_t::exec_and_fork(const struct timespec &ts)
+void cronentry_t::exec(const struct timespec &ts)
 {
     char *env[MAX_CENV];
     char envbuf[MAX_ENVBUF];
@@ -351,42 +351,42 @@ void cronentry_t::exec_and_fork(const struct timespec &ts)
         case 0:
             if (nk_generate_env(user, chroot.empty() ? nullptr : chroot.c_str(),
                                 env, MAX_CENV, envbuf, sizeof envbuf) < 0) {
-                const char errstr[] = "exec_and_fork: failed to generate environment\n";
+                const char errstr[] = "exec: failed to generate environment\n";
                 write(STDERR_FILENO, errstr, sizeof errstr);
                 std::exit(EXIT_FAILURE);
             }
             if (limits.exist() && limits.enforce(user, group, command)) {
-                const char errstr[] = "exec_and_fork: rlimits::enforce failed\n";
+                const char errstr[] = "exec: rlimits::enforce failed\n";
                 write(STDERR_FILENO, errstr, sizeof errstr);
                 std::exit(EXIT_FAILURE);
             }
             if (group) {
                 if (setresgid(group, group, group)) {
-                    const char errstr[] = "exec_and_fork: setresgid failed\n";
+                    const char errstr[] = "exec: setresgid failed\n";
                     write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
                 if (getgid() == 0) {
-                    const char errstr[] = "exec_and_fork: child is still gid=root after setgid()\n";
+                    const char errstr[] = "exec: child is still gid=root after setgid()\n";
                     write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
             }
             if (user) {
                 if (setresuid(user, user, user)) {
-                    const char errstr[] = "exec_and_fork: setresuid failed\n";
+                    const char errstr[] = "exec: setresuid failed\n";
                     write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
                 if (getuid() == 0) {
-                    const char errstr[] = "exec_and_fork: child is still uid=root after setuid()\n";
+                    const char errstr[] = "exec: child is still uid=root after setuid()\n";
                     write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
             }
             nk_execute(command.c_str(), args.c_str(), env);
         case -1: {
-            const char errstr[] = "exec_and_fork: fork failed\n";
+            const char errstr[] = "exec: fork failed\n";
             write(STDERR_FILENO, errstr, sizeof errstr);
             std::exit(EXIT_FAILURE);
         }

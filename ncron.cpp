@@ -217,7 +217,7 @@ static void do_work(unsigned int initial_sleep)
             if (gflags_debug)
                 fmt::print(stderr, "do_work: DISPATCH\n");
 
-            i.exec_and_fork(ts);
+            i.exec(ts);
             stack.front().exectime = i.exectime;
             if (i.journal)
                 pending_save = true;
