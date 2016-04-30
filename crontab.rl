@@ -304,20 +304,19 @@ static void parse_history(const std::string &path)
     SCOPE_EXIT{ fclose(f); };
     size_t linenum = 0;
     while (!feof(f)) {
-        auto fsv = fgets(buf, sizeof buf, f);
-        auto llen = strlen(buf);
-        if (buf[llen-1] == '\n')
-            buf[--llen] = 0;
-        ++linenum;
-        if (!fsv) {
+        if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))
                 fmt::print(stderr, "{}: io error fetching line of '{}'\n", __func__, path);
             break;
         }
+        auto llen = strlen(buf);
         if (llen == 0)
             continue;
+        if (buf[llen-1] == '\n')
+            buf[--llen] = 0;
+        ++linenum;
         hstm h;
-        auto r = do_parse_history(h, buf, llen);
+        const auto r = do_parse_history(h, buf, llen);
         if (r < 0) {
             if (r == -2)
                 fmt::print(stderr, "{}: Incomplete configuration at line {}; ignoring\n",
@@ -625,20 +624,18 @@ void parse_config(const std::string &path, const std::string &execfile,
     }
     SCOPE_EXIT{ fclose(f); };
     while (!feof(f)) {
-        auto fsv = fgets(buf, sizeof buf, f);
-        auto llen = strlen(buf);
-        if (buf[llen-1] == '\n')
-            buf[--llen] = 0;
-        ++ncs.linenum;
-        if (!fsv) {
+        if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))
                 fmt::print(stderr, "{}: io error fetching line of '{}'\n", __func__, path);
             break;
         }
+        auto llen = strlen(buf);
         if (llen == 0)
             continue;
-        auto r = do_parse_config(ncs, buf, llen);
-        if (r < 0) {
+        if (buf[llen-1] == '\n')
+            buf[--llen] = 0;
+        ++ncs.linenum;
+        if (do_parse_config(ncs, buf, llen) < 0) {
             fmt::print(stderr, "{}: do_parse_config({}) failed at line {}\n",
                        __func__, path, ncs.linenum);
             std::exit(EXIT_FAILURE);
