@@ -44,6 +44,7 @@
 #include <sys/resource.h>
 #include <limits.h>
 #include <nk/string_replace_all.hpp>
+#include <nk/from_string.hpp>
 #include <nk/scopeguard.hpp>
 extern "C" {
 #include "nk/privilege.h"
@@ -261,10 +262,10 @@ struct hstm {
     access hst.;
 
     action St { hst.st = p; }
-    action LastTimeEn { hst.h.set_lasttime(atoi(hst.st)); }
-    action NumRunsEn { hst.h.set_numruns(atoi(hst.st)); }
-    action ExecTimeEn { hst.h.set_exectime(atoi(hst.st)); }
-    action IdEn { hst.id = atoi(hst.st); }
+    action LastTimeEn { hst.h.set_lasttime(nk::from_string<time_t>(hst.st, p - hst.st)); }
+    action NumRunsEn { hst.h.set_numruns(nk::from_string<unsigned>(hst.st, p - hst.st)); }
+    action ExecTimeEn { hst.h.set_exectime(nk::from_string<time_t>(hst.st, p - hst.st)); }
+    action IdEn { hst.id = nk::from_string<unsigned>(hst.st, p - hst.st); }
 
     lasttime = '|' digit+ > St % LastTimeEn;
     numruns = ':' digit+ > St % NumRunsEn;
@@ -450,21 +451,21 @@ static void parse_command_key(ParseCfgState &ncs)
     eqsep = spc* '=' spc*;
 
     action TUnitSt { ncs.time_st = p; ncs.v_time = 0; }
-    action TSecEn  { ncs.v_time +=          atoi(ncs.time_st); }
-    action TMinEn  { ncs.v_time += 60     * atoi(ncs.time_st); }
-    action THrEn   { ncs.v_time += 3600   * atoi(ncs.time_st); }
-    action TDayEn  { ncs.v_time += 86400  * atoi(ncs.time_st); }
-    action TWeekEn { ncs.v_time += 604800 * atoi(ncs.time_st); }
+    action TSecEn  { ncs.v_time +=          nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
+    action TMinEn  { ncs.v_time += 60     * nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
+    action THrEn   { ncs.v_time += 3600   * nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
+    action TDayEn  { ncs.v_time += 86400  * nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
+    action TWeekEn { ncs.v_time += 604800 * nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
 
     action IntValSt {
         ncs.intv_st = p;
         ncs.v_int = ncs.v_int2 = 0;
         ncs.intv2_exist = false;
     }
-    action IntValEn { ncs.v_int = atoi(ncs.intv_st); }
+    action IntValEn { ncs.v_int = nk::from_string<int>(ncs.intv_st, p - ncs.intv_st); }
     action IntVal2St { ncs.intv2_st = p; }
     action IntVal2En {
-        ncs.v_int2 = atoi(ncs.intv2_st);
+        ncs.v_int2 = nk::from_string<int>(ncs.intv2_st, p - ncs.intv2_st);
         ncs.intv2_exist = true;
     }
 
@@ -583,7 +584,7 @@ static void parse_command_key(ParseCfgState &ncs)
            maxruns | runat | journal;
 
     action JobIdSt { ncs.jobid_st = p; }
-    action JobIdEn { ncs.ce->id = atoi(ncs.jobid_st); }
+    action JobIdEn { ncs.ce->id = nk::from_string<unsigned>(ncs.jobid_st, p - ncs.jobid_st); }
     action CreateCe { ncs.finish_ce(); ncs.create_ce(); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;

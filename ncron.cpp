@@ -51,6 +51,7 @@
 #include <sys/prctl.h>
 #endif
 
+#include <nk/from_string.hpp>
 #include <nk/optionarg.hpp>
 extern "C" {
 #include "nk/pidfile.h"
@@ -77,7 +78,7 @@ static bool gflags_background{false};
 /* Time (in msec) to sleep before dispatching events at startup.
    Set to a nonzero value so as not to compete for cpu with init scripts at
    boot time. */
-static int g_initial_sleep = 0;
+static unsigned g_initial_sleep = 0;
 
 static std::string g_ncron_conf(CONFIG_FILE_DEFAULT);
 static std::string g_ncron_execfile(EXEC_FILE_DEFAULT);
@@ -199,7 +200,7 @@ static inline void debug_stack_print(const struct timespec &ts) {
                    i.ce->id, i.ce->exectime);
 }
 
-static void do_work(unsigned int initial_sleep)
+static void do_work(unsigned initial_sleep)
 {
     struct timespec ts;
     ts.tv_sec = 0;
@@ -313,7 +314,9 @@ static void process_options(int ac, char *av[]) {
     if (parse.error())
         std::exit(EXIT_FAILURE);
     if (options[OPT_HELP]) {
-        int col = getenv("COLUMNS") ? atoi(getenv("COLUMNS")) : 80;
+        uint16_t col{80};
+        const auto cols = getenv("COLUMNS");
+        if (cols) col = nk::from_string<uint16_t>(cols);
         option::printUsage(fwrite, stdout, usage, col);
         std::exit(EXIT_FAILURE);
     }
@@ -325,7 +328,14 @@ static void process_options(int ac, char *av[]) {
         option::Option &opt = buffer[i];
         switch (opt.index()) {
             case OPT_BACKGROUND: gflags_background = true; break;
-            case OPT_SLEEP: g_initial_sleep = atoi(opt.arg); break;
+            case OPT_SLEEP:
+                try {
+                    g_initial_sleep = nk::from_string<unsigned>(opt.arg);
+                } catch (...) {
+                    fmt::print(stderr, "invalid sleep '{}' specified\n", opt.arg);
+                    std::exit(EXIT_FAILURE);
+                }
+                break;
             case OPT_NOEXECSAVE: g_ncron_execmode = 2; break;
             case OPT_JOURNAL: g_ncron_execmode = 1; break;
             case OPT_CRONTAB: g_ncron_conf = std::string(opt.arg); break;
