@@ -64,7 +64,6 @@ extern "C" {
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
-#define LOG_FILE_DEFAULT "/var/log/ncron.log"
 
 #define NCRON_VERSION "0.99"
 
