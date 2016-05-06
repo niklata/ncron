@@ -64,7 +64,6 @@ extern "C" {
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
-#define PID_FILE_DEFAULT "/var/run/ncron.pid"
 #define LOG_FILE_DEFAULT "/var/log/ncron.log"
 
 #define NCRON_VERSION "0.99"
@@ -82,7 +81,7 @@ static unsigned g_initial_sleep = 0;
 
 static std::string g_ncron_conf(CONFIG_FILE_DEFAULT);
 static std::string g_ncron_execfile(EXEC_FILE_DEFAULT);
-static std::string pidfile(PID_FILE_DEFAULT);
+static std::string pidfile;
 static int g_ncron_execmode = 0;
 
 static std::vector<StackItem> stack;
@@ -147,9 +146,9 @@ static void fix_signals(void)
     hook_signal(SIGTERM, sighandler, 0);
 }
 
-static void fail_on_fdne(const std::string &file, const char *mode)
+static void fail_on_fdne(const std::string &file, int mode)
 {
-    if (file_exists(file.c_str(), mode))
+    if (access(file.c_str(), mode))
         exit(EXIT_FAILURE);
 }
 
@@ -349,8 +348,8 @@ static void process_options(int ac, char *av[]) {
 int main(int argc, char* argv[])
 {
     process_options(argc, argv);
-    fail_on_fdne(g_ncron_conf, "r");
-    fail_on_fdne(g_ncron_execfile, "rw");
+    fail_on_fdne(g_ncron_conf, R_OK);
+    fail_on_fdne(g_ncron_execfile, R_OK | W_OK);
     parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
 
     if (stack.empty()) {
@@ -365,7 +364,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    if (pidfile.size() && file_exists(pidfile.c_str(), "w"))
+    if (pidfile.size())
         write_pid(pidfile.c_str());
 
     umask(077);
