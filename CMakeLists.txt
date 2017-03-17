@@ -78,7 +78,7 @@ ENDMACRO(COMPARE_VERSION_STRINGS)
 ####################################
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=gnu99 -fno-strict-overflow -pedantic -Wall -Wextra -Wno-maybe-uninitialized -Wformat=2 -Wformat-nonliteral -Wformat-security -Wpointer-arith -Wno-unused-parameter")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=gnu++14 -fno-strict-overflow -pedantic -Wall -Wextra -Wno-maybe-uninitialized -Wformat=2 -Wformat-nonliteral -Wformat-security -Wpointer-arith -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=gnu++14 -fno-strict-overflow -pedantic -Wall -Wextra -Wno-maybe-uninitialized -Wformat-security -Wpointer-arith -Wno-unused-parameter")
 
 if (WIN32)
   set(OSNAME "Win32")
