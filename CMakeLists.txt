@@ -120,9 +120,9 @@ endif()
 
 include_directories("${PROJECT_SOURCE_DIR}"
                     "${PROJECT_SOURCE_DIR}/ncmlib"
-                    "${PROJECT_SOURCE_DIR}/cppformat")
+                    "${PROJECT_SOURCE_DIR}/fmt")
 add_subdirectory(ncmlib)
-add_subdirectory(cppformat)
+add_subdirectory(fmt)
 
 set(RAGEL_CRONTAB ${CMAKE_CURRENT_BINARY_DIR}/crontab.cpp)
 
@@ -138,4 +138,4 @@ add_custom_command(
 
 file(GLOB NCRON_SRCS "*.cpp")
 add_executable(ncron ${RAGEL_CRONTAB} ${NCRON_SRCS})
-target_link_libraries(ncron ncmlib cppformat)
+target_link_libraries(ncron ncmlib fmt)

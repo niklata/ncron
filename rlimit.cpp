@@ -30,7 +30,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <errno.h>
-#include <format.hpp>
+#include <fmt/format.h>
 #include "rlimit.hpp"
 
 static inline const char *resource_to_str(int resource)
