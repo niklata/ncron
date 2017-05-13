@@ -1,85 +1,100 @@
 ncron - secure, small, fast, and reliable cron/at daemon
-(C) 2003-2012 Nicholas J. Kain.  Licensed under 2-clause BSD.
+(C) 2003-2017 Nicholas J. Kain.  Licensed under 2-clause BSD.
 
 INTRODUCTION
 ------------
 
-Cron daemons have been a part of Unix systems for as long as most Unix users
-can remember, and over that time cron hasn't changed very much in form.  Ncron
-is not like other cron daemons in either design or intention.
+ncron is a constraint-solving cron daemon that supports persistence of job
+execution times and also subsumes most of the abilities of atd.
 
-Ncron is intentionally not backwards compatible with existing cron daemons.  I
-honestly haven't used existing cron daemons very much at all, as I have never
-really trusted them, so I can say that any similarities with existing cronds
-are purely coincidential.
+The advantage over conventional crons is that it can execute tasks at
+arbitrary (limited by system API and QoI) time precision and also makes it
+easy to restrict job execution times to certain arbitrary time constraints
+and intervals.
 
-SECURITY PHILOSOPHY
--------------------
+It also does not force the system to periodically wake and poll for pending
+jobs; ncron calculates the next time it will need to act and has the OS
+wake it after that time has passed.  This method is better for power
+efficiency.
 
-The primary intention of ncron is to provide a secure cron daemon.  Ncron is
-designed above all to behave correctly and safely.  I have attempted to design
-ncron with three principles in mind: security, reliability, and efficiency.
+ncron also has the ability to run as a per-user daemon, and it has robust
+support for enforcing ulimits and running jobs under alternative credentials
+if run as a conventional uid root cron.
 
-Security is really a matter of trust and knowledge, and programs are known to
-be secure by some combination of design, testing, and open review.  Secure
-programs generally minimize privilege, distrust inputs, are very careful about
-direct memory manipulation (including string handling in C), and are careful
-about numeric overflow conditions.
+REQUIREMENTS
+------------
 
-Reliability is an obvious consequence of secure design -- most security issues
-are really reliability problems that can be subverted to behave in controllable
-ways.  Reliable programs should run smoothly and with little human attention
-once properly set up.
+GCC or Clang
+CMake
+Ragel
+ncmlib
+fmtlib
 
-Efficiency is desirable in all programs, and is compatible with security, so I
-do not neglect it.  However, I do not compromise correctness for efficiency.
-Making programs efficient is also one of the enjoyable things about
-programming, especially in imperative languages.
+ncron should work on most POSIX platforms, but the primary development platform
+is x64 Linux with recent glibc.
 
-INSTALL
--------
+STANDARD USAGE
+--------------
 
-Ncron should run on most POSIX platforms, but it has not yet been extensively
-tested.  It is developed on SMP x86 Linux 2.6 systems running various versions
-of glibc (2.1-2.4) and gcc (2.95.3-4.1.1).  Success reports for other
-architectures and operating systems would be welcomed.
+0) Install dependencies. In the ncron directory, symlinks should be created.
+   Assuming that ncmlib, and fmtlib live in the same directory as the
+   ncron directory:
 
-Tested to work on:
+   $ ls
+   fmt ncmlib ncron
+   $ cd ncron
+   $ ln -s ../ncmlib .
+   $ ln -s ../fmt/format.[ch] fmt/
 
-o Linux 2.[46], glibc 2.[1234].x, uclibc
+1) Compile and install ncron.
 
-Before you build, I suggest that you check the Makefile to make sure that it
-matches your system.
+   a) Create a build directory:
+      $ mkdir build && cd build
+   b) Create the makefiles:
+      $ cmake ..
+   c) Build ncron:
+      $ make
+   d) Install the ncron executable in a normal place, such as /usr/local/bin.
+      $ su
+      # cp ncron /usr/local/bin
+      # chown root.root /usr/local/bin/ncron
+      # chmod 755 /usr/local/bin/ncron
 
-Building: 
+      # mkdir -m 755 -p /usr/local/share/man/man[15]
+      # cp ncron.1.gz /usr/local/share/man/man1
+      # cp crontab.5.gz /usr/local/share/man/man5
+      # exit
+   e) Read the manpages for information on crontab format and paths.
+      $ man 5 crontab
+      $ man 1 ncron
 
-Choose the makefile that suits your system and edit it to taste.
+  A system-wide ncron will have its crontab at /var/lib/ncron/crontab.  The
+  directory will look much like:
 
-Or if you're running something similar to Linux/glibc:
+      # ls -laF /var/lib/ncron
+      total 12
+      drwx------  2 root root   36 May 13  2017 ./
+      drwxr-xr-x  3 root root 4096 May 13  2017 ../
+      -rw-------  1 root root  252 May 13  2017 crontab
+      -rw-r--r--  1 root root  131 May 13  2017 exectimes
 
-$ make
-$ su
-# make install
-# exit
+  A simple crontab file (remove the leading spaces if you copy/paste):
 
-If you wish to clean up the build directory, use:
+      !1
+      command=/bin/echo 'Hello world!'
+      interval=5m
+      !0
 
-$ make clean
+  The exectimes file will be created by ncron; it stores the history of
+  previously run jobs (denoted by the !NUMBER markers in the crontab).
 
--=-=-=-=-
+  Read the man pages for more info!  But what I've written here should be
+  enough to get you started.
 
-DOCUMENTATION
+SIMILAR PROGRAMS
+----------------
 
-See the man pages:
-
-man 5 crontab
-man ncron
-
--=-=-=-=-
-
-CONTACTING THE AUTHOR
-
-If you need to personally contact me, email me.  I would prefer if you
-formatted the header of your email to be prefixed with "NCRON: "; such a format
-may make a response more likely.  My email address is njk at aerifal dot cx.
+ncron does not support acting on changes in file descriptor state, but I have
+written a similar program called 'fcactus' that can provide this functionality
+on Linux systems via the inotify API.
 
