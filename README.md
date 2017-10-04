@@ -97,9 +97,9 @@ enough to get you started.
 
 ## Downloads
 
-* [GitLab](https://github.com/niklata/ncron)
-* [BitBucket](https://gitlab.com/niklata/ncron)
-* [GitHub](https://bitbucket.com/niklata/ncron)
+* [GitLab](https://gitlab.com/niklata/ncron)
+* [BitBucket](https://bitbucket.com/niklata/ncron)
+* [GitHub](https://github.com/niklata/ncron)
 
 ## Similar Programs
 
