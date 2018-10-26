@@ -111,7 +111,7 @@ static void save_and_exit(void)
 
 static void free_children(void)
 {
-    while (waitpid(-1, NULL, WNOHANG) > 0);
+    while (waitpid(-1, nullptr, WNOHANG) > 0);
     pending_free_children = 0;
 }
 
