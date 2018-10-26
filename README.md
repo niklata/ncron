@@ -1,5 +1,5 @@
 # ncron
-Copyright (C) 2003-2017 Nicholas J. Kain.
+Copyright 2003-2017 Nicholas J. Kain.
 
 License: Two-clause BSD.
 

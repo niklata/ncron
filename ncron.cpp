@@ -1,6 +1,6 @@
 /* ncron.cpp - secure, minimally-sleeping cron daemon
  *
- * (c) 2003-2016 Nicholas J. Kain <njkain at gmail dot com>
+ * Copyright 2003-2016 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -250,7 +250,7 @@ static void do_work(unsigned initial_sleep)
 static void print_version(void)
 {
     fmt::print("ncron " NCRON_VERSION ", cron/at daemon.\n"
-               "Copyright (c) 2003-2016 Nicholas J. Kain\n"
+               "Copyright 2003-2016 Nicholas J. Kain\n"
                "All rights reserved.\n\n"
                "Redistribution and use in source and binary forms, with or without\n"
                "modification, are permitted provided that the following conditions are met:\n\n"
@@ -280,7 +280,7 @@ enum OpIdx {
 static const option::Descriptor usage[] = {
     { OPT_UNKNOWN,    0,  "",           "", Arg::Unknown,
         "ncron " NCRON_VERSION ", cron/at daemon.\n"
-        "Copyright (c) 2003-2016 Nicholas J. Kain\n"
+        "Copyright 2003-2016 Nicholas J. Kain\n"
         "Usage: ncron [options]...\n\nOptions:" },
     { OPT_HELP,       0, "h",       "help",    Arg::None, "\t-h, \t--help  \tPrint usage and exit." },
     { OPT_VERSION,    0, "v",    "version",    Arg::None, "\t-v, \t--version  \tPrint version and exit." },

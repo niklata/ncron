@@ -2,7 +2,7 @@
 #define NCRON_SCHED_HPP_
 /* sched.hpp - ncron job scheduling
  *
- * (c) 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
+ * Copyright 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
