@@ -349,11 +349,28 @@ void cronentry_t::exec(const struct timespec &ts)
     char envbuf[MAX_ENVBUF];
     switch ((int)fork()) {
         case 0:
-            if (nk_generate_env(user, chroot.empty() ? nullptr : chroot.c_str(),
-                                path.empty() ? nullptr : path.c_str(),
-                                env, MAX_CENV, envbuf, sizeof envbuf) < 0) {
-                const char errstr[] = "exec: failed to generate environment\n";
+            if (const auto r = nk_generate_env(user, chroot.empty() ? nullptr : chroot.c_str(),
+                                               path.empty() ? nullptr : path.c_str(),
+                                               env, MAX_CENV, envbuf, sizeof envbuf);
+                r < 0) {
+                const char errstr[] = "exec: failed to generate environment - ";
                 write(STDERR_FILENO, errstr, sizeof errstr);
+                if (r == -1) {
+                    const char errstr2[] = "(-1) account uid does not exist\n";
+                    write(STDERR_FILENO, errstr2, sizeof errstr2);
+                } else if (r == -2) {
+                    const char errstr2[] = "(-2) not enough space in env buffer\n";
+                    write(STDERR_FILENO, errstr2, sizeof errstr2);
+                } else if (r == -3) {
+                    const char errstr2[] = "(-3) not enough space in env\n";
+                    write(STDERR_FILENO, errstr2, sizeof errstr2);
+                } else if (r == -4) {
+                    const char errstr2[] = "(-4) chdir failed\n";
+                    write(STDERR_FILENO, errstr2, sizeof errstr2);
+                } else {
+                    const char errstr2[] = "(?) unknown error\n";
+                    write(STDERR_FILENO, errstr2, sizeof errstr2);
+                }
                 std::exit(EXIT_FAILURE);
             }
             if (limits.exist() && limits.enforce(user, group, command)) {
