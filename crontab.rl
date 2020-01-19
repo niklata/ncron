@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <utility>
 #include <unordered_map>
+#include <optional>
 #include <cstdio>
 #include <fmt/format.h>
 #include <unistd.h>
@@ -233,23 +234,17 @@ struct ParseCfgState
 };
 
 struct item_history {
-    item_history() : have_exectime_(false), have_lasttime_(false), have_numruns_(false) {}
-    void set_exectime(time_t v) { exectime_ = v; have_exectime_ = true; }
-    void set_lasttime(time_t v) { lasttime_ = v; have_lasttime_ = true; }
-    void set_numruns(unsigned int v) { numruns_ = v; have_numruns_ = true; }
-    bool exectime_exists() const { return have_exectime_; }
-    bool lasttime_exists() const { return have_lasttime_; }
-    bool numruns_exists() const { return have_numruns_; }
-    time_t exectime() const { if (!have_exectime_) throw std::runtime_error("no exectime"); return exectime_; }
-    time_t lasttime() const { if (!have_lasttime_) throw std::runtime_error("no lasttime"); return lasttime_; }
-    unsigned int numruns() const { if (!have_numruns_) throw std::runtime_error("no numruns"); return numruns_; }
+    item_history() {}
+    void set_exectime(time_t v) { exectime_ = v; }
+    void set_lasttime(time_t v) { lasttime_ = v; }
+    void set_numruns(unsigned int v) { numruns_ = v; }
+    auto exectime() const { return exectime_; }
+    auto lasttime() const { return lasttime_; }
+    auto numruns() const { return numruns_; }
 private:
-    time_t exectime_;
-    time_t lasttime_;
-    unsigned int numruns_;
-    bool have_exectime_:1;
-    bool have_lasttime_:1;
-    bool have_numruns_:1;
+    std::optional<time_t> exectime_;
+    std::optional<time_t> lasttime_;
+    std::optional<unsigned int> numruns_;
 };
 
 struct hstm {
@@ -363,17 +358,12 @@ static void get_history(std::unique_ptr<cronentry_t> &item)
     auto i = history_map.find(item->id);
     if (i == history_map.end())
         return;
-    if (i->second.exectime_exists()) {
-        const auto exectm = i->second.exectime();
-        item->exectime = exectm > 0 ? exectm : 0;
-    }
-    if (i->second.lasttime_exists()) {
-        const auto lasttm = i->second.lasttime();
-        item->lasttime = lasttm > 0 ? lasttm : 0;
-    }
-    if (i->second.numruns_exists()) {
-        item->numruns = i->second.numruns();
-    }
+    if (const auto exectm = i->second.exectime())
+        item->exectime = *exectm > 0 ? *exectm : 0;
+    if (const auto lasttm = i->second.lasttime())
+        item->lasttime = *lasttm > 0 ? *lasttm : 0;
+    if (const auto t = i->second.numruns())
+        item->numruns = *t;
 }
 
 static void addcstlist(ParseCfgState &ncs, cronentry_t::cst_list &list,

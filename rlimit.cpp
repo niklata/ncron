@@ -32,6 +32,9 @@
 #include <errno.h>
 #include <fmt/format.h>
 #include "rlimit.hpp"
+extern "C" {
+#include "nk/log.h"
+}
 
 static inline const char *resource_to_str(int resource)
 {
@@ -53,7 +56,7 @@ static inline const char *resource_to_str(int resource)
     case RLIMIT_RTPRIO: return "rtprio";
     case RLIMIT_SIGPENDING: return "sigpending";
 #endif /* BSD */
-    default: throw std::logic_error("unknown rlimit");
+    default: suicide("unknown rlimit");
     }
 }
 
