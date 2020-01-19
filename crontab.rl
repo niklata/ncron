@@ -72,7 +72,8 @@ struct ParseCfgState
         stack(stk), deadstack(dstk), ce(nullptr), execfile(ef),
         jobid_st(nullptr), time_st(nullptr), intv_st(nullptr),
         intv2_st(nullptr), strv_st(nullptr), v_strlen(0), linenum(0), v_int(0),
-        v_int2(0), cs(0), cmdret(0), intv2_exist(false), runat(false)
+        v_int2(0), cs(0), cmdret(0), intv2_exist(false), runat(false),
+        parse_error(false)
     {
         memset(v_str, 0, sizeof v_str);
     }
@@ -103,6 +104,8 @@ struct ParseCfgState
 
     bool intv2_exist;
     bool runat;
+
+    bool parse_error;
 
     void create_ce()
     {
@@ -250,11 +253,12 @@ private:
 };
 
 struct hstm {
-    hstm() : st(nullptr), cs(0), id(0) {}
+    hstm() : st(nullptr), cs(0), id(0), parse_error(false) {}
     const char *st;
     int cs;
     unsigned int id;
     item_history h;
+    bool parse_error;
 };
 
 %%{
@@ -262,10 +266,30 @@ struct hstm {
     access hst.;
 
     action St { hst.st = p; }
-    action LastTimeEn { hst.h.set_lasttime(nk::from_string<time_t>(hst.st, p - hst.st)); }
-    action NumRunsEn { hst.h.set_numruns(nk::from_string<unsigned>(hst.st, p - hst.st)); }
-    action ExecTimeEn { hst.h.set_exectime(nk::from_string<time_t>(hst.st, p - hst.st)); }
-    action IdEn { hst.id = nk::from_string<unsigned>(hst.st, p - hst.st); }
+    action LastTimeEn {
+        if (auto t = nk::from_string<time_t>(hst.st, p - hst.st)) hst.h.set_lasttime(*t); else {
+            hst.parse_error = true;
+            fbreak;
+        }
+    }
+    action NumRunsEn {
+        if (auto t = nk::from_string<unsigned>(hst.st, p - hst.st)) hst.h.set_numruns(*t); else {
+            hst.parse_error = true;
+            fbreak;
+        }
+    }
+    action ExecTimeEn {
+        if (auto t = nk::from_string<time_t>(hst.st, p - hst.st)) hst.h.set_exectime(*t); else {
+            hst.parse_error = true;
+            fbreak;
+        }
+    }
+    action IdEn {
+        if (auto t = nk::from_string<unsigned>(hst.st, p - hst.st)) hst.id = *t; else {
+            hst.parse_error = true;
+            fbreak;
+        }
+    }
 
     lasttime = '|' digit+ > St % LastTimeEn;
     numruns = ':' digit+ > St % NumRunsEn;
@@ -284,6 +308,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
     %% write init;
     %% write exec;
 
+    if (hst.parse_error) return -1;
     if (hst.cs >= history_m_first_final)
         return 1;
     if (hst.cs == history_m_error)
@@ -451,21 +476,54 @@ static void parse_command_key(ParseCfgState &ncs)
     eqsep = spc* '=' spc*;
 
     action TUnitSt { ncs.time_st = p; ncs.v_time = 0; }
-    action TSecEn  { ncs.v_time +=          nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
-    action TMinEn  { ncs.v_time += 60     * nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
-    action THrEn   { ncs.v_time += 3600   * nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
-    action TDayEn  { ncs.v_time += 86400  * nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
-    action TWeekEn { ncs.v_time += 604800 * nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1); }
+    action TSecEn  {
+        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += *t; else {
+            ncs.parse_error = true;
+            fbreak;
+        }
+    }
+    action TMinEn  {
+        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += 60 * *t; else {
+            ncs.parse_error = true;
+            fbreak;
+        }
+    }
+    action THrEn   {
+        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += 3600 * *t; else {
+            ncs.parse_error = true;
+            fbreak;
+        }
+    }
+    action TDayEn  {
+        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += 86400 * *t; else {
+            ncs.parse_error = true;
+            fbreak;
+        }
+    }
+    action TWeekEn {
+        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += 604800 * *t; else {
+            ncs.parse_error = true;
+            fbreak;
+        }
+    }
 
     action IntValSt {
         ncs.intv_st = p;
         ncs.v_int = ncs.v_int2 = 0;
         ncs.intv2_exist = false;
     }
-    action IntValEn { ncs.v_int = nk::from_string<int>(ncs.intv_st, p - ncs.intv_st); }
+    action IntValEn {
+        if (auto t = nk::from_string<int>(ncs.intv_st, p - ncs.intv_st)) ncs.v_int = *t; else {
+            ncs.parse_error = true;
+            fbreak;
+        }
+    }
     action IntVal2St { ncs.intv2_st = p; }
     action IntVal2En {
-        ncs.v_int2 = nk::from_string<int>(ncs.intv2_st, p - ncs.intv2_st);
+        if (auto t = nk::from_string<int>(ncs.intv2_st, p - ncs.intv2_st)) ncs.v_int2 = *t; else {
+            ncs.parse_error = true;
+            fbreak;
+        }
         ncs.intv2_exist = true;
     }
 
@@ -584,7 +642,12 @@ static void parse_command_key(ParseCfgState &ncs)
            maxruns | runat | journal;
 
     action JobIdSt { ncs.jobid_st = p; }
-    action JobIdEn { ncs.ce->id = nk::from_string<unsigned>(ncs.jobid_st, p - ncs.jobid_st); }
+    action JobIdEn {
+        if (auto t = nk::from_string<unsigned>(ncs.jobid_st, p - ncs.jobid_st)) ncs.ce->id = *t; else {
+            ncs.parse_error = true;
+            fbreak;
+        }
+    }
     action CreateCe { ncs.finish_ce(); ncs.create_ce(); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;
@@ -602,6 +665,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
     %% write init;
     %% write exec;
 
+    if (ncs.parse_error) return -1;
     if (ncs.cs == ncrontab_error)
         return -1;
     if (ncs.cs >= ncrontab_first_final)

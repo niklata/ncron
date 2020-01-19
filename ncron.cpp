@@ -313,8 +313,9 @@ static void process_options(int ac, char *av[]) {
         std::exit(EXIT_FAILURE);
     if (options[OPT_HELP]) {
         uint16_t col{80};
-        const auto cols = getenv("COLUMNS");
-        if (cols) col = nk::from_string<uint16_t>(cols);
+        if (const auto cols = getenv("COLUMNS")) {
+            if (auto t = nk::from_string<uint16_t>(cols)) col = *t;
+        }
         option::printUsage(fwrite, stdout, usage, col);
         std::exit(EXIT_FAILURE);
     }
@@ -327,9 +328,7 @@ static void process_options(int ac, char *av[]) {
         switch (opt.index()) {
             case OPT_BACKGROUND: gflags_background = true; break;
             case OPT_SLEEP:
-                try {
-                    g_initial_sleep = nk::from_string<unsigned>(opt.arg);
-                } catch (...) {
+                if (auto t = nk::from_string<unsigned>(opt.arg)) g_initial_sleep = *t; else {
                     fmt::print(stderr, "invalid sleep '{}' specified\n", opt.arg);
                     std::exit(EXIT_FAILURE);
                 }
