@@ -39,7 +39,7 @@
 #include <nk/scopeguard.hpp>
 extern "C" {
 #include "nk/exec.h"
-#include "nk/privilege.h"
+#include "nk/privs.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"

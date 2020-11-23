@@ -48,7 +48,7 @@
 #include <nk/from_string.hpp>
 #include <nk/scopeguard.hpp>
 extern "C" {
-#include "nk/privilege.h"
+#include "nk/privs.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
