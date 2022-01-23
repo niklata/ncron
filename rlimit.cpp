@@ -30,7 +30,6 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <errno.h>
-#include <fmt/format.h>
 #include "rlimit.hpp"
 extern "C" {
 #include "nk/log.h"
@@ -67,16 +66,16 @@ int rlimits::do_limit(int resource, const rlimit &rlim, uid_t uid, gid_t gid,
     if (r < 0) {
         switch (errno) {
         case EFAULT:
-            fmt::print(stderr, "setrlimit({}) given bad value for job: uid={} gid={} command='{}'\n",
-                       resource_to_str(resource), uid, gid, cmd);
+            log_line("setrlimit(%s) given bad value for job: uid=%u gid=%u command='%s'",
+                     resource_to_str(resource), uid, gid, cmd.c_str());
             break;
         case EINVAL:
-            fmt::print(stderr, "setrlimit({}) given invalid RLIMIT for job: uid={} gid={} command='{}'\n",
-                       resource_to_str(resource), uid, gid, cmd);
+            log_line("setrlimit(%s) given invalid RLIMIT for job: uid=%u gid=%u command='%s'",
+                     resource_to_str(resource), uid, gid, cmd.c_str());
             break;
         case EPERM:
-            fmt::print(stderr, "setrlimit({}) denied permission to set limit for job: uid={} gid={} command='{}'\n",
-                       resource_to_str(resource), uid, gid, cmd);
+            log_line("setrlimit(%s) denied permission to set limit for job: uid=%u gid=%u command='%s'",
+                     resource_to_str(resource), uid, gid, cmd.c_str());
         default:
             break;
         }

@@ -29,7 +29,6 @@ credentials if run as a conventional uid root cron.
 * CMake
 * [Ragel 6](https://www.colm.net/open-source/ragel)
 * [ncmlib](https://github.com/niklata/ncmlib)
-* [fmtlib](https://github.com/fmtlib/fmt)
 
 ncron should work on most POSIX platforms, but the primary development
 platform is x64 Linux with recent glibc.
@@ -37,14 +36,13 @@ platform is x64 Linux with recent glibc.
 ## Installation
 
 Install dependencies. In the ncron directory, symlinks should be created.
-Assuming that ncmlib, and fmtlib live in the same directory as the
+Assuming that ncmlib lives in the same directory as the
 ncron directory:
 ```
    $ ls
-   fmt ncmlib ncron
+   ncmlib ncron
    $ cd ncron
    $ ln -s ../ncmlib .
-   $ ln -s ../fmt/format.[ch] fmt/
 ```
 
 Compile and install ncron.

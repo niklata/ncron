@@ -28,6 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <vector>
+#include <string>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>

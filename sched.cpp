@@ -35,9 +35,9 @@
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
-#include <fmt/format.h>
 #include <nk/scopeguard.hpp>
 extern "C" {
+#include "nk/log.h"
 #include "nk/exec.h"
 #include "nk/privs.h"
 }
@@ -305,7 +305,7 @@ void save_stack(const std::string &file,
 
     auto f = fopen(file.c_str(), "w");
     if (!f) {
-        fmt::print(stderr, "{}: failed to open history file {} for write\n", __func__, file);
+        log_line("%s: failed to open history file %s for write", __func__, file.c_str());
         std::exit(EXIT_FAILURE);
     }
     SCOPE_EXIT{ fclose(f); };
@@ -313,8 +313,8 @@ void save_stack(const std::string &file,
         auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
                               i.ce->exectime, i.ce->numruns, i.ce->lasttime);
         if (snlen < 0 || static_cast<std::size_t>(snlen) >= sizeof buf) {
-            fmt::print(stderr, "{}: Would truncate history entry for job {}; skipping.\n",
-                       __func__, i.ce->id);
+            log_line("%s: Would truncate history entry for job %u; skipping.",
+                     __func__, i.ce->id);
             continue;
         }
         auto bsize = strlen(buf);
@@ -327,8 +327,8 @@ void save_stack(const std::string &file,
         auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
                               i.ce->exectime, i.ce->numruns, i.ce->lasttime);
         if (snlen < 0 || static_cast<std::size_t>(snlen) >= sizeof buf) {
-            fmt::print(stderr, "{}: Would truncate history entry for job {}; skipping.\n",
-                       __func__, i.ce->id);
+            log_line("%s: Would truncate history entry for job %u; skipping.",
+                     __func__, i.ce->id);
             continue;
         }
         auto bsize = strlen(buf);

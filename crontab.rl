@@ -31,7 +31,6 @@
 #include <unordered_map>
 #include <optional>
 #include <cstdio>
-#include <fmt/format.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +48,7 @@
 #include <nk/scopeguard.hpp>
 extern "C" {
 #include "nk/privs.h"
+#include "nk/log.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -120,39 +120,39 @@ struct ParseCfgState
     {
         if (!gflags_debug)
             return;
-        fmt::print(stderr, "-=- finish_ce -=-\n");
-        fmt::print(stderr, "id: {}\n", ce->id);
-        fmt::print(stderr, "command: {}\n", ce->command);
-        fmt::print(stderr, "args: {}\n", ce->args);
-        fmt::print(stderr, "chroot: {}\n", ce->chroot);
-        fmt::print(stderr, "path: {}\n", ce->path);
-        fmt::print(stderr, "numruns: {}\n", ce->numruns);
-        fmt::print(stderr, "maxruns: {}\n", ce->maxruns);
-        fmt::print(stderr, "journal: {}\n", ce->journal);
-        fmt::print(stderr, "user: {}\n", ce->user);
-        fmt::print(stderr, "group: {}\n", ce->group);
+        log_line("-=- finish_ce -=-");
+        log_line("id: %u", ce->id);
+        log_line("command: %s", ce->command.c_str());
+        log_line("args: %s", ce->args.c_str());
+        log_line("chroot: %s", ce->chroot.c_str());
+        log_line("path: %s", ce->path.c_str());
+        log_line("numruns: %u", ce->numruns);
+        log_line("maxruns: %u", ce->maxruns);
+        log_line("journal: %s", ce->journal ? "true" : "false");
+        log_line("user: %u", ce->user);
+        log_line("group: %u", ce->group);
         for (const auto &i: ce->month)
-            fmt::print(stderr, "month: [{},{}]\n", i.first, i.second);
+            log_line("month: [%u,%u]", i.first, i.second);
         for (const auto &i: ce->day)
-            fmt::print(stderr, "day: [{},{}]\n", i.first, i.second);
+            log_line("day: [%u,%u]", i.first, i.second);
         for (const auto &i: ce->weekday)
-            fmt::print(stderr, "weekday: [{},{}]\n", i.first, i.second);
+            log_line("weekday: [%u,%u]", i.first, i.second);
         for (const auto &i: ce->hour)
-            fmt::print(stderr, "hour: [{},{}]\n", i.first, i.second);
+            log_line("hour: [%u,%u]", i.first, i.second);
         for (const auto &i: ce->minute)
-            fmt::print(stderr, "minute: [{},{}]\n", i.first, i.second);
-        fmt::print(stderr, "interval: {}\n", ce->interval);
-        fmt::print(stderr, "exectime: {}\n", ce->exectime);
-        fmt::print(stderr, "lasttime: {}\n", ce->lasttime);
+            log_line("minute: [%u,%u]", i.first, i.second);
+        log_line("interval: %u", ce->interval);
+        log_line("exectime: %lu", ce->exectime);
+        log_line("lasttime: %lu", ce->lasttime);
     }
 
     inline void debug_print_ce_history() const
     {
         if (!gflags_debug)
             return;
-        fmt::print(stderr, "[{}]->numruns = {}\n", ce->id, ce->numruns);
-        fmt::print(stderr, "[{}]->exectime = {}\n", ce->id, ce->exectime);
-        fmt::print(stderr, "[{}]->lasttime = {}\n", ce->id, ce->lasttime);
+        log_line("[%u]->numruns = %u", ce->id, ce->numruns);
+        log_line("[%u]->exectime = %lu", ce->id, ce->exectime);
+        log_line("[%u]->lasttime = %lu", ce->id, ce->lasttime);
     }
 
     void finish_ce()
@@ -165,12 +165,12 @@ struct ParseCfgState
             || (ce->interval <= 0 && ce->exectime <= 0)
             || ce->command.empty() || cmdret < 1) {
             if (gflags_debug)
-                fmt::print(stderr, "===> IGNORE\n");
+                log_line("===> IGNORE");
             ce.reset();
             return;
         }
         if (gflags_debug)
-            fmt::print(stderr, "===> ADD\n");
+            log_line("===> ADD");
 
         /* we have a job to insert */
         if (runat) { /* runat task */
@@ -202,8 +202,8 @@ struct ParseCfgState
     void setgroupv()
     {
         if (nk_gidbyname(v_str, &ce->group)) {
-            fmt::print(stderr, "{}: nonexistent group specified at line {}\n",
-                       __func__, linenum);
+            log_line("%s: nonexistent group specified at line %zu",
+                     __func__, linenum);
             std::exit(EXIT_FAILURE);
         }
     }
@@ -211,8 +211,8 @@ struct ParseCfgState
     void setuserv()
     {
         if (nk_uidgidbyname(v_str, &ce->user, &ce->group)) {
-            fmt::print(stderr, "{}: nonexistent user specified at line {}\n",
-                       __func__, linenum);
+            log_line("%s: nonexistent user specified at line %zu",
+                     __func__, linenum);
             std::exit(EXIT_FAILURE);
         }
     }
@@ -226,7 +226,7 @@ struct ParseCfgState
         try {
             ce->limits.add(type, rli);
         } catch (const std::logic_error&) {
-            fmt::print(stderr, "{}: Bad RLIMIT_type specified.\n", __func__);
+            log_line("%s: Bad RLIMIT_type specified.", __func__);
             std::exit(EXIT_FAILURE);
         }
     }
@@ -318,8 +318,8 @@ static void parse_history(const std::string &path)
     char buf[MAX_LINE];
     auto f = fopen(path.c_str(), "r");
     if (!f) {
-        fmt::print(stderr, "{}: failed to open history file \"{}\" for read: {}\n",
-                   __func__, path, strerror(errno));
+        log_line("%s: failed to open history file \"%s\" for read: %s",
+                 __func__, path.c_str(), strerror(errno));
         return;
     }
     SCOPE_EXIT{ fclose(f); };
@@ -327,7 +327,7 @@ static void parse_history(const std::string &path)
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))
-                fmt::print(stderr, "{}: io error fetching line of '{}'\n", __func__, path);
+                log_line("%s: io error fetching line of '%s'", __func__, path.c_str());
             break;
         }
         auto llen = strlen(buf);
@@ -340,11 +340,11 @@ static void parse_history(const std::string &path)
         const auto r = do_parse_history(h, buf, llen);
         if (r < 0) {
             if (r == -2)
-                fmt::print(stderr, "{}: Incomplete configuration at line {}; ignoring\n",
-                           __func__, linenum);
+                log_line("%s: Incomplete configuration at line %zu; ignoring",
+                         __func__, linenum);
             else
-                fmt::print(stderr, "{}: Malformed configuration at line {}; ignoring.\n",
-                           __func__, linenum);
+                log_line("%s: Malformed configuration at line %zu; ignoring.",
+                         __func__, linenum);
             continue;
         }
         history_map.emplace(std::make_pair(h.id, h.h));
@@ -435,8 +435,7 @@ static void parse_command_key(ParseCfgState &ncs)
 
     if (ncs.cmdret != 0) {
         ncs.cmdret = -3;
-        fmt::print(stderr, "Duplicate 'command' value at line {}\n",
-                   ncs.linenum);
+        log_line("Duplicate 'command' value at line %zu", ncs.linenum);
         std::exit(EXIT_FAILURE);
     }
 
@@ -445,15 +444,13 @@ static void parse_command_key(ParseCfgState &ncs)
 
     if (pckm.cs == parse_cmd_key_m_error) {
         ncs.cmdret = -1;
-        fmt::print(stderr, "Malformed 'command' value at line {}\n",
-                   ncs.linenum);
+        log_line("Malformed 'command' value at line %zu", ncs.linenum);
         std::exit(EXIT_FAILURE);
     } else if (pckm.cs >= parse_cmd_key_m_first_final)
         ncs.cmdret = 1;
     else {
         ncs.cmdret = -2;
-        fmt::print(stderr, "Incomplete 'command' value at line {}\n",
-                   ncs.linenum);
+        log_line("Incomplete 'command' value at line %zu", ncs.linenum);
         std::exit(EXIT_FAILURE);
     }
 }
@@ -524,8 +521,7 @@ static void parse_command_key(ParseCfgState &ncs)
             ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
                                    "%.*s", (int)ncs.v_strlen, ncs.strv_st);
             if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
-                fmt::print(stderr, "error parsing line {} in crontab; too long?\n",
-                           ncs.linenum);
+                log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
                 std::exit(EXIT_FAILURE);
             }
         }
@@ -673,15 +669,14 @@ void parse_config(const std::string &path, const std::string &execfile,
     char buf[MAX_LINE];
     auto f = fopen(path.c_str(), "r");
     if (!f) {
-        fmt::print(stderr, "{}: failed to open file: '{}': {}\n",
-                   __func__, path, strerror(errno));
+        log_line("%s: failed to open file: '%s': %s", __func__, path.c_str(), strerror(errno));
         std::exit(EXIT_FAILURE);
     }
     SCOPE_EXIT{ fclose(f); };
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))
-                fmt::print(stderr, "{}: io error fetching line of '{}'\n", __func__, path);
+                log_line("%s: io error fetching line of '%s'", __func__, path.c_str());
             break;
         }
         auto llen = strlen(buf);
@@ -691,8 +686,7 @@ void parse_config(const std::string &path, const std::string &execfile,
             buf[--llen] = 0;
         ++ncs.linenum;
         if (do_parse_config(ncs, buf, llen) < 0) {
-            fmt::print(stderr, "{}: do_parse_config({}) failed at line {}\n",
-                       __func__, path, ncs.linenum);
+            log_line("%s: do_parse_config(%s) failed at line %zu", __func__, path.c_str(), ncs.linenum);
             std::exit(EXIT_FAILURE);
         }
     }

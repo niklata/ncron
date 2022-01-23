@@ -1,6 +1,6 @@
 /* ncron.cpp - secure, minimally-sleeping cron daemon
  *
- * Copyright 2003-2016 Nicholas J. Kain <njkain at gmail dot com>
+ * Copyright 2003-2022 Nicholas J. Kain <njkain at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,6 @@
 
 #include <memory>
 #include <algorithm>
-#include <fmt/format.h>
 
 #include <unistd.h>
 #include <stdio.h>
@@ -54,6 +53,7 @@
 #include <nk/from_string.hpp>
 #include <nk/optionarg.hpp>
 extern "C" {
+#include "nk/log.h"
 #include "nk/pidfile.h"
 #include "nk/signals.h"
 }
@@ -67,10 +67,10 @@ extern "C" {
 
 #define NCRON_VERSION "0.99"
 
+int gflags_debug;
 static volatile sig_atomic_t pending_save_and_exit;
 static volatile sig_atomic_t pending_reload_config;
 static volatile sig_atomic_t pending_free_children;
-extern int gflags_debug;
 static bool gflags_background{false};
 
 /* Time (in msec) to sleep before dispatching events at startup.
@@ -94,7 +94,7 @@ static void reload_config(void)
     stack.clear();
     deadstack.clear();
     parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
-    fmt::print("SIGHUP - Reloading config: {}.\n", g_ncron_conf);
+    log_line("SIGHUP - Reloading config: %s.", g_ncron_conf.c_str());
     std::fflush(stdout);
     pending_reload_config = 0;
 }
@@ -103,9 +103,9 @@ static void save_and_exit(void)
 {
     if (g_ncron_execmode != 2) {
         save_stack(g_ncron_execfile, stack, deadstack);
-        fmt::print("Saving stack to {}.\n", g_ncron_execfile);
+        log_line("Saving stack to %s.", g_ncron_execfile.c_str());
     }
-    fmt::print("Exited.\n");
+    log_line("Exited.");
     exit(EXIT_SUCCESS);
 }
 
@@ -172,8 +172,7 @@ sleep:
                 memcpy(ts, &rem, sizeof(struct timespec));
                 goto sleep;
             default:
-                fmt::print(stderr, "{}: nanosleep failed: {}\n",
-                           __func__, strerror(errno));
+                log_line("%s: nanosleep failed: %s", __func__, strerror(errno));
                 std::exit(EXIT_FAILURE);
         }
     }
@@ -182,8 +181,7 @@ sleep:
 void clock_or_die(struct timespec *ts)
 {
     if (clock_gettime(CLOCK_REALTIME, ts)) {
-        fmt::print(stderr, "{}: clock_gettime failed: {}\n",
-                   __func__, strerror(errno));
+        log_line("%s: clock_gettime failed: %s", __func__, strerror(errno));
         std::exit(EXIT_FAILURE);
     }
 }
@@ -191,11 +189,9 @@ void clock_or_die(struct timespec *ts)
 static inline void debug_stack_print(const struct timespec &ts) {
     if (!gflags_debug)
         return;
-    fmt::print(stderr, "do_work: ts.tv_sec = {}  stack.front().exectime = {}",
-               ts.tv_sec, stack.front().exectime);
+    log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, stack.front().exectime);
     for (const auto &i: stack)
-        fmt::print(stderr, "do_work: job {} exectime = {}",
-                   i.ce->id, i.ce->exectime);
+        log_line("do_work: job %u exectime = %lu", i.ce->id, i.ce->exectime);
 }
 
 static void do_work(unsigned initial_sleep)
@@ -214,7 +210,7 @@ static void do_work(unsigned initial_sleep)
         while (stack.front().exectime <= ts.tv_sec) {
             auto &i = *stack.front().ce;
             if (gflags_debug)
-                fmt::print(stderr, "do_work: DISPATCH\n");
+                log_line("do_work: DISPATCH");
 
             i.exec(ts);
             stack.front().exectime = i.exectime;
@@ -241,7 +237,7 @@ static void do_work(unsigned initial_sleep)
             sts.tv_sec = stack.front().exectime - ts.tv_sec;
             sts.tv_nsec = 0;
             if (gflags_debug)
-                fmt::print(stderr, "do_work: SLEEP {} seconds\n", sts.tv_sec);
+                log_line("do_work: SLEEP %zu seconds", sts.tv_sec);
             sleep_or_die(&sts, pending_save);
         }
     }
@@ -249,27 +245,27 @@ static void do_work(unsigned initial_sleep)
 
 static void print_version(void)
 {
-    fmt::print("ncron " NCRON_VERSION ", cron/at daemon.\n"
-               "Copyright 2003-2016 Nicholas J. Kain\n"
-               "All rights reserved.\n\n"
-               "Redistribution and use in source and binary forms, with or without\n"
-               "modification, are permitted provided that the following conditions are met:\n\n"
-               "- Redistributions of source code must retain the above copyright notice,\n"
-               "  this list of conditions and the following disclaimer.\n"
-               "- Redistributions in binary form must reproduce the above copyright notice,\n"
-               "  this list of conditions and the following disclaimer in the documentation\n"
-               "  and/or other materials provided with the distribution.\n\n"
-               "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n"
-               "AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n"
-               "IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n"
-               "ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE\n"
-               "LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\n"
-               "CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF\n"
-               "SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS\n"
-               "INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN\n"
-               "CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)\n"
-               "ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE\n"
-               "POSSIBILITY OF SUCH DAMAGE.\n");
+    log_line("ncron " NCRON_VERSION ", cron/at daemon.\n"
+             "Copyright 2003-2022 Nicholas J. Kain\n"
+             "All rights reserved.\n\n"
+             "Redistribution and use in source and binary forms, with or without\n"
+             "modification, are permitted provided that the following conditions are met:\n\n"
+             "- Redistributions of source code must retain the above copyright notice,\n"
+             "  this list of conditions and the following disclaimer.\n"
+             "- Redistributions in binary form must reproduce the above copyright notice,\n"
+             "  this list of conditions and the following disclaimer in the documentation\n"
+             "  and/or other materials provided with the distribution.\n\n"
+             "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n"
+             "AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n"
+             "IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n"
+             "ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE\n"
+             "LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\n"
+             "CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF\n"
+             "SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS\n"
+             "INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN\n"
+             "CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)\n"
+             "ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE\n"
+             "POSSIBILITY OF SUCH DAMAGE.");
 }
 
 enum OpIdx {
@@ -329,7 +325,7 @@ static void process_options(int ac, char *av[]) {
             case OPT_BACKGROUND: gflags_background = true; break;
             case OPT_SLEEP:
                 if (auto t = nk::from_string<unsigned>(opt.arg)) g_initial_sleep = *t; else {
-                    fmt::print(stderr, "invalid sleep '{}' specified\n", opt.arg);
+                    log_line("invalid sleep '%s' specified", opt.arg);
                     std::exit(EXIT_FAILURE);
                 }
                 break;
@@ -351,13 +347,13 @@ int main(int argc, char* argv[])
     parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
 
     if (stack.empty()) {
-        fmt::print(stderr, "{}: no jobs, exiting\n", __func__);
+        log_line("%s: no jobs, exiting", __func__);
         std::exit(EXIT_FAILURE);
     }
 
     if (gflags_background) {
         if (daemon(0,0)) {
-            fmt::print(stderr, "{}: daemon failed: {}\n", __func__, strerror(errno));
+            log_line("%s: daemon failed: %s", __func__, strerror(errno));
             std::exit(EXIT_FAILURE);
         }
     }
