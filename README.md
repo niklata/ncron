@@ -1,5 +1,5 @@
 # ncron
-Copyright 2003-2017 Nicholas J. Kain.
+Copyright 2003-2022 Nicholas J. Kain.
 
 License: Two-clause BSD.
 
@@ -26,30 +26,17 @@ credentials if run as a conventional uid root cron.
 
 * Linux kernel
 * GCC or Clang
-* CMake
-* [Ragel 6](https://www.colm.net/open-source/ragel)
-* [ncmlib](https://github.com/niklata/ncmlib)
+* GNU Make
+* For developers: [Ragel](https://www.colm.net/open-source/ragel)
 
 ncron should work on most POSIX platforms, but the primary development
 platform is x64 Linux with recent glibc.
 
 ## Installation
 
-Install dependencies. In the ncron directory, symlinks should be created.
-Assuming that ncmlib lives in the same directory as the
-ncron directory:
-```
-   $ ls
-   ncmlib ncron
-   $ cd ncron
-   $ ln -s ../ncmlib .
-```
-
 Compile and install ncron.
-* Create a build directory: `mkdir build && cd build`
-* Create the makefiles: `cmake ..`
 * Build ncron: `make`
-* Install the `ncron/ncron` executable in a normal place:
+* Install the `ncron` executable in a normal place:
 ```
 $ su
 # cp ncron /usr/local/bin
