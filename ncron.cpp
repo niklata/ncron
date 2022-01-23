@@ -54,7 +54,6 @@
 #include <nk/from_string.hpp>
 extern "C" {
 #include "nk/log.h"
-#include "nk/pidfile.h"
 #include "nk/signals.h"
 }
 #include "ncron.hpp"
@@ -80,7 +79,6 @@ static unsigned g_initial_sleep = 0;
 
 static std::string g_ncron_conf(CONFIG_FILE_DEFAULT);
 static std::string g_ncron_execfile(EXEC_FILE_DEFAULT);
-static std::string pidfile;
 static int g_ncron_execmode = 0;
 
 static std::vector<StackItem> stack;
@@ -256,7 +254,6 @@ static void usage()
            "--journal      -j    Save exectimes at each job invocation.\n"
            "--crontab      -t [] Path to crontab file.\n"
            "--history      -H [] Path to execution history file.\n"
-           "--pidfile      -f [] Path to process id file.\n"
            "--verbose      -V    Log diagnostic information.\n"
     );
 }
@@ -297,7 +294,6 @@ static void process_options(int ac, char *av[])
         {"journal", 0, (int *)0, 'j'},
         {"crontab", 1, (int *)0, 't'},
         {"history", 1, (int *)0, 'H'},
-        {"pidfile", 1, (int *)0, 'f'},
         {"verbose", 0, (int *)0, 'V'},
         {(const char *)0, 0, (int *)0, 0 }
     };
@@ -317,7 +313,6 @@ static void process_options(int ac, char *av[])
             case 'j': g_ncron_execmode = 1; break;
             case 't': g_ncron_conf = optarg; break;
             case 'H': g_ncron_execfile = optarg; break;
-            case 'f': pidfile = optarg; break;
             case 'V': gflags_debug = 1; break;
             default: break;
         }
@@ -342,9 +337,6 @@ int main(int argc, char* argv[])
             std::exit(EXIT_FAILURE);
         }
     }
-
-    if (pidfile.size())
-        write_pid(pidfile.c_str());
 
     umask(077);
     fix_signals();
