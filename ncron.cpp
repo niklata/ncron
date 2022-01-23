@@ -45,13 +45,13 @@
 #include <signal.h>
 #include <errno.h>
 #include <limits.h>
+#include <getopt.h>
 
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
 
 #include <nk/from_string.hpp>
-#include <nk/optionarg.hpp>
 extern "C" {
 #include "nk/log.h"
 #include "nk/pidfile.h"
@@ -243,7 +243,25 @@ static void do_work(unsigned initial_sleep)
     }
 }
 
-static void print_version(void)
+static void usage()
+{
+    printf("ncron " NCRON_VERSION ", cron/at daemon.\n"
+           "Copyright 2003-2022 Nicholas J. Kain\n"
+           "Usage: ncron [options]...\n\nOptions:\n"
+           "--help         -h    Print usage and exit.\n"
+           "--version      -v    Print version and exit.\n"
+           "--background   -b    Run as a background daemon.\n"
+           "--sleep        -s [] Initial sleep time in seconds.\n"
+           "--noexecsave   -0    Don't save execution history at all.\n"
+           "--journal      -j    Save exectimes at each job invocation.\n"
+           "--crontab      -t [] Path to crontab file.\n"
+           "--history      -H [] Path to execution history file.\n"
+           "--pidfile      -f [] Path to process id file.\n"
+           "--verbose      -V    Log diagnostic information.\n"
+    );
+}
+
+static void print_version()
 {
     log_line("ncron " NCRON_VERSION ", cron/at daemon.\n"
              "Copyright 2003-2022 Nicholas J. Kain\n"
@@ -268,73 +286,40 @@ static void print_version(void)
              "POSSIBILITY OF SUCH DAMAGE.");
 }
 
-enum OpIdx {
-    OPT_UNKNOWN, OPT_HELP, OPT_VERSION, OPT_BACKGROUND, OPT_SLEEP,
-    OPT_NOEXECSAVE, OPT_JOURNAL, OPT_CRONTAB, OPT_HISTORY, OPT_PIDFILE,
-    OPT_VERBOSE
-};
-static const option::Descriptor usage[] = {
-    { OPT_UNKNOWN,    0,  "",           "", Arg::Unknown,
-        "ncron " NCRON_VERSION ", cron/at daemon.\n"
-        "Copyright 2003-2016 Nicholas J. Kain\n"
-        "Usage: ncron [options]...\n\nOptions:" },
-    { OPT_HELP,       0, "h",       "help",    Arg::None, "\t-h, \t--help  \tPrint usage and exit." },
-    { OPT_VERSION,    0, "v",    "version",    Arg::None, "\t-v, \t--version  \tPrint version and exit." },
-    { OPT_BACKGROUND, 0, "b", "background",    Arg::None, "\t-b, \t--background  \tRun as a background daemon." },
-    { OPT_SLEEP,      0, "s",      "sleep", Arg::Integer, "\t-s, \t--sleep  \tInitial sleep time in seconds." },
-    { OPT_NOEXECSAVE, 0, "0", "noexecsave",    Arg::None, "\t-0, \t--noexecsave  \tDon't save execution history at all." },
-    { OPT_JOURNAL,    0, "j",    "journal",    Arg::None, "\t-j, \t--journal  \tSave exectimes at each job invocation." },
-    { OPT_CRONTAB,    0, "t",    "crontab",  Arg::String, "\t-t, \t--crontab  \tPath to crontab file." },
-    { OPT_HISTORY,    0, "H",    "history",  Arg::String, "\t-H, \t--history  \tPath to execution history file." },
-    { OPT_PIDFILE,    0, "f",    "pidfile",  Arg::String, "\t-f, \t--pidfile  \tPath to process id file." },
-    { OPT_VERBOSE,    0,  "",    "verbose",    Arg::None, "\t    \t--verbose  \tLog diagnostic information." },
-    {0,0,0,0,0,0}
-};
-
-static void process_options(int ac, char *av[]) {
-    ac-=ac>0; av+=ac>0;
-    option::Stats stats(usage, ac, av);
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wvla"
-    option::Option options[stats.options_max], buffer[stats.buffer_max];
-#pragma GCC diagnostic pop
-    option::Parser parse(usage, ac, av, options, buffer);
-#else
-    auto options = std::make_unique<option::Option[]>(stats.options_max);
-    auto buffer = std::make_unique<option::Option[]>(stats.buffer_max);
-    option::Parser parse(usage, ac, av, options.get(), buffer.get());
-#endif
-    if (parse.error())
-        std::exit(EXIT_FAILURE);
-    if (options[OPT_HELP]) {
-        uint16_t col{80};
-        if (const auto cols = getenv("COLUMNS")) {
-            if (auto t = nk::from_string<uint16_t>(cols)) col = *t;
-        }
-        option::printUsage(fwrite, stdout, usage, col);
-        std::exit(EXIT_FAILURE);
-    }
-    if (options[OPT_VERSION]) {
-        print_version();
-        std::exit(EXIT_FAILURE);
-    }
-    for (int i = 0; i < parse.optionsCount(); ++i) {
-        option::Option &opt = buffer[i];
-        switch (opt.index()) {
-            case OPT_BACKGROUND: gflags_background = true; break;
-            case OPT_SLEEP:
-                if (auto t = nk::from_string<unsigned>(opt.arg)) g_initial_sleep = *t; else {
-                    log_line("invalid sleep '%s' specified", opt.arg);
-                    std::exit(EXIT_FAILURE);
-                }
-                break;
-            case OPT_NOEXECSAVE: g_ncron_execmode = 2; break;
-            case OPT_JOURNAL: g_ncron_execmode = 1; break;
-            case OPT_CRONTAB: g_ncron_conf = std::string(opt.arg); break;
-            case OPT_HISTORY: g_ncron_execfile = std::string(opt.arg); break;
-            case OPT_PIDFILE: pidfile = std::string(opt.arg); break;
-            case OPT_VERBOSE: gflags_debug = 1; break;
+static void process_options(int ac, char *av[])
+{
+    static struct option long_options[] = {
+        {"help", 0, (int *)0, 'h'},
+        {"version", 0, (int *)0, 'v'},
+        {"background", 0, (int *)0, 'b'},
+        {"sleep", 1, (int *)0, 's'},
+        {"noexecsave", 0, (int *)0, '0'},
+        {"journal", 0, (int *)0, 'j'},
+        {"crontab", 1, (int *)0, 't'},
+        {"history", 1, (int *)0, 'H'},
+        {"pidfile", 1, (int *)0, 'f'},
+        {"verbose", 0, (int *)0, 'V'},
+        {(const char *)0, 0, (int *)0, 0 }
+    };
+    for (;;) {
+        auto c = getopt_long(ac, av, "hvbs:0jt:H:V", long_options, (int *)0);
+        if (c == -1) break;
+        switch (c) {
+            case 'h': usage(); std::exit(EXIT_SUCCESS); break;
+            case 'v': print_version(); std::exit(EXIT_SUCCESS); break;
+            case 'b': gflags_background = true; break;
+            case 's': if (auto t = nk::from_string<unsigned>(optarg)) g_initial_sleep = *t; else {
+                          log_line("invalid sleep '%s' specified", optarg);
+                          std::exit(EXIT_FAILURE);
+                      }
+                      break;
+            case '0': g_ncron_execmode = 2; break;
+            case 'j': g_ncron_execmode = 1; break;
+            case 't': g_ncron_conf = optarg; break;
+            case 'H': g_ncron_execfile = optarg; break;
+            case 'f': pidfile = optarg; break;
+            case 'V': gflags_debug = 1; break;
+            default: break;
         }
     }
 }
