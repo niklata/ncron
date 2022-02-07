@@ -1,3 +1,5 @@
+// Copyright 2013 Nicholas J. Kain <njkain at gmail dot com>
+// SPDX-License-Identifier: MIT
 #ifndef NKLIB_SCOPEGUARD_HPP_
 #define NKLIB_SCOPEGUARD_HPP_
 
