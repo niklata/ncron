@@ -1,7 +1,6 @@
 # ncron
 Copyright 2003-2022 Nicholas J. Kain.
-
-License: Two-clause BSD.
+See LICENSE for licensing information.
 
 ## Introduction
 
