@@ -1,0 +1,135 @@
+.\" Man page for ncron
+.\"
+.\" Copyright (c) 2004-2022 Nicholas J. Kain
+.\"
+.TH ncron 1 "January 22, 2022"
+.LO 1
+.SH NAME
+ncron \- secure and reliable cron/at daemon
+.SH SYNOPSIS
+ncron [\-b0jqhv] [\-s msec] [\-c config_file] [\-t crontab_file]
+      [\-H history_file] [\-p pid_file]
+.SH DESCRIPTION
+.B ncron
+runs programs at intervals specified by the user, subject to time constraints.
+It is designed to be both secure and reliable.
+.SH OPTIONS
+.TP
+.B \-\^c , \-\-config=FILE
+Specify the configuration file to use.  Configuration file elements are
+specified as key = value pairs, and correspond to long command line arguments.
+.TP
+.B \-\^t , \-\-crontab=FILE
+Specify the crontab file to use; the default is
+.BR /var/lib/ncron/crontab .
+(See
+.BR crontab (5).)
+.TP
+.B \-\^H , \-\-history=FILE
+Specify the file in which ncron will store job
+runtimes and the number of times that a job has
+been invoked.  The default location is
+.BR /var/lib/ncron/exectime .
+.TP
+.B \-\^s , \-\-sleep=MSEC
+Wait for the specified number of milliseconds at startup before running any
+tasks.  Useful for boot scripts that invoke ncron.  Note that if ncron receives
+a signal during this wait time, ncron will run pending jobs immediately.
+.TP
+.B \-\^b   \-\-background
+Detach from the controlling terminal and run as
+a daemon.
+.TP
+.B \-\^0   \-\-noexecsave
+Do not save any data on the times when jobs are executed.
+.TP
+.B \-\^j   \-\-journal
+Save execution times to disk immediately after a job is run.  Perhaps useful
+for very unstable machines that often suffer unclean shutdowns.
+.TP
+.BR \-\^h  \-\-help
+Print abbreviated help and exit.
+.TP
+.B \-\^v   \-\-version
+Print version information and exit.
+.TP
+
+.SH "INTRODUCTION"
+.PP
+ncron's job scheduling has two critical concepts: intervals and constraints. An
+"interval" is simply the minimum time between job invocations. The concept of
+time intervals is no doubt familiar. A trivial example of a simple interval
+would be "wait one day before synchronizing my clock again". ncron intervals
+are specified in seconds and have second precision.
+.PP
+Constraints limit the times in which a particular job may be run.  In ncron,
+intervals may be constrained by ranges of minutes, hours, weekdays, days of the
+month, and months of the year.  Multiple constraint ranges may be applied, even
+of the same type.  Constraints of the same type will be mathematically unioned
+(logical OR'ed) together. ncron internally uses a greedy algorithm to solve the
+optimization problem to find the smallest suitable time that satisfies the
+specified interval within the specified constraint.
+.PP
+Examples are probably the clearest way of explaining this system.  Suppose we
+would like a locatedb to run weekly between 1 and 5am.  Since we want the
+program to run weekly, we would specify an interval of interval=7w.  We would
+then specify a constraint of hour=1,5.  ncron would then make sure that our job
+only ran weekly between 1 and 5am.
+.PP
+The astute reader might wonder why ncron deals with constraints in terms of
+intervals -- after all, if ncron uses a greedy algorithm, the task will only
+run at a time other than the lower bound of the interval if the cron is invoked
+at a time after the lower bound of the interval but within the interval. Why
+bother with unnecessary complexity to handle that case? Traditional cronds
+certainly don't bother. The answer lies in ncron's attempts to be reliable and
+fast.
+.PP
+ncron internally works by precalculating the exact time at which a job should
+be run. ncron then spends most of its time sleeping until its next job, waking
+up only to handle signals. If ncron is gracefully terminated, it will by
+default save these times it has calculated. Thus, ncron keeps a memory of when
+jobs were invoked in the past. This feature is obviously quite useful to laptop
+users and people who reboot their computers to use other OSes.  For those who
+have very critical jobs or very unstable computers, ncron can optionally save
+these times to disk whenever they change in memory. This mode of operation is
+called "journalling".
+.PP
+Another interesting feature of ncron is that it is quite possible to use ncron
+as a single-user crond. The process is rather simple; invoke ncron using the
+-c, -f, and -p options to specify your crontab, execfile, and pidfile
+locations. Jobs will run as the same user as ncron by default, so no further
+work is necessary -- just run seperate copies of ncron for each user account.
+This method of setup is the most secure way to allow users to run backgrounded
+tasks, as it is absolutely impossible for a user to crack system security
+through a bug in ncron. The downside is that each user will have its own ncron,
+forcing more resident memory usage; cpu usage is not signficantly increased.
+.PP
+ncron only reads input from its command line invocation and from its configure
+files. Command line invocation should not be a security concern. Configure file
+parsing is written to be paranoid and tolerant of malformed data. However, it
+should be obvious that any attacker that gains arbitrary access to ncron's
+config file will gain the ability to run jobs with the user access that ncron
+possesses on the next configure file reload. The most secure way to allow
+normal users to run cronjobs is simply to have them run their own ncron
+process. If this is not possible or not desirable, one could write a program to
+add entries to ncron's configure file and to HUP the daemon. However, such a
+program will have to be carefully audited for security.
+.PP
+For specifics on how to configure ncron, consult
+.B crontab(5).
+
+.SH ENVIRONMENT
+ncron ignores its environment. It will provide a minimal environment to tasks
+that it runs. Note that ncron will
+.B not
+provide a PATH variable, since it does not spawn jobs using the system()
+syscall. If a job is to be run with a full shell environment, a wrapper script
+should be used.
+
+.SH "SEE ALSO"
+crontab(5).
+.SH BUGS
+None known, otherwise they would be fixed.
+.SH AUTHOR
+Nicholas J. Kain <njkain (at) gmail.com>
+

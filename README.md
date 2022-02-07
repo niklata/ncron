@@ -44,8 +44,8 @@ $ su
 # chmod 755 /usr/local/bin/ncron
 
 # mkdir -m 755 -p /usr/local/share/man/man[15]
-# cp ncron.1.gz /usr/local/share/man/man1
-# cp crontab.5.gz /usr/local/share/man/man5
+# cp ncron.1 /usr/local/share/man/man1
+# cp crontab.5 /usr/local/share/man/man5
 # exit
 ```
 
