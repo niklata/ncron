@@ -29,6 +29,7 @@
 extern "C" {
 #include "nk/log.h"
 #include "nk/signals.h"
+#include "nk/io.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -45,6 +46,7 @@ static volatile sig_atomic_t pending_save_and_exit;
 static volatile sig_atomic_t pending_reload_config;
 static volatile sig_atomic_t pending_free_children;
 static bool gflags_background{false};
+static std::optional<int> s6_notify_fd;
 
 /* Time (in msec) to sleep before dispatching events at startup.
    Set to a nonzero value so as not to compete for cpu with init scripts at
@@ -266,11 +268,12 @@ static void process_options(int ac, char *av[])
         {"journal", 0, (int *)0, 'j'},
         {"crontab", 1, (int *)0, 't'},
         {"history", 1, (int *)0, 'H'},
+        {"s6-notify", 1, (int *)0, 'd'},
         {"verbose", 0, (int *)0, 'V'},
         {(const char *)0, 0, (int *)0, 0 }
     };
     for (;;) {
-        auto c = getopt_long(ac, av, "hvbs:0jt:H:V", long_options, (int *)0);
+        auto c = getopt_long(ac, av, "hvbs:0jt:H:d:V", long_options, (int *)0);
         if (c == -1) break;
         switch (c) {
             case 'h': usage(); std::exit(EXIT_SUCCESS); break;
@@ -285,6 +288,7 @@ static void process_options(int ac, char *av[])
             case 'j': g_ncron_execmode = 1; break;
             case 't': g_ncron_conf = optarg; break;
             case 'H': g_ncron_execfile = optarg; break;
+            case 'd': s6_notify_fd = atoi(optarg); break;
             case 'V': gflags_debug = 1; break;
             default: break;
         }
@@ -318,6 +322,12 @@ int main(int argc, char* argv[])
     prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0);
     prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);
 #endif
+
+    if (s6_notify_fd) {
+        char buf[] = "\n";
+        safe_write(*s6_notify_fd, buf, 1);
+        close(*s6_notify_fd);
+    }
 
     do_work(g_initial_sleep);
     exit(EXIT_SUCCESS);
