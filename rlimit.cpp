@@ -33,10 +33,10 @@ static inline const char *resource_to_str(int resource)
     }
 }
 
-int rlimits::do_limit(int resource, const rlimit &rlim, uid_t uid, gid_t gid,
+int rlimits::do_limit(int resource, const rlimit &rli, uid_t uid, gid_t gid,
                       const std::string &cmd)
 {
-    auto r = setrlimit(resource, &rlim);
+    auto r = setrlimit(resource, &rli);
     if (r < 0) {
         switch (errno) {
         case EFAULT:

@@ -194,8 +194,8 @@ struct ParseCfgState
     void setlim(int type)
     {
         struct rlimit rli;
-        rli.rlim_cur = v_int == 0 ? RLIM_INFINITY : v_int;
-        rli.rlim_max = v_int2 == 0 ? RLIM_INFINITY : v_int2;
+        rli.rlim_cur = v_int <= 0 ? RLIM_INFINITY : static_cast<size_t>(v_int);
+        rli.rlim_max = v_int2 <= 0 ? RLIM_INFINITY : static_cast<size_t>(v_int2);
         ce->limits.add(type, rli);
     }
 
@@ -224,31 +224,33 @@ struct hstm {
     bool parse_error;
 };
 
+#define MARKED_HST() hst.st, (p > hst.st ? static_cast<size_t>(p - hst.st) : 0)
+
 %%{
     machine history_m;
     access hst.;
 
     action St { hst.st = p; }
     action LastTimeEn {
-        if (auto t = nk::from_string<time_t>(hst.st, p - hst.st)) hst.h.set_lasttime(*t); else {
+        if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
             hst.parse_error = true;
             fbreak;
         }
     }
     action NumRunsEn {
-        if (auto t = nk::from_string<unsigned>(hst.st, p - hst.st)) hst.h.set_numruns(*t); else {
+        if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
             hst.parse_error = true;
             fbreak;
         }
     }
     action ExecTimeEn {
-        if (auto t = nk::from_string<time_t>(hst.st, p - hst.st)) hst.h.set_exectime(*t); else {
+        if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
             hst.parse_error = true;
             fbreak;
         }
     }
     action IdEn {
-        if (auto t = nk::from_string<unsigned>(hst.st, p - hst.st)) hst.id = *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.id = *t; else {
             hst.parse_error = true;
             fbreak;
         }
@@ -367,17 +369,19 @@ struct pckm {
     int cs;
 };
 
+#define MARKED_PCKM() pckm.st, (p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0)
+
 %%{
     machine parse_cmd_key_m;
     access pckm.;
 
     action St { pckm.st = p; }
     action CmdEn {
-        ncs.ce->command = std::string(pckm.st, p - pckm.st);
+        ncs.ce->command = std::string(MARKED_PCKM());
         string_replace_all(ncs.ce->command, "\\ ", 2, " ");
         string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
     }
-    action ArgEn { ncs.ce->args = std::string(pckm.st, p - pckm.st); }
+    action ArgEn { ncs.ce->args = std::string(MARKED_PCKM()); }
 
     sptab = [ \t];
     cmdstr = ([^\0 \t] | '\\\\' | '\\ ')+;
@@ -423,6 +427,11 @@ static void parse_command_key(ParseCfgState &ncs)
     }
 }
 
+#define MARKED_TIME() ncs.time_st, (p > (ncs.time_st + 1) ? static_cast<size_t>(p - ncs.time_st - 1) : 0)
+#define MARKED_INTV1() ncs.intv_st, (p > ncs.intv_st ? static_cast<size_t>(p - ncs.intv_st) : 0)
+#define MARKED_INTV2() ncs.intv2_st, (p > ncs.intv2_st ? static_cast<size_t>(p - ncs.intv2_st) : 0)
+#define MARKED_JOBID() ncs.jobid_st, (p > ncs.jobid_st ? static_cast<size_t>(p - ncs.jobid_st) : 0)
+
 %%{
     machine ncrontab;
     access ncs.;
@@ -432,31 +441,31 @@ static void parse_command_key(ParseCfgState &ncs)
 
     action TUnitSt { ncs.time_st = p; ncs.v_time = 0; }
     action TSecEn  {
-        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += *t; else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action TMinEn  {
-        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += 60 * *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 60 * *t; else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action THrEn   {
-        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += 3600 * *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 3600 * *t; else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action TDayEn  {
-        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += 86400 * *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 86400 * *t; else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action TWeekEn {
-        if (auto t = nk::from_string<unsigned>(ncs.time_st, p - ncs.time_st - 1)) ncs.v_time += 604800 * *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 604800 * *t; else {
             ncs.parse_error = true;
             fbreak;
         }
@@ -468,14 +477,14 @@ static void parse_command_key(ParseCfgState &ncs)
         ncs.intv2_exist = false;
     }
     action IntValEn {
-        if (auto t = nk::from_string<int>(ncs.intv_st, p - ncs.intv_st)) ncs.v_int = *t; else {
+        if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action IntVal2St { ncs.intv2_st = p; }
     action IntVal2En {
-        if (auto t = nk::from_string<int>(ncs.intv2_st, p - ncs.intv2_st)) ncs.v_int2 = *t; else {
+        if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
             ncs.parse_error = true;
             fbreak;
         }
@@ -484,7 +493,7 @@ static void parse_command_key(ParseCfgState &ncs)
 
     action StrValSt { ncs.strv_st = p; ncs.v_strlen = 0; }
     action StrValEn {
-        ncs.v_strlen = p - ncs.strv_st;
+        ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
         if (ncs.v_strlen <= INT_MAX) {
             ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
                                    "%.*s", (int)ncs.v_strlen, ncs.strv_st);
@@ -519,7 +528,7 @@ static void parse_command_key(ParseCfgState &ncs)
     }
     action MaxRunsEn {
         if (!ncs.runat)
-            ncs.ce->maxruns = ncs.v_int;
+            ncs.ce->maxruns = ncs.v_int > 0 ? static_cast<unsigned>(ncs.v_int) : 0;
     }
 
     runat = 'runat'i eqsep intval % RunAtEn;
@@ -597,7 +606,7 @@ static void parse_command_key(ParseCfgState &ncs)
 
     action JobIdSt { ncs.jobid_st = p; }
     action JobIdEn {
-        if (auto t = nk::from_string<unsigned>(ncs.jobid_st, p - ncs.jobid_st)) ncs.ce->id = *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_JOBID())) ncs.ce->id = *t; else {
             ncs.parse_error = true;
             fbreak;
         }
