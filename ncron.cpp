@@ -28,7 +28,6 @@
 #include <nk/from_string.hpp>
 extern "C" {
 #include "nk/log.h"
-#include "nk/signals.h"
 #include "nk/io.h"
 }
 #include "ncron.hpp"
@@ -44,7 +43,6 @@ extern "C" {
 int gflags_debug;
 static volatile sig_atomic_t pending_save_and_exit;
 static volatile sig_atomic_t pending_reload_config;
-static volatile sig_atomic_t pending_free_children;
 static bool gflags_background{false};
 static std::optional<int> s6_notify_fd;
 
@@ -83,40 +81,44 @@ static void save_and_exit(void)
     exit(EXIT_SUCCESS);
 }
 
-static void free_children(void)
+static void signal_handler(int sig)
 {
-    while (waitpid(-1, nullptr, WNOHANG) > 0);
-    pending_free_children = 0;
-}
-
-static void sighandler(int sig)
-{
-    switch (sig) {
-        case SIGTERM:
-        case SIGINT:
-            pending_save_and_exit = 1;
-            break;
-        case SIGHUP:
-            pending_reload_config = 1;
-            break;
-        case SIGCHLD:
-            pending_free_children = 1;
-            break;
+    int serrno = errno;
+    if (sig == SIGTERM || sig == SIGINT) {
+        pending_save_and_exit = 1;
+    } else if (sig == SIGHUP) {
+        pending_reload_config = 1;
+    } else if (sig == SIGCHLD) {
+        while (waitpid(-1, NULL, WNOHANG) > 0);
     }
+    errno = serrno;
 }
 
 static void fix_signals(void)
 {
-    disable_signal(SIGPIPE);
-    disable_signal(SIGUSR1);
-    disable_signal(SIGUSR2);
-    disable_signal(SIGTSTP);
-    disable_signal(SIGTTIN);
+    static const int ss[] = {
+        SIGCHLD, SIGHUP, SIGINT, SIGTERM, SIGKILL
+    };
+    sigset_t mask;
+    if (sigprocmask(0, 0, &mask) < 0)
+        suicide("sigprocmask failed");
+    for (int i = 0; ss[i] != SIGKILL; ++i)
+        if (sigdelset(&mask, ss[i]))
+            suicide("sigdelset failed");
+    if (sigaddset(&mask, SIGPIPE))
+        suicide("sigaddset failed");
+    if (sigprocmask(SIG_SETMASK, &mask, (sigset_t *)0) < 0)
+        suicide("sigprocmask failed");
 
-    hook_signal(SIGCHLD, sighandler, SA_NOCLDSTOP);
-    hook_signal(SIGHUP, sighandler, 0);
-    hook_signal(SIGINT, sighandler, 0);
-    hook_signal(SIGTERM, sighandler, 0);
+    struct sigaction sa;
+    memset(&sa, 0, sizeof sa);
+    sa.sa_handler = signal_handler;
+    sa.sa_flags = SA_RESTART|SA_NOCLDWAIT;
+    if (sigemptyset(&sa.sa_mask))
+        suicide("sigemptyset failed");
+    for (int i = 0; ss[i] != SIGKILL; ++i)
+        if (sigaction(ss[i], &sa, NULL))
+            suicide("sigaction failed");
 }
 
 static void fail_on_fdne(const std::string &file, int mode)
@@ -132,8 +134,6 @@ sleep:
     if (nanosleep(ts, &rem)) {
         switch (errno) {
             case EINTR:
-                if (pending_free_children)
-                    free_children();
                 if (pending_save_and_exit)
                     save_and_exit();
 
