@@ -324,21 +324,7 @@ void cronentry_t::exec(const struct timespec &ts)
                                                path.empty() ? nullptr : path.c_str(),
                                                env, MAX_CENV, envbuf, sizeof envbuf);
                 r < 0) {
-                static const char errstr[] = "exec: failed to generate environment - ";
-                safe_write(STDERR_FILENO, errstr, sizeof errstr);
-                static const char errstr0[] = "(?) unknown error";
-                static const char errstr1[] = "(-1) account for uid does not exist";
-                static const char errstr2[] = "(-2) not enough space in envbuf";
-                static const char errstr3[] = "(-3) not enough space in env";
-                static const char errstr4[] = "(-4) chdir to homedir or rootdir failed";
-                switch (r) {
-                default: safe_write(STDERR_FILENO, errstr0, sizeof errstr0); break;
-                case -1: safe_write(STDERR_FILENO, errstr1, sizeof errstr1); break;
-                case -2: safe_write(STDERR_FILENO, errstr2, sizeof errstr2); break;
-                case -3: safe_write(STDERR_FILENO, errstr3, sizeof errstr3); break;
-                case -4: safe_write(STDERR_FILENO, errstr4, sizeof errstr4); break;
-                }
-                safe_write(STDERR_FILENO, "\n", 1);
+                nk_generate_env_print_error(r);
                 std::exit(EXIT_FAILURE);
             }
             if (limits.exist() && limits.enforce(user, group, command)) {

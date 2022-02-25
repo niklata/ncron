@@ -1,4 +1,4 @@
-// Copyright 2003-2018 Nicholas J. Kain <njkain at gmail dot com>
+// Copyright 2003-2022 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #include <sys/types.h>
 #include <stdbool.h>
@@ -116,6 +116,30 @@ out:
     free(pw_buf);
     return ret;
 }
+
+#define ERRSTR0 "exec: failed to generate environment - (?) unknown error\n"
+#define ERRSTR1 "exec: failed to generate environment - (-1) account for uid does not exist\n"
+#define ERRSTR2 "exec: failed to generate environment - (-2) not enough space in envbuf\n"
+#define ERRSTR3 "exec: failed to generate environment - (-3) not enough space in env\n"
+#define ERRSTR4 "exec: failed to generate environment - (-4) chdir to homedir or rootdir failed\n"
+#define ERRSTR5 "exec: failed to generate environment - (-5) oom or i/o error\n"
+void nk_generate_env_print_error(int err)
+{
+    switch (err) {
+    default: safe_write(STDERR_FILENO, ERRSTR0, sizeof ERRSTR0); break;
+    case -1: safe_write(STDERR_FILENO, ERRSTR1, sizeof ERRSTR1); break;
+    case -2: safe_write(STDERR_FILENO, ERRSTR2, sizeof ERRSTR2); break;
+    case -3: safe_write(STDERR_FILENO, ERRSTR3, sizeof ERRSTR3); break;
+    case -4: safe_write(STDERR_FILENO, ERRSTR4, sizeof ERRSTR4); break;
+    case -5: safe_write(STDERR_FILENO, ERRSTR5, sizeof ERRSTR5); break;
+    }
+}
+#undef ERRSTR0
+#undef ERRSTR1
+#undef ERRSTR2
+#undef ERRSTR3
+#undef ERRSTR4
+#undef ERRSTR5
 
 #define NK_GEN_ARG(GEN_STR, ...) do { \
         ssize_t snlen = snprintf(argbuf, argbuflen, GEN_STR, __VA_ARGS__); \
