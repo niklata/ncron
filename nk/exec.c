@@ -32,7 +32,7 @@
 #define NK_GEN_ENV(GEN_STR, ...) do { \
         if (env_offset >= envlen) return -3; \
         ssize_t snlen = snprintf(envbuf, envbuflen, GEN_STR, __VA_ARGS__); \
-        if (snlen < 0 || (size_t)snlen >= envbuflen) return -2; \
+        if (snlen < 0 || (size_t)snlen > envbuflen) return -2; \
         env[env_offset++] = envbuf; envbuf += snlen; envbuflen -= (size_t)snlen; \
     } while (0)
 
@@ -119,7 +119,7 @@ void nk_generate_env_print_error(int err)
 
 #define NK_GEN_ARG(GEN_STR, ...) do { \
         ssize_t snlen = snprintf(argbuf, argbuflen, GEN_STR, __VA_ARGS__); \
-        if (snlen < 0 || (size_t)snlen >= argbuflen) { \
+        if (snlen < 0 || (size_t)snlen > argbuflen) { \
             static const char errstr[] = "nk_execute: constructing argument list failed\n"; \
             safe_write(STDERR_FILENO, errstr, sizeof errstr); \
             _Exit(EXIT_FAILURE); \

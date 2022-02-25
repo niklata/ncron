@@ -2154,7 +2154,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
@@ -2208,7 +2208,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
@@ -2417,7 +2417,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
@@ -2469,7 +2469,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
@@ -2862,7 +2862,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
@@ -2914,7 +2914,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
@@ -8451,7 +8451,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
@@ -8505,7 +8505,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
@@ -8851,7 +8851,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
@@ -8903,7 +8903,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			if (ncs.v_strlen <= INT_MAX) {
 				ssize_t snl = snprintf(ncs.v_str, sizeof ncs.v_str,
 				"%.*s", (int)ncs.v_strlen, ncs.strv_st);
-				if (snl < 0 || (size_t)snl >= sizeof ncs.v_str) {
+				if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
 					log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
 					std::exit(EXIT_FAILURE);
 				}
