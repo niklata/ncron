@@ -14,6 +14,7 @@ extern "C" {
 #include "nk/log.h"
 #include "nk/exec.h"
 #include "nk/privs.h"
+#include "nk/io.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -313,10 +314,6 @@ void save_stack(const std::string &file,
     }
 }
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-#endif
 void cronentry_t::exec(const struct timespec &ts)
 {
     char *env[MAX_CENV];
@@ -328,55 +325,55 @@ void cronentry_t::exec(const struct timespec &ts)
                                                env, MAX_CENV, envbuf, sizeof envbuf);
                 r < 0) {
                 static const char errstr[] = "exec: failed to generate environment - ";
-                write(STDERR_FILENO, errstr, sizeof errstr);
+                safe_write(STDERR_FILENO, errstr, sizeof errstr);
                 static const char errstr0[] = "(?) unknown error";
                 static const char errstr1[] = "(-1) account for uid does not exist";
                 static const char errstr2[] = "(-2) not enough space in envbuf";
                 static const char errstr3[] = "(-3) not enough space in env";
                 static const char errstr4[] = "(-4) chdir to homedir or rootdir failed";
                 switch (r) {
-                default: write(STDERR_FILENO, errstr0, sizeof errstr0); break;
-                case -1: write(STDERR_FILENO, errstr1, sizeof errstr1); break;
-                case -2: write(STDERR_FILENO, errstr2, sizeof errstr2); break;
-                case -3: write(STDERR_FILENO, errstr3, sizeof errstr3); break;
-                case -4: write(STDERR_FILENO, errstr4, sizeof errstr4); break;
+                default: safe_write(STDERR_FILENO, errstr0, sizeof errstr0); break;
+                case -1: safe_write(STDERR_FILENO, errstr1, sizeof errstr1); break;
+                case -2: safe_write(STDERR_FILENO, errstr2, sizeof errstr2); break;
+                case -3: safe_write(STDERR_FILENO, errstr3, sizeof errstr3); break;
+                case -4: safe_write(STDERR_FILENO, errstr4, sizeof errstr4); break;
                 }
-                write(STDERR_FILENO, "\n", 1);
+                safe_write(STDERR_FILENO, "\n", 1);
                 std::exit(EXIT_FAILURE);
             }
             if (limits.exist() && limits.enforce(user, group, command)) {
                 static const char errstr[] = "exec: rlimits::enforce failed\n";
-                write(STDERR_FILENO, errstr, sizeof errstr);
+                safe_write(STDERR_FILENO, errstr, sizeof errstr);
                 std::exit(EXIT_FAILURE);
             }
             if (group) {
                 if (setresgid(group, group, group)) {
                     static const char errstr[] = "exec: setresgid failed\n";
-                    write(STDERR_FILENO, errstr, sizeof errstr);
+                    safe_write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
                 if (getgid() == 0) {
                     static const char errstr[] = "exec: child is still gid=root after setgid()\n";
-                    write(STDERR_FILENO, errstr, sizeof errstr);
+                    safe_write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
             }
             if (user) {
                 if (setresuid(user, user, user)) {
                     static const char errstr[] = "exec: setresuid failed\n";
-                    write(STDERR_FILENO, errstr, sizeof errstr);
+                    safe_write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
                 if (getuid() == 0) {
                     static const char errstr[] = "exec: child is still uid=root after setuid()\n";
-                    write(STDERR_FILENO, errstr, sizeof errstr);
+                    safe_write(STDERR_FILENO, errstr, sizeof errstr);
                     std::exit(EXIT_FAILURE);
                 }
             }
             nk_execute(command.c_str(), args.c_str(), env);
         case -1: {
             static const char errstr[] = "exec: fork failed\n";
-            write(STDERR_FILENO, errstr, sizeof errstr);
+            safe_write(STDERR_FILENO, errstr, sizeof errstr);
             std::exit(EXIT_FAILURE);
         }
         default:
@@ -386,7 +383,4 @@ void cronentry_t::exec(const struct timespec &ts)
             break;
     }
 }
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 
