@@ -26,7 +26,7 @@
 #define DEFAULT_ROOT_PATH "/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
 #define DEFAULT_PATH "/bin:/usr/bin:/usr/local/bin"
 #define MAX_ARGS 256
-#define MAX_ARGBUF 4096
+#define MAX_ARGBUF 16384
 #define MAX_PWBUF 16384
 
 #define NK_GEN_ENV(GEN_STR, ...) do { \
