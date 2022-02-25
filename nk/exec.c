@@ -33,7 +33,7 @@
         if (env_offset >= envlen) return -3; \
         ssize_t snlen = snprintf(envbuf, envbuflen, GEN_STR, __VA_ARGS__); \
         if (snlen < 0 || (size_t)snlen > envbuflen) return -2; \
-        env[env_offset++] = envbuf; envbuf += snlen; envbuflen -= (size_t)snlen; \
+        xe->env[env_offset++] = envbuf; envbuf += snlen; envbuflen -= (size_t)snlen; \
     } while (0)
 
 /*
@@ -54,8 +54,7 @@
  * -5 if oom or i/o failed
  * -6 if MAX_PWBUF is too small
  */
-int nk_generate_env(uid_t uid, const char *chroot_path, const char *path_var,
-                    char *env[], size_t envlen, char *envbuf, size_t envbuflen)
+int nk_generate_env(struct nk_exec_env *xe, uid_t uid, const char *chroot_path, const char *path_var)
 {
     char pwbuf[MAX_PWBUF];
     struct passwd pw_s, *pw;
@@ -73,6 +72,9 @@ int nk_generate_env(uid_t uid, const char *chroot_path, const char *path_var,
     }
 
     size_t env_offset = 0;
+    size_t envlen = sizeof xe->env / sizeof xe->env[0];
+    char *envbuf = xe->envbuf;
+    size_t envbuflen = sizeof xe->envbuf;
     if (envlen-- < 1) return -3; // So we don't have to account for the terminal NULL
 
     NK_GEN_ENV("UID=%i", uid);
@@ -86,7 +88,7 @@ int nk_generate_env(uid_t uid, const char *chroot_path, const char *path_var,
     if (chroot_path && chroot(chroot_path)) return -4;
     if (chdir(chroot_path ? chroot_path : "/")) return -4;
 
-    env[env_offset] = 0;
+    xe->env[env_offset] = 0;
     return 0;
 }
 

@@ -20,8 +20,6 @@ extern "C" {
 #include "sched.hpp"
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
-#define MAX_CENV 50
-#define MAX_ENVBUF 2048
 
 /*
  * returns -1 if below range
@@ -316,13 +314,11 @@ void save_stack(const std::string &file,
 
 void cronentry_t::exec(const struct timespec &ts)
 {
-    char *env[MAX_CENV];
-    char envbuf[MAX_ENVBUF];
+    nk_exec_env xe;
     switch ((int)fork()) {
         case 0:
-            if (const auto r = nk_generate_env(user, chroot.empty() ? nullptr : chroot.c_str(),
-                                               path.empty() ? nullptr : path.c_str(),
-                                               env, MAX_CENV, envbuf, sizeof envbuf);
+            if (const auto r = nk_generate_env(&xe, user, chroot.empty() ? nullptr : chroot.c_str(),
+                                               path.empty() ? nullptr : path.c_str());
                 r < 0) {
                 nk_generate_env_print_error(r);
                 std::exit(EXIT_FAILURE);
@@ -356,7 +352,7 @@ void cronentry_t::exec(const struct timespec &ts)
                     std::exit(EXIT_FAILURE);
                 }
             }
-            nk_execute(command.c_str(), args.c_str(), env);
+            nk_execute(command.c_str(), args.c_str(), xe.env);
         case -1: {
             static const char errstr[] = "exec: fork failed\n";
             safe_write(STDERR_FILENO, errstr, sizeof errstr);
