@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <nk/scopeguard.hpp>
 extern "C" {
+#include "nk/stb_sprintf.h"
 #include "nk/log.h"
 #include "nk/exec.h"
 #include "nk/privs.h"
@@ -283,8 +284,8 @@ void save_stack(const std::string &file,
     }
     SCOPE_EXIT{ fclose(f); };
     for (auto &i: stack) {
-        auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
-                              i.ce->exectime, i.ce->numruns, i.ce->lasttime);
+        auto snlen = stbsp_snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
+                                    i.ce->exectime, i.ce->numruns, i.ce->lasttime);
         if (snlen < 0 || static_cast<std::size_t>(snlen) > sizeof buf) {
             log_line("%s: Would truncate history entry for job %u; skipping.",
                      __func__, i.ce->id);
@@ -297,8 +298,8 @@ void save_stack(const std::string &file,
         }
     }
     for (auto &i: deadstack) {
-        auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
-                              i.ce->exectime, i.ce->numruns, i.ce->lasttime);
+        auto snlen = stbsp_snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
+                                    i.ce->exectime, i.ce->numruns, i.ce->lasttime);
         if (snlen < 0 || static_cast<std::size_t>(snlen) > sizeof buf) {
             log_line("%s: Would truncate history entry for job %u; skipping.",
                      __func__, i.ce->id);
