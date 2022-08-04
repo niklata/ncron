@@ -82,6 +82,7 @@ enough to get you started.
 ## Downloads
 
 * [GitLab](https://gitlab.com/niklata/ncron)
+* [Codeberg](https://codeberg.org/niklata/ncron)
 * [BitBucket](https://bitbucket.com/niklata/ncron)
 * [GitHub](https://github.com/niklata/ncron)
 
