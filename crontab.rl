@@ -21,9 +21,9 @@
 #include <nk/from_string.hpp>
 #include <nk/scopeguard.hpp>
 extern "C" {
-#include "nk/stb_sprintf.h"
 #include "nk/privs.h"
 #include "nk/log.h"
+#include "nk/nstrcpy.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -495,13 +495,9 @@ static void parse_command_key(ParseCfgState &ncs)
     action StrValSt { ncs.strv_st = p; ncs.v_strlen = 0; }
     action StrValEn {
         ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
-        if (ncs.v_strlen <= INT_MAX) {
-            ssize_t snl = stbsp_snprintf(ncs.v_str, sizeof ncs.v_str,
-                                         "%.*s", (int)ncs.v_strlen, ncs.strv_st);
-            if (snl < 0 || (size_t)snl > sizeof ncs.v_str) {
-                log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
-                std::exit(EXIT_FAILURE);
-            }
+        if (!nstrcpyl(ncs.v_str, sizeof ncs.v_str, ncs.strv_st, ncs.v_strlen)) {
+            log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
+            std::exit(EXIT_FAILURE);
         }
     }
 

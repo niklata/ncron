@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <pwd.h>
-#include "nk/stb_sprintf.h"
+#include "nk/nstrcpy.h"
 #include "nk/exec.h"
 #include "nk/io.h"
 
@@ -30,12 +30,36 @@
 #define MAX_ARGBUF 16384
 #define MAX_PWBUF 16384
 
-#define NK_GEN_ENV(GEN_STR, ...) do { \
+#define NK_GEN_ENV(PREFIX, SUFFIX) do { \
         if (env_offset >= envlen) return -3; \
-        ssize_t snlen = stbsp_snprintf(envbuf, envbuflen, GEN_STR, __VA_ARGS__); \
-        if (snlen < 0 || (size_t)snlen > envbuflen) return -2; \
-        xe->env[env_offset++] = envbuf; envbuf += snlen; envbuflen -= (size_t)snlen; \
+        char *snp = nstrcat(envbuf, envbuflen, PREFIX); \
+        if (!snp) return -2; \
+        snp = nstrcat(envbuf, envbuflen, SUFFIX); \
+        if (!snp) return -2; \
+        xe->env[env_offset++] = envbuf; envbuflen -= (unsigned)(snp - envbuf); envbuf = snp; \
     } while (0)
+
+static bool utoa(unsigned v, char *buf, size_t buflen)
+{
+    char *p = buf;
+    do {
+        if (buflen == 0) return false;
+        *p++ = "0123456789"[v % 10];
+        v /= 10;
+        --buflen;
+    } while (v);
+    if (buflen == 0) {
+        buf[0] = 0;
+        return false;
+    }
+    *p-- = 0;
+    while (buf < p) {
+        char t = *buf;
+        *buf++ = *p;
+        *p-- = t;
+    }
+    return true;
+}
 
 /*
  * xe: contains generated env and backing buffer
@@ -69,20 +93,27 @@ int nk_generate_env(struct nk_exec_env *xe, uid_t uid, const char *chroot_path, 
         }
     }
 
+    char uidbuf[16];
+    if (!utoa(uid, uidbuf, sizeof uidbuf)) {
+        static const char errstr[] = "nk_generate_env: uidbuf is too small\n";
+        safe_write(STDERR_FILENO, errstr, sizeof errstr);
+        _Exit(EXIT_FAILURE);
+    }
+
     size_t env_offset = 0;
     size_t envlen = sizeof xe->env / sizeof xe->env[0];
     char *envbuf = xe->envbuf;
     size_t envbuflen = sizeof xe->envbuf;
     if (envlen-- < 1) return -3; // So we don't have to account for the terminal NULL
 
-    NK_GEN_ENV("UID=%i", uid);
-    NK_GEN_ENV("USER=%s", pw->pw_name);
-    NK_GEN_ENV("USERNAME=%s", pw->pw_name);
-    NK_GEN_ENV("LOGNAME=%s", pw->pw_name);
-    NK_GEN_ENV("HOME=%s", pw->pw_dir);
-    NK_GEN_ENV("SHELL=%s", pw->pw_shell);
-    NK_GEN_ENV("PATH=%s", path_var ? path_var : (uid > 0 ? DEFAULT_PATH : DEFAULT_ROOT_PATH));
-    NK_GEN_ENV("PWD=%s", !chroot_path ? pw->pw_dir : "/");
+    NK_GEN_ENV("UID=", uidbuf);
+    NK_GEN_ENV("USER=", pw->pw_name);
+    NK_GEN_ENV("USERNAME=", pw->pw_name);
+    NK_GEN_ENV("LOGNAME=", pw->pw_name);
+    NK_GEN_ENV("HOME=", pw->pw_dir);
+    NK_GEN_ENV("SHELL=", pw->pw_shell);
+    NK_GEN_ENV("PATH=", path_var ? path_var : (uid > 0 ? DEFAULT_PATH : DEFAULT_ROOT_PATH));
+    NK_GEN_ENV("PWD=", !chroot_path ? pw->pw_dir : "/");
     if (chroot_path && chroot(chroot_path)) return -4;
     if (chdir(chroot_path ? chroot_path : "/")) return -4;
 
@@ -117,15 +148,16 @@ void nk_generate_env_print_error(int err)
 #undef ERRSTR5
 #undef ERRSTR6
 
-#define NK_GEN_ARG(GEN_STR, ...) do { \
-        ssize_t snlen = stbsp_snprintf(argbuf, argbuflen, GEN_STR, __VA_ARGS__); \
-        if (snlen < 0 || (size_t)snlen > argbuflen) { \
+#define NK_GEN_ARG(STRVAL, STRLEN) do { \
+        char *snp = nstrcpyl(argbuf, argbuflen, STRVAL, STRLEN); \
+        if (!snp) { \
             static const char errstr[] = "nk_execute: constructing argument list failed\n"; \
             safe_write(STDERR_FILENO, errstr, sizeof errstr); \
             _Exit(EXIT_FAILURE); \
         } \
         argv[curv] = argbuf; argv[++curv] = NULL; \
-        argbuf += snlen; argbuflen -= (size_t)snlen; \
+        size_t l = (size_t)(snp - argbuf); \
+        argbuf += l; argbuflen -= l; \
     } while (0)
 
 void __attribute__((noreturn))
@@ -142,7 +174,11 @@ nk_execute(const char *command, const char *args, char * const envp[])
 
     // strip the path from the command name and set argv[0]
     const char *p = strrchr(command, '/');
-    NK_GEN_ARG("%s", p ? p + 1 : command);
+    {
+        const char *q = p ? p + 1 : command;
+        size_t ql = strlen(q);
+        NK_GEN_ARG(q, ql);
+    }
 
     if (args) {
         p = args;
@@ -176,7 +212,7 @@ endarg:
                     safe_write(STDERR_FILENO, errstr, sizeof errstr);
                     _Exit(EXIT_FAILURE);
                 }
-                NK_GEN_ARG("%.*s", (int)(p - q), q);
+                NK_GEN_ARG(q, (size_t)(p - q));
                 q = p + 1;
                 if (atend || curv >= (MAX_ARGS - 1))
                     break;
