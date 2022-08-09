@@ -308,10 +308,7 @@ void save_stack(const std::string &file,
 void cronentry_t::exec(const struct timespec &ts)
 {
     pid_t pid;
-    posix_spawn_file_actions_t fdact;
-    posix_spawn_file_actions_init(&fdact);
-    SCOPE_EXIT{ posix_spawn_file_actions_destroy(&fdact); };
-    if (int ret = nk_pspawn(&pid, command.c_str(), &fdact, nullptr, args.c_str(), environ)) {
+    if (int ret = nk_pspawn(&pid, command.c_str(), nullptr, nullptr, args.c_str(), environ)) {
         log_line("posix_spawn failed for '%s': %s\n", command.c_str(), strerror(ret));
         return;
     }
