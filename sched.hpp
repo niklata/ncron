@@ -40,6 +40,7 @@ struct cronentry_t
     }
     void exec(const struct timespec &ts);
 private:
+    void exec_fork(const struct timespec &ts, bool use_limits);
     void set_next_time();
 };
 

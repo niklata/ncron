@@ -13,6 +13,7 @@
 extern "C" {
 #include "nk/log.h"
 #include "nk/exec.h"
+#include "nk/pspawn.h"
 #include "nk/privs.h"
 #include "nk/io.h"
 }
@@ -303,7 +304,7 @@ void save_stack(const std::string &file,
     if (!do_save(deadstack)) return;
 }
 
-void cronentry_t::exec(const struct timespec &ts)
+void cronentry_t::exec_fork(const struct timespec &ts, bool use_limits)
 {
     nk_exec_env xe;
     switch ((int)fork()) {
@@ -314,7 +315,7 @@ void cronentry_t::exec(const struct timespec &ts)
                 nk_generate_env_print_error(r);
                 std::exit(EXIT_FAILURE);
             }
-            if (limits.exist() && limits.enforce(user, group, command)) {
+            if (use_limits) {
                 static const char errstr[] = "exec: rlimits::enforce failed\n";
                 safe_write(STDERR_FILENO, errstr, sizeof errstr);
                 std::exit(EXIT_FAILURE);
@@ -354,6 +355,31 @@ void cronentry_t::exec(const struct timespec &ts)
             lasttime = ts.tv_sec;
             set_next_time();
             break;
+    }
+
+}
+
+void cronentry_t::exec(const struct timespec &ts)
+{
+    const auto use_limits = limits.exist() && limits.enforce(user, group, command);
+    if (chroot.empty() && !use_limits && !group && !user) {
+        nk_exec_env xe;
+        pid_t pid;
+        if (const auto r = nk_generate_env(&xe, user, nullptr,
+                                           path.empty() ? nullptr : path.c_str());
+            r < 0) {
+            nk_generate_env_print_error(r);
+            return;
+        }
+        posix_spawn_file_actions_t fdact;
+        posix_spawn_file_actions_init(&fdact);
+        SCOPE_EXIT{ posix_spawn_file_actions_destroy(&fdact); };
+        if (int ret = nk_pspawn(&pid, command.c_str(), &fdact, nullptr, args.c_str(), xe.env)) {
+            log_line("posix_spawn failed for '%s': %s\n", command.c_str(), strerror(ret));
+            return;
+        }
+    } else {
+        exec_fork(ts, use_limits);
     }
 }
 
