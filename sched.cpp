@@ -13,7 +13,6 @@
 extern "C" {
 #include "nk/log.h"
 #include "nk/pspawn.h"
-#include "nk/privs.h"
 #include "nk/io.h"
 }
 #include "ncron.hpp"

@@ -21,7 +21,6 @@
 #include <nk/from_string.hpp>
 #include <nk/scopeguard.hpp>
 extern "C" {
-#include "nk/privs.h"
 #include "nk/log.h"
 #include "nk/nstrcpy.h"
 }
