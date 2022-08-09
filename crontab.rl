@@ -99,13 +99,10 @@ struct ParseCfgState
         log_line("id: %u", ce->id);
         log_line("command: %s", ce->command.c_str());
         log_line("args: %s", ce->args.c_str());
-        log_line("chroot: %s", ce->chroot.c_str());
         log_line("path: %s", ce->path.c_str());
         log_line("numruns: %u", ce->numruns);
         log_line("maxruns: %u", ce->maxruns);
         log_line("journal: %s", ce->journal ? "true" : "false");
-        log_line("user: %u", ce->user);
-        log_line("group: %u", ce->group);
         for (const auto &i: ce->month)
             log_line("month: [%u,%u]", i.first, i.second);
         for (const auto &i: ce->day)
@@ -173,33 +170,6 @@ struct ParseCfgState
         }
         ce.reset();
     }
-
-    void setgroupv()
-    {
-        if (nk_gidbyname(v_str, &ce->group)) {
-            log_line("%s: nonexistent group specified at line %zu",
-                     __func__, linenum);
-            std::exit(EXIT_FAILURE);
-        }
-    }
-
-    void setuserv()
-    {
-        if (nk_uidgidbyname(v_str, &ce->user, &ce->group)) {
-            log_line("%s: nonexistent user specified at line %zu",
-                     __func__, linenum);
-            std::exit(EXIT_FAILURE);
-        }
-    }
-
-    void setlim(int type)
-    {
-        struct rlimit rli;
-        rli.rlim_cur = v_int <= 0 ? RLIM_INFINITY : static_cast<size_t>(v_int);
-        rli.rlim_max = v_int2 <= 0 ? RLIM_INFINITY : static_cast<size_t>(v_int2);
-        ce->limits.add(type, rli);
-    }
-
 };
 
 struct item_history {
@@ -531,38 +501,6 @@ static void parse_command_key(ParseCfgState &ncs)
     runat = 'runat'i eqsep intval % RunAtEn;
     maxruns = 'maxruns'i eqsep intval % MaxRunsEn;
 
-    action LimAsEn { ncs.setlim(RLIMIT_AS); }
-    action LimMemlockEn { ncs.setlim(RLIMIT_MEMLOCK); }
-    action LimNofileEn { ncs.setlim(RLIMIT_NOFILE); }
-    action LimNprocEn { ncs.setlim(RLIMIT_NPROC); }
-    action LimRssEn { ncs.setlim(RLIMIT_RSS); }
-    action LimCoreEn { ncs.setlim(RLIMIT_CORE); }
-    action LimStackEn { ncs.setlim(RLIMIT_STACK); }
-    action LimDataEn { ncs.setlim(RLIMIT_DATA); }
-    action LimFsizeEn { ncs.setlim(RLIMIT_FSIZE); }
-    action LimCpuEn { ncs.setlim(RLIMIT_CPU); }
-    action LimMsgQueueEn { ncs.setlim(RLIMIT_MSGQUEUE); }
-    action LimNiceEn { ncs.setlim(RLIMIT_NICE); }
-    action LimRtTimeEn { ncs.setlim(RLIMIT_RTTIME); }
-    action LimRtPrioEn { ncs.setlim(RLIMIT_RTPRIO); }
-    action LimSigPendingEn { ncs.setlim(RLIMIT_SIGPENDING); }
-
-    lim_as = 'l_as'i eqsep intrangeval % LimAsEn;
-    lim_memlock = 'l_memlock'i eqsep intrangeval % LimMemlockEn;
-    lim_nofile = 'l_nofile'i eqsep intrangeval % LimNofileEn;
-    lim_nproc = 'l_nproc'i eqsep intrangeval % LimNprocEn;
-    lim_rss = 'l_rss'i eqsep intrangeval % LimRssEn;
-    lim_core = 'l_core'i eqsep intrangeval % LimCoreEn;
-    lim_stack = 'l_stack'i eqsep intrangeval % LimStackEn;
-    lim_data = 'l_data'i eqsep intrangeval % LimDataEn;
-    lim_fsize = 'l_fsize'i eqsep intrangeval % LimFsizeEn;
-    lim_cpu = 'l_cpu'i eqsep intrangeval % LimCpuEn;
-    lim_msgqueue = 'l_msgqueue'i eqsep intrangeval % LimMsgQueueEn;
-    lim_nice = 'l_nice'i eqsep intrangeval % LimNiceEn;
-    lim_rttime = 'l_rttime'i eqsep intrangeval % LimRtTimeEn;
-    lim_rtprio = 'l_rtprio'i eqsep intrangeval % LimRtPrioEn;
-    lim_sigpending = 'l_sigpending'i eqsep intrangeval % LimSigPendingEn;
-
     action IntervalEn { ncs.ce->interval = ncs.v_time; }
 
     interval = 'interval'i eqsep timeval % IntervalEn;
@@ -579,27 +517,16 @@ static void parse_command_key(ParseCfgState &ncs)
     hour = 'hour'i eqsep intrangeval % HourEn;
     minute = 'minute'i eqsep intrangeval % MinuteEn;
 
-    action GroupEn { ncs.setgroupv(); }
-    action UserEn { ncs.setuserv(); }
-    action ChrootEn {
-        ncs.ce->chroot = std::string(ncs.v_str, ncs.v_strlen);
-    }
     action CommandEn { parse_command_key(ncs); }
     action PathEn {
         ncs.ce->path = std::string(ncs.v_str, ncs.v_strlen);
     }
 
-    group = 'group'i eqsep stringval % GroupEn;
-    user = 'user'i eqsep stringval % UserEn;
-    chroot = 'chroot'i eqsep stringval % ChrootEn;
     command = 'command'i eqsep stringval % CommandEn;
     path = 'path'i eqsep stringval % PathEn;
 
-    cmds = command | chroot | path | user | group | minute | hour | weekday | day |
-           month | interval | lim_cpu | lim_fsize | lim_data | lim_stack |
-           lim_core | lim_rss | lim_nproc | lim_nofile | lim_memlock | lim_as |
-           lim_msgqueue | lim_nice | lim_rttime | lim_rtprio | lim_sigpending |
-           maxruns | runat | journal;
+    cmds = command | path | minute | hour | weekday | day |
+           month | interval | maxruns | runat | journal;
 
     action JobIdSt { ncs.jobid_st = p; }
     action JobIdEn {

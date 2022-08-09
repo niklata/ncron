@@ -17,9 +17,12 @@ pending jobs; ncron calculates the next time it will need to act and
 has the OS wake it after that time has passed.  This method is better
 for power efficiency.
 
-ncron also has the ability to run as a per-user daemon, and it has
-robust support for enforcing ulimits and running jobs under alternative
-credentials if run as a conventional uid root cron.
+Setting spawned task state (chroot, rlimits, uid, gid, etc) should be performed
+via a wrapper script (either shell or
+[execline](https://skarnet.org/software/execline/)) that perform chain loading
+("Bernstein chaining") for the job. I suggest using the tools such as
+s6-softlimit or s6-applyuidgid from the
+[s6 suite](https://www.skarnet.org/software/s6/overview.html).
 
 ## Requirements
 
@@ -85,11 +88,4 @@ enough to get you started.
 * [Codeberg](https://codeberg.org/niklata/ncron)
 * [BitBucket](https://bitbucket.com/niklata/ncron)
 * [GitHub](https://github.com/niklata/ncron)
-
-## Similar Programs
-
-ncron does not support acting on changes in file
-descriptor state, but I have written a similar program called
-[fcactus](https://github.com/niklata/fcactus) that can provide this
-functionality on Linux systems via the inotify API.
 

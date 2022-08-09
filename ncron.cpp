@@ -33,7 +33,6 @@ extern "C" {
 #include "ncron.hpp"
 #include "sched.hpp"
 #include "crontab.hpp"
-#include "rlimit.hpp"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"

@@ -1,15 +1,14 @@
 .\" Man page for ncron
 .\"
-.\" Copyright (c) 2004-2014 Nicholas J. Kain
+.\" Copyright (c) 2004-2022 Nicholas J. Kain
 .\"
-.TH crontab 5 "April 29, 2014"
+.TH crontab 5 "August 9, 2022"
 .LO 1
 .SH NAME
 crontab \- ncron configuration file
 .SH DESCRIPTION
 .B crontab
-specifies job commands, intervals, and constraints.  Additionally, rlimits
-and chroot paths may be specified for jobs.
+specifies job commands, intervals, and constraints.
 
 .SH "FILE FORMAT"
 .nf
@@ -20,9 +19,6 @@ IPAIR := integer,integer OR integer
 JOB :=
 	!JOBID
 	command=string
-	chroot=string
-	user=string
-	group=string
 	path=string
 	minute=IPAIR
 	hour=IPAIR
@@ -30,16 +26,6 @@ JOB :=
 	day=IPAIR
 	month=IPAIR
 	interval=INTERVAL
-	l_cpu=IPAIR
-	l_fsize=IPAIR
-	l_data=IPAIR
-	l_stack=IPAIR
-	l_core=IPAIR
-	l_rss=IPAIR
-	l_nproc=IPAIR
-	l_nofile=IPAIR
-	l_memlock=IPAIR
-	l_as=IPAIR
 	journal
 	maxruns=integer
 	runat=integer
@@ -64,26 +50,10 @@ command=STRING
 Specifies the full path to a command, followed by any arguments that
 should be passed to the command.
 .TP
-chroot=STRING
-If present, ncron will force the spawned job into a chroot whose path
-corresponds to the argument of the chroot keyword. This keyword only has an
-effect if ncron is being run uid root.  Otherwise, it will prevent job
-invocation entirely.
-.TP
-user=STRING
-The user name of the account that the specified job should run under.  This
-command only makes sense if ncron is running uid root on systems with standard
-UNIX DAC.
-.TP
-group=STRING
-The group name of the account that the specified job should run under.  This
-command only makes sense if ncron is running uid root on systems with standard
-UNIX DAC.
 path=STRING
 If present, customizes the value of the PATH environment variable in the
 spawned process.  It should be in a format identical to that used by
 unix shells (eg, path1:path2:path3).
-.TP
 .TP
 minute=RANGE
 Specifies a comma delimited range of minutes within which the job may run.
@@ -112,55 +82,6 @@ Any number before a valid unit (s,m,h,d) == (seconds, minutes, hours, days)
 will be associated with the next valid unit specifier.  Multiple units are
 allowed to be in sequence and will be implicitly added.  No unit specifier (a
 bare number) implies a unit of seconds.
-.TP
-l_cpu=SOFTLIM,HARDLIM
-Corresponds with a rlimit. The first integer in the pair is the softlimit for
-the resource. The second is the hard limit. Only root may change hardlimits or
-set softlimits above the current hardlimit. Values of 0 will be treated as an
-infinite limit. If no l_* statement is made, current values for rlimits will
-not be changed.
-.TP
-l_fsize=HARDLIM,SOFTLIM
-As above.
-.TP
-l_data=HARDLIM,SOFTLIM
-As above.
-.TP
-l_stack=HARDLIM,SOFTLIM
-As above.
-.TP
-l_core=HARDLIM,SOFTLIM
-As above.
-.TP
-l_rss=HARDLIM,SOFTLIM
-As above.
-.TP
-l_nproc=HARDLIM,SOFTLIM
-As above.
-.TP
-l_nofile=HARDLIM,SOFTLIM
-As above.
-.TP
-l_memlock=HARDLIM,SOFTLIM
-As above.
-.TP
-l_as=HARDLIM,SOFTLIM
-As above.
-.TP
-l_msgqueue=HARDLIM,SOFTLIM
-As above.
-.TP
-l_nice=HARDLIM,SOFTLIM
-As above.
-.TP
-l_rttime=HARDLIM,SOFTLIM
-As above.
-.TP
-l_rtprio=HARDLIM,SOFTLIM
-As above.
-.TP
-l_sigpending=HARDLIM,SOFTLIM
-As above.
 .TP
 journal
 ncron will save execution times and number of runs after each run of this job.
@@ -195,15 +116,13 @@ first quarter of an hour".
 .nf
 !1
 command=ls -laF
-user=bob
-group=users
 day=10
 interval=1h
 !0
 .fi
 .PP
-This job will run "ls -laF" in ncron's working directory as user:group
-bob:users hourly on the 10th day of every month.
+This job will run "ls -laF" in ncron's working directory hourly on the 10th day
+of every month.
 .SH "SEE ALSO"
 ncron(1).
 .SH LIMITATIONS

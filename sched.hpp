@@ -7,16 +7,13 @@
 #include <memory>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include "rlimit.hpp"
 
 struct cronentry_t
 {
-    cronentry_t() : id(0), user(0), group(0), exectime(0), lasttime(0),
-                    interval(0), numruns(0), maxruns(0), journal(false) {}
+    cronentry_t() : id(0), exectime(0), lasttime(0), interval(0),
+                    numruns(0), maxruns(0), journal(false) {}
     typedef std::vector<std::pair<int,int>> cst_list;
     unsigned int id;
-    uid_t user;
-    gid_t group;
     time_t exectime;        /* time at which we will execute in the future */
     time_t lasttime;        /* time that the job last ran */
     unsigned int interval;  /* min interval between executions in seconds */
@@ -25,7 +22,6 @@ struct cronentry_t
     bool journal;
     std::string command;
     std::string args;
-    std::string chroot;
     std::string path;
 
     cst_list month;       /* 1-12, l=0  is wildcard, h=l is no range */
@@ -33,14 +29,12 @@ struct cronentry_t
     cst_list weekday;     /* 1-7,  l=0  is wildcard, h=l is no range */
     cst_list hour;        /* 0-23, l=24 is wildcard, h=l is no range */
     cst_list minute;      /* 0-59, l=60 is wildcard, h=l is no range */
-    rlimits limits;
 
     inline bool operator<(const cronentry_t &o) const {
         return exectime < o.exectime;
     }
     void exec(const struct timespec &ts);
 private:
-    void exec_fork(const struct timespec &ts, bool use_limits);
     void set_next_time();
 };
 
