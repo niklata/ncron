@@ -19,7 +19,6 @@ IPAIR := integer,integer OR integer
 JOB :=
 	!JOBID
 	command=string
-	path=string
 	minute=IPAIR
 	hour=IPAIR
 	weekday=IPAIR
@@ -49,11 +48,6 @@ The default location for configure files is /var/lib/ncron/crontab.
 command=STRING
 Specifies the full path to a command, followed by any arguments that
 should be passed to the command.
-.TP
-path=STRING
-If present, customizes the value of the PATH environment variable in the
-spawned process.  It should be in a format identical to that used by
-unix shells (eg, path1:path2:path3).
 .TP
 minute=RANGE
 Specifies a comma delimited range of minutes within which the job may run.

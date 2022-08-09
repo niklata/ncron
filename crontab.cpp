@@ -100,7 +100,6 @@ struct ParseCfgState
 		log_line("id: %u", ce->id);
 		log_line("command: %s", ce->command.c_str());
 		log_line("args: %s", ce->args.c_str());
-		log_line("path: %s", ce->path.c_str());
 		log_line("numruns: %u", ce->numruns);
 		log_line("maxruns: %u", ce->maxruns);
 		log_line("journal: %s", ce->journal ? "true" : "false");
@@ -199,11 +198,11 @@ struct hstm {
 #define MARKED_HST() hst.st, (p > hst.st ? static_cast<size_t>(p - hst.st) : 0)
 
 
-#line 236 "crontab.rl"
+#line 234 "crontab.rl"
 
 
 
-#line 208 "crontab.cpp"
+#line 206 "crontab.cpp"
 static const int history_m_start = 1;
 static const int history_m_first_final = 6;
 static const int history_m_error = 0;
@@ -211,7 +210,7 @@ static const int history_m_error = 0;
 static const int history_m_en_main = 1;
 
 
-#line 238 "crontab.rl"
+#line 236 "crontab.rl"
 
 
 static int do_parse_history(hstm &hst, const char *p, size_t plen)
@@ -220,15 +219,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 	const char *eof = pe;
 	
 	
-#line 225 "crontab.cpp"
+#line 223 "crontab.cpp"
 	{
 		hst.cs = (int)history_m_start;
 	}
 	
-#line 245 "crontab.rl"
+#line 243 "crontab.rl"
 	
 	
-#line 233 "crontab.cpp"
+#line 231 "crontab.cpp"
 	{
 		switch ( hst.cs ) {
 			case 1:
@@ -272,10 +271,10 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		goto _out0;
 		_ctr2:
 		{
-#line 205 "crontab.rl"
+#line 203 "crontab.rl"
 			hst.st = p; }
 		
-#line 280 "crontab.cpp"
+#line 278 "crontab.cpp"
 		
 		goto _st2;
 		_st2:
@@ -306,7 +305,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr4:
 		{
-#line 224 "crontab.rl"
+#line 222 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.id = *t; else {
 				hst.parse_error = true;
@@ -314,12 +313,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 319 "crontab.cpp"
+#line 317 "crontab.cpp"
 		
 		goto _st3;
 		_ctr15:
 		{
-#line 212 "crontab.rl"
+#line 210 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
 				hst.parse_error = true;
@@ -327,12 +326,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 332 "crontab.cpp"
+#line 330 "crontab.cpp"
 		
 		goto _st3;
 		_ctr20:
 		{
-#line 218 "crontab.rl"
+#line 216 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
 				hst.parse_error = true;
@@ -340,12 +339,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 345 "crontab.cpp"
+#line 343 "crontab.cpp"
 		
 		goto _st3;
 		_ctr25:
 		{
-#line 206 "crontab.rl"
+#line 204 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
 				hst.parse_error = true;
@@ -353,7 +352,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 358 "crontab.cpp"
+#line 356 "crontab.cpp"
 		
 		goto _st3;
 		_st3:
@@ -373,15 +372,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr8:
 		{
-#line 205 "crontab.rl"
+#line 203 "crontab.rl"
 			hst.st = p; }
 		
-#line 381 "crontab.cpp"
+#line 379 "crontab.cpp"
 		
 		goto _st6;
 		_ctr13:
 		{
-#line 212 "crontab.rl"
+#line 210 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
 				hst.parse_error = true;
@@ -389,7 +388,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 394 "crontab.cpp"
+#line 392 "crontab.cpp"
 		
 		goto _st6;
 		_st6:
@@ -420,7 +419,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr5:
 		{
-#line 224 "crontab.rl"
+#line 222 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.id = *t; else {
 				hst.parse_error = true;
@@ -428,12 +427,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 433 "crontab.cpp"
+#line 431 "crontab.cpp"
 		
 		goto _st4;
 		_ctr16:
 		{
-#line 212 "crontab.rl"
+#line 210 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
 				hst.parse_error = true;
@@ -441,12 +440,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 446 "crontab.cpp"
+#line 444 "crontab.cpp"
 		
 		goto _st4;
 		_ctr21:
 		{
-#line 218 "crontab.rl"
+#line 216 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
 				hst.parse_error = true;
@@ -454,12 +453,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 459 "crontab.cpp"
+#line 457 "crontab.cpp"
 		
 		goto _st4;
 		_ctr26:
 		{
-#line 206 "crontab.rl"
+#line 204 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
 				hst.parse_error = true;
@@ -467,7 +466,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 472 "crontab.cpp"
+#line 470 "crontab.cpp"
 		
 		goto _st4;
 		_st4:
@@ -487,15 +486,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr10:
 		{
-#line 205 "crontab.rl"
+#line 203 "crontab.rl"
 			hst.st = p; }
 		
-#line 495 "crontab.cpp"
+#line 493 "crontab.cpp"
 		
 		goto _st7;
 		_ctr18:
 		{
-#line 218 "crontab.rl"
+#line 216 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
 				hst.parse_error = true;
@@ -503,7 +502,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 508 "crontab.cpp"
+#line 506 "crontab.cpp"
 		
 		goto _st7;
 		_st7:
@@ -534,7 +533,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr6:
 		{
-#line 224 "crontab.rl"
+#line 222 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.id = *t; else {
 				hst.parse_error = true;
@@ -542,12 +541,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 547 "crontab.cpp"
+#line 545 "crontab.cpp"
 		
 		goto _st5;
 		_ctr17:
 		{
-#line 212 "crontab.rl"
+#line 210 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
 				hst.parse_error = true;
@@ -555,12 +554,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 560 "crontab.cpp"
+#line 558 "crontab.cpp"
 		
 		goto _st5;
 		_ctr22:
 		{
-#line 218 "crontab.rl"
+#line 216 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
 				hst.parse_error = true;
@@ -568,12 +567,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 573 "crontab.cpp"
+#line 571 "crontab.cpp"
 		
 		goto _st5;
 		_ctr27:
 		{
-#line 206 "crontab.rl"
+#line 204 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
 				hst.parse_error = true;
@@ -581,7 +580,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 586 "crontab.cpp"
+#line 584 "crontab.cpp"
 		
 		goto _st5;
 		_st5:
@@ -601,15 +600,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr12:
 		{
-#line 205 "crontab.rl"
+#line 203 "crontab.rl"
 			hst.st = p; }
 		
-#line 609 "crontab.cpp"
+#line 607 "crontab.cpp"
 		
 		goto _st8;
 		_ctr23:
 		{
-#line 206 "crontab.rl"
+#line 204 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
 				hst.parse_error = true;
@@ -617,7 +616,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 622 "crontab.cpp"
+#line 620 "crontab.cpp"
 		
 		goto _st8;
 		_st8:
@@ -658,7 +657,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		_out: {}
 	}
 	
-#line 246 "crontab.rl"
+#line 244 "crontab.rl"
 	
 	
 	if (hst.parse_error) return -1;
@@ -760,11 +759,11 @@ struct pckm {
 #define MARKED_PCKM() pckm.st, (p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0)
 
 
-#line 363 "crontab.rl"
+#line 361 "crontab.rl"
 
 
 
-#line 769 "crontab.cpp"
+#line 767 "crontab.cpp"
 static const int parse_cmd_key_m_start = 1;
 static const int parse_cmd_key_m_first_final = 2;
 static const int parse_cmd_key_m_error = 0;
@@ -772,7 +771,7 @@ static const int parse_cmd_key_m_error = 0;
 static const int parse_cmd_key_m_en_main = 1;
 
 
-#line 365 "crontab.rl"
+#line 363 "crontab.rl"
 
 
 // cmdret = 0: Not parsed a command key yet.
@@ -795,15 +794,15 @@ static void parse_command_key(ParseCfgState &ncs)
 	}
 	
 	
-#line 800 "crontab.cpp"
+#line 798 "crontab.cpp"
 	{
 		pckm.cs = (int)parse_cmd_key_m_start;
 	}
 	
-#line 386 "crontab.rl"
+#line 384 "crontab.rl"
 	
 	
-#line 808 "crontab.cpp"
+#line 806 "crontab.cpp"
 	{
 		switch ( pckm.cs ) {
 			case 1:
@@ -853,22 +852,22 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr2:
 		{
-#line 350 "crontab.rl"
+#line 348 "crontab.rl"
 			pckm.st = p; }
 		
-#line 861 "crontab.cpp"
+#line 859 "crontab.cpp"
 		
 		goto _st2;
 		_ctr4:
 		{
-#line 351 "crontab.rl"
+#line 349 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 873 "crontab.cpp"
+#line 871 "crontab.cpp"
 		
 		goto _st2;
 		_st2:
@@ -904,54 +903,54 @@ static void parse_command_key(ParseCfgState &ncs)
 		goto _out0;
 		_ctr10:
 		{
-#line 350 "crontab.rl"
+#line 348 "crontab.rl"
 			pckm.st = p; }
 		
-#line 912 "crontab.cpp"
+#line 910 "crontab.cpp"
 		
 		goto _st3;
 		_ctr6:
 		{
-#line 351 "crontab.rl"
+#line 349 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 924 "crontab.cpp"
+#line 922 "crontab.cpp"
 		
 		goto _st3;
 		_ctr8:
 		{
-#line 350 "crontab.rl"
+#line 348 "crontab.rl"
 			pckm.st = p; }
 		
-#line 932 "crontab.cpp"
+#line 930 "crontab.cpp"
 		
 		{
-#line 356 "crontab.rl"
+#line 354 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 938 "crontab.cpp"
+#line 936 "crontab.cpp"
 		
 		goto _st3;
 		_ctr17:
 		{
-#line 351 "crontab.rl"
+#line 349 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 950 "crontab.cpp"
+#line 948 "crontab.cpp"
 		
 		{
-#line 350 "crontab.rl"
+#line 348 "crontab.rl"
 			pckm.st = p; }
 		
-#line 956 "crontab.cpp"
+#line 954 "crontab.cpp"
 		
 		goto _st3;
 		_st3:
@@ -979,18 +978,18 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr9:
 		{
-#line 350 "crontab.rl"
+#line 348 "crontab.rl"
 			pckm.st = p; }
 		
-#line 987 "crontab.cpp"
+#line 985 "crontab.cpp"
 		
 		goto _st4;
 		_ctr11:
 		{
-#line 356 "crontab.rl"
+#line 354 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 995 "crontab.cpp"
+#line 993 "crontab.cpp"
 		
 		goto _st4;
 		_st4:
@@ -1010,22 +1009,22 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr3:
 		{
-#line 350 "crontab.rl"
+#line 348 "crontab.rl"
 			pckm.st = p; }
 		
-#line 1018 "crontab.cpp"
+#line 1016 "crontab.cpp"
 		
 		goto _st5;
 		_ctr13:
 		{
-#line 351 "crontab.rl"
+#line 349 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1030 "crontab.cpp"
+#line 1028 "crontab.cpp"
 		
 		goto _st5;
 		_st5:
@@ -1056,38 +1055,38 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr14:
 		{
-#line 351 "crontab.rl"
+#line 349 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1068 "crontab.cpp"
+#line 1066 "crontab.cpp"
 		
 		goto _st6;
 		_ctr15:
 		{
-#line 351 "crontab.rl"
+#line 349 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1080 "crontab.cpp"
+#line 1078 "crontab.cpp"
 		
 		{
-#line 350 "crontab.rl"
+#line 348 "crontab.rl"
 			pckm.st = p; }
 		
-#line 1086 "crontab.cpp"
+#line 1084 "crontab.cpp"
 		
 		{
-#line 356 "crontab.rl"
+#line 354 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 1092 "crontab.cpp"
+#line 1090 "crontab.cpp"
 		
 		goto _st6;
 		_st6:
@@ -1118,28 +1117,28 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr16:
 		{
-#line 350 "crontab.rl"
+#line 348 "crontab.rl"
 			pckm.st = p; }
 		
-#line 1126 "crontab.cpp"
+#line 1124 "crontab.cpp"
 		
 		goto _st7;
 		_ctr19:
 		{
-#line 351 "crontab.rl"
+#line 349 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1138 "crontab.cpp"
+#line 1136 "crontab.cpp"
 		
 		{
-#line 356 "crontab.rl"
+#line 354 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 1144 "crontab.cpp"
+#line 1142 "crontab.cpp"
 		
 		goto _st7;
 		_st7:
@@ -1170,28 +1169,28 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr18:
 		{
-#line 350 "crontab.rl"
+#line 348 "crontab.rl"
 			pckm.st = p; }
 		
-#line 1178 "crontab.cpp"
+#line 1176 "crontab.cpp"
 		
 		goto _st8;
 		_ctr22:
 		{
-#line 351 "crontab.rl"
+#line 349 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1190 "crontab.cpp"
+#line 1188 "crontab.cpp"
 		
 		{
-#line 356 "crontab.rl"
+#line 354 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 1196 "crontab.cpp"
+#line 1194 "crontab.cpp"
 		
 		goto _st8;
 		_st8:
@@ -1232,7 +1231,7 @@ static void parse_command_key(ParseCfgState &ncs)
 		_out: {}
 	}
 	
-#line 387 "crontab.rl"
+#line 385 "crontab.rl"
 	
 	
 	if (pckm.cs == parse_cmd_key_m_error) {
@@ -1254,19 +1253,19 @@ static void parse_command_key(ParseCfgState &ncs)
 #define MARKED_JOBID() ncs.jobid_st, (p > ncs.jobid_st ? static_cast<size_t>(p - ncs.jobid_st) : 0)
 
 
-#line 544 "crontab.rl"
+#line 538 "crontab.rl"
 
 
 
-#line 1263 "crontab.cpp"
+#line 1261 "crontab.cpp"
 static const int ncrontab_start = 1;
-static const int ncrontab_first_final = 79;
+static const int ncrontab_first_final = 74;
 static const int ncrontab_error = 0;
 
 static const int ncrontab_en_main = 1;
 
 
-#line 546 "crontab.rl"
+#line 540 "crontab.rl"
 
 
 static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
@@ -1275,15 +1274,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 	const char *eof = pe;
 	
 	
-#line 1280 "crontab.cpp"
+#line 1278 "crontab.cpp"
 	{
 		ncs.cs = (int)ncrontab_start;
 	}
 	
-#line 553 "crontab.rl"
+#line 547 "crontab.rl"
 	
 	
-#line 1288 "crontab.cpp"
+#line 1286 "crontab.cpp"
 	{
 		switch ( ncs.cs ) {
 			case 1:
@@ -1292,8 +1291,8 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_0;
 			case 2:
 			goto st_case_2;
-			case 79:
-			goto st_case_79;
+			case 74:
+			goto st_case_74;
 			case 3:
 			goto st_case_3;
 			case 4:
@@ -1310,10 +1309,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_9;
 			case 10:
 			goto st_case_10;
-			case 80:
-			goto st_case_80;
-			case 81:
-			goto st_case_81;
+			case 75:
+			goto st_case_75;
+			case 76:
+			goto st_case_76;
 			case 11:
 			goto st_case_11;
 			case 12:
@@ -1322,12 +1321,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_13;
 			case 14:
 			goto st_case_14;
-			case 82:
-			goto st_case_82;
+			case 77:
+			goto st_case_77;
 			case 15:
 			goto st_case_15;
-			case 83:
-			goto st_case_83;
+			case 78:
+			goto st_case_78;
 			case 16:
 			goto st_case_16;
 			case 17:
@@ -1338,12 +1337,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_19;
 			case 20:
 			goto st_case_20;
-			case 84:
-			goto st_case_84;
+			case 79:
+			goto st_case_79;
 			case 21:
 			goto st_case_21;
-			case 85:
-			goto st_case_85;
+			case 80:
+			goto st_case_80;
 			case 22:
 			goto st_case_22;
 			case 23:
@@ -1364,16 +1363,16 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_30;
 			case 31:
 			goto st_case_31;
-			case 86:
-			goto st_case_86;
-			case 87:
-			goto st_case_87;
-			case 88:
-			goto st_case_88;
-			case 89:
-			goto st_case_89;
-			case 90:
-			goto st_case_90;
+			case 81:
+			goto st_case_81;
+			case 82:
+			goto st_case_82;
+			case 83:
+			goto st_case_83;
+			case 84:
+			goto st_case_84;
+			case 85:
+			goto st_case_85;
 			case 32:
 			goto st_case_32;
 			case 33:
@@ -1386,8 +1385,8 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_36;
 			case 37:
 			goto st_case_37;
-			case 91:
-			goto st_case_91;
+			case 86:
+			goto st_case_86;
 			case 38:
 			goto st_case_38;
 			case 39:
@@ -1404,8 +1403,8 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_44;
 			case 45:
 			goto st_case_45;
-			case 92:
-			goto st_case_92;
+			case 87:
+			goto st_case_87;
 			case 46:
 			goto st_case_46;
 			case 47:
@@ -1418,12 +1417,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_50;
 			case 51:
 			goto st_case_51;
-			case 93:
-			goto st_case_93;
+			case 88:
+			goto st_case_88;
 			case 52:
 			goto st_case_52;
-			case 94:
-			goto st_case_94;
+			case 89:
+			goto st_case_89;
 			case 53:
 			goto st_case_53;
 			case 54:
@@ -1434,12 +1433,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_56;
 			case 57:
 			goto st_case_57;
-			case 95:
-			goto st_case_95;
+			case 90:
+			goto st_case_90;
 			case 58:
 			goto st_case_58;
-			case 96:
-			goto st_case_96;
+			case 91:
+			goto st_case_91;
 			case 59:
 			goto st_case_59;
 			case 60:
@@ -1450,12 +1449,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_62;
 			case 63:
 			goto st_case_63;
-			case 97:
-			goto st_case_97;
-			case 98:
-			goto st_case_98;
 			case 64:
 			goto st_case_64;
+			case 92:
+			goto st_case_92;
 			case 65:
 			goto st_case_65;
 			case 66:
@@ -1466,30 +1463,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto st_case_68;
 			case 69:
 			goto st_case_69;
-			case 99:
-			goto st_case_99;
 			case 70:
 			goto st_case_70;
 			case 71:
 			goto st_case_71;
 			case 72:
 			goto st_case_72;
+			case 93:
+			goto st_case_93;
 			case 73:
 			goto st_case_73;
-			case 74:
-			goto st_case_74;
-			case 75:
-			goto st_case_75;
-			case 76:
-			goto st_case_76;
-			case 77:
-			goto st_case_77;
-			case 100:
-			goto st_case_100;
-			case 78:
-			goto st_case_78;
-			case 101:
-			goto st_case_101;
+			case 94:
+			goto st_case_94;
 		}
 		_st1:
 		if ( p == eof )
@@ -1523,14 +1508,11 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				case 77: {
 					goto _st38;
 				}
-				case 80: {
+				case 82: {
 					goto _st59;
 				}
-				case 82: {
-					goto _st64;
-				}
 				case 87: {
-					goto _st70;
+					goto _st65;
 				}
 				case 99: {
 					goto _st3;
@@ -1550,14 +1532,11 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				case 109: {
 					goto _st38;
 				}
-				case 112: {
+				case 114: {
 					goto _st59;
 				}
-				case 114: {
-					goto _st64;
-				}
 				case 119: {
-					goto _st70;
+					goto _st65;
 				}
 			}
 			goto _st0;
@@ -1569,10 +1548,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		goto _out0;
 		_ctr2:
 		{
-#line 539 "crontab.rl"
+#line 533 "crontab.rl"
 			ncs.finish_ce(); ncs.create_ce(); }
 		
-#line 1577 "crontab.cpp"
+#line 1555 "crontab.cpp"
 		
 		goto _st2;
 		_st2:
@@ -1586,43 +1565,43 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st2;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr13;
+				goto _ctr12;
 			}
 			goto _st0;
 		}
-		_ctr13:
+		_ctr12:
 		{
-#line 532 "crontab.rl"
+#line 526 "crontab.rl"
 			ncs.jobid_st = p; }
 		
-#line 1600 "crontab.cpp"
+#line 1578 "crontab.cpp"
 		
-		goto _st79;
-		_ctr104:
+		goto _st74;
+		_ctr97:
 		{
-#line 533 "crontab.rl"
+#line 527 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_JOBID())) ncs.ce->id = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 79; goto _out;}
+				{p+= 1; ncs.cs = 74; goto _out;}
 			}
 		}
 		
-#line 1613 "crontab.cpp"
+#line 1591 "crontab.cpp"
 		
-		goto _st79;
-		_st79:
+		goto _st74;
+		_st74:
 		if ( p == eof )
-			goto _out79;
+			goto _out74;
 		p+= 1;
-		st_case_79:
+		st_case_74:
 		if ( p == pe && p != eof )
-			goto _out79;
+			goto _out74;
 		if ( p == eof ) {
-			goto _ctr104;}
+			goto _ctr97;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st79;
+				goto _st74;
 			}
 			goto _st0;
 		}
@@ -1784,28 +1763,28 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 					goto _st0;
 				}
 				case 9: {
-					goto _ctr22;
+					goto _ctr21;
 				}
 				case 10: {
 					goto _st0;
 				}
 				case 32: {
-					goto _ctr22;
+					goto _ctr21;
 				}
 			}
-			goto _ctr21;
+			goto _ctr20;
 		}
-		_ctr21:
+		_ctr20:
 		{
-#line 466 "crontab.rl"
+#line 464 "crontab.rl"
 			ncs.strv_st = p; ncs.v_strlen = 0; }
 		
-#line 1805 "crontab.cpp"
+#line 1783 "crontab.cpp"
 		
-		goto _st80;
-		_ctr106:
+		goto _st75;
+		_ctr99:
 		{
-#line 467 "crontab.rl"
+#line 465 "crontab.rl"
 			
 			ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
 			if (!nstrcpyl(ncs.v_str, sizeof ncs.v_str, ncs.strv_st, ncs.v_strlen)) {
@@ -1814,24 +1793,24 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 1819 "crontab.cpp"
+#line 1797 "crontab.cpp"
 		
 		{
-#line 521 "crontab.rl"
+#line 519 "crontab.rl"
 			parse_command_key(ncs); }
 		
-#line 1825 "crontab.cpp"
+#line 1803 "crontab.cpp"
 		
-		goto _st80;
-		_st80:
+		goto _st75;
+		_st75:
 		if ( p == eof )
-			goto _out80;
+			goto _out75;
 		p+= 1;
-		st_case_80:
+		st_case_75:
 		if ( p == pe && p != eof )
-			goto _out80;
+			goto _out75;
 		if ( p == eof ) {
-			goto _ctr106;}
+			goto _ctr99;}
 		else {
 			switch( ( (*( p))) ) {
 				case 0: {
@@ -1841,19 +1820,19 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 					goto _st0;
 				}
 			}
-			goto _st80;
+			goto _st75;
 		}
-		_ctr22:
+		_ctr21:
 		{
-#line 466 "crontab.rl"
+#line 464 "crontab.rl"
 			ncs.strv_st = p; ncs.v_strlen = 0; }
 		
-#line 1853 "crontab.cpp"
+#line 1831 "crontab.cpp"
 		
-		goto _st81;
-		_ctr108:
+		goto _st76;
+		_ctr101:
 		{
-#line 467 "crontab.rl"
+#line 465 "crontab.rl"
 			
 			ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
 			if (!nstrcpyl(ncs.v_str, sizeof ncs.v_str, ncs.strv_st, ncs.v_strlen)) {
@@ -1862,40 +1841,40 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 1867 "crontab.cpp"
+#line 1845 "crontab.cpp"
 		
 		{
-#line 521 "crontab.rl"
+#line 519 "crontab.rl"
 			parse_command_key(ncs); }
 		
-#line 1873 "crontab.cpp"
+#line 1851 "crontab.cpp"
 		
-		goto _st81;
-		_st81:
+		goto _st76;
+		_st76:
 		if ( p == eof )
-			goto _out81;
+			goto _out76;
 		p+= 1;
-		st_case_81:
+		st_case_76:
 		if ( p == pe && p != eof )
-			goto _out81;
+			goto _out76;
 		if ( p == eof ) {
-			goto _ctr108;}
+			goto _ctr101;}
 		else {
 			switch( ( (*( p))) ) {
 				case 0: {
 					goto _st0;
 				}
 				case 9: {
-					goto _ctr22;
+					goto _ctr21;
 				}
 				case 10: {
 					goto _st0;
 				}
 				case 32: {
-					goto _ctr22;
+					goto _ctr21;
 				}
 			}
-			goto _ctr21;
+			goto _ctr20;
 		}
 		_st11:
 		if ( p == eof )
@@ -1979,62 +1958,62 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr26;
+				goto _ctr25;
 			}
 			goto _st0;
 		}
-		_ctr26:
+		_ctr25:
 		{
-#line 446 "crontab.rl"
+#line 444 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 1997 "crontab.cpp"
+#line 1975 "crontab.cpp"
 		
-		goto _st82;
-		_ctr109:
+		goto _st77;
+		_ctr102:
 		{
-#line 451 "crontab.rl"
+#line 449 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 82; goto _out;}
+				{p+= 1; ncs.cs = 77; goto _out;}
 			}
 		}
 		
-#line 2010 "crontab.cpp"
+#line 1988 "crontab.cpp"
 		
 		{
-#line 510 "crontab.rl"
+#line 508 "crontab.rl"
 			addcstlist(ncs, ncs.ce->day, 0, 1, 31); }
 		
-#line 2016 "crontab.cpp"
+#line 1994 "crontab.cpp"
 		
-		goto _st82;
-		_st82:
+		goto _st77;
+		_st77:
 		if ( p == eof )
-			goto _out82;
+			goto _out77;
 		p+= 1;
-		st_case_82:
+		st_case_77:
 		if ( p == pe && p != eof )
-			goto _out82;
+			goto _out77;
 		if ( p == eof ) {
-			goto _ctr109;}
+			goto _ctr102;}
 		else {
 			if ( ( (*( p))) == 44 ) {
-				goto _ctr110;
+				goto _ctr103;
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st82;
+				goto _st77;
 			}
 			goto _st0;
 		}
-		_ctr110:
+		_ctr103:
 		{
-#line 451 "crontab.rl"
+#line 449 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -2042,7 +2021,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2047 "crontab.cpp"
+#line 2025 "crontab.cpp"
 		
 		goto _st15;
 		_st15:
@@ -2056,50 +2035,50 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st15;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr28;
+				goto _ctr27;
 			}
 			goto _st0;
 		}
-		_ctr28:
+		_ctr27:
 		{
-#line 457 "crontab.rl"
+#line 455 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 2070 "crontab.cpp"
+#line 2048 "crontab.cpp"
 		
-		goto _st83;
-		_ctr112:
+		goto _st78;
+		_ctr105:
 		{
-#line 458 "crontab.rl"
+#line 456 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 83; goto _out;}
+				{p+= 1; ncs.cs = 78; goto _out;}
 			}
 			ncs.intv2_exist = true;
 		}
 		
-#line 2084 "crontab.cpp"
+#line 2062 "crontab.cpp"
 		
 		{
-#line 510 "crontab.rl"
+#line 508 "crontab.rl"
 			addcstlist(ncs, ncs.ce->day, 0, 1, 31); }
 		
-#line 2090 "crontab.cpp"
+#line 2068 "crontab.cpp"
 		
-		goto _st83;
-		_st83:
+		goto _st78;
+		_st78:
 		if ( p == eof )
-			goto _out83;
+			goto _out78;
 		p+= 1;
-		st_case_83:
+		st_case_78:
 		if ( p == pe && p != eof )
-			goto _out83;
+			goto _out78;
 		if ( p == eof ) {
-			goto _ctr112;}
+			goto _ctr105;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st83;
+				goto _st78;
 			}
 			goto _st0;
 		}
@@ -2205,62 +2184,62 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr33;
+				goto _ctr32;
 			}
 			goto _st0;
 		}
-		_ctr33:
+		_ctr32:
 		{
-#line 446 "crontab.rl"
+#line 444 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 2223 "crontab.cpp"
+#line 2201 "crontab.cpp"
 		
-		goto _st84;
-		_ctr114:
+		goto _st79;
+		_ctr107:
 		{
-#line 451 "crontab.rl"
+#line 449 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 84; goto _out;}
+				{p+= 1; ncs.cs = 79; goto _out;}
 			}
 		}
 		
-#line 2236 "crontab.cpp"
+#line 2214 "crontab.cpp"
 		
 		{
-#line 512 "crontab.rl"
+#line 510 "crontab.rl"
 			addcstlist(ncs, ncs.ce->hour, 24, 0, 23); }
 		
-#line 2242 "crontab.cpp"
+#line 2220 "crontab.cpp"
 		
-		goto _st84;
-		_st84:
+		goto _st79;
+		_st79:
 		if ( p == eof )
-			goto _out84;
+			goto _out79;
 		p+= 1;
-		st_case_84:
+		st_case_79:
 		if ( p == pe && p != eof )
-			goto _out84;
+			goto _out79;
 		if ( p == eof ) {
-			goto _ctr114;}
+			goto _ctr107;}
 		else {
 			if ( ( (*( p))) == 44 ) {
-				goto _ctr115;
+				goto _ctr108;
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st84;
+				goto _st79;
 			}
 			goto _st0;
 		}
-		_ctr115:
+		_ctr108:
 		{
-#line 451 "crontab.rl"
+#line 449 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -2268,7 +2247,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2273 "crontab.cpp"
+#line 2251 "crontab.cpp"
 		
 		goto _st21;
 		_st21:
@@ -2282,50 +2261,50 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st21;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr35;
+				goto _ctr34;
 			}
 			goto _st0;
 		}
-		_ctr35:
+		_ctr34:
 		{
-#line 457 "crontab.rl"
+#line 455 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 2296 "crontab.cpp"
+#line 2274 "crontab.cpp"
 		
-		goto _st85;
-		_ctr117:
+		goto _st80;
+		_ctr110:
 		{
-#line 458 "crontab.rl"
+#line 456 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 85; goto _out;}
+				{p+= 1; ncs.cs = 80; goto _out;}
 			}
 			ncs.intv2_exist = true;
 		}
 		
-#line 2310 "crontab.cpp"
+#line 2288 "crontab.cpp"
 		
 		{
-#line 512 "crontab.rl"
+#line 510 "crontab.rl"
 			addcstlist(ncs, ncs.ce->hour, 24, 0, 23); }
 		
-#line 2316 "crontab.cpp"
+#line 2294 "crontab.cpp"
 		
-		goto _st85;
-		_st85:
+		goto _st80;
+		_st80:
 		if ( p == eof )
-			goto _out85;
+			goto _out80;
 		p+= 1;
-		st_case_85:
+		st_case_80:
 		if ( p == pe && p != eof )
-			goto _out85;
+			goto _out80;
 		if ( p == eof ) {
-			goto _ctr117;}
+			goto _ctr110;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st85;
+				goto _st80;
 			}
 			goto _st0;
 		}
@@ -2492,9 +2471,9 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 			goto _st0;
 		}
-		_ctr120:
+		_ctr113:
 		{
-#line 433 "crontab.rl"
+#line 431 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 86400 * *t; else {
 				ncs.parse_error = true;
@@ -2502,12 +2481,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2507 "crontab.cpp"
+#line 2485 "crontab.cpp"
 		
 		goto _st30;
-		_ctr123:
+		_ctr116:
 		{
-#line 427 "crontab.rl"
+#line 425 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 3600 * *t; else {
 				ncs.parse_error = true;
@@ -2515,12 +2494,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2520 "crontab.cpp"
+#line 2498 "crontab.cpp"
 		
 		goto _st30;
-		_ctr126:
+		_ctr119:
 		{
-#line 421 "crontab.rl"
+#line 419 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 60 * *t; else {
 				ncs.parse_error = true;
@@ -2528,12 +2507,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2533 "crontab.cpp"
+#line 2511 "crontab.cpp"
 		
 		goto _st30;
-		_ctr129:
+		_ctr122:
 		{
-#line 415 "crontab.rl"
+#line 413 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += *t; else {
 				ncs.parse_error = true;
@@ -2541,12 +2520,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2546 "crontab.cpp"
+#line 2524 "crontab.cpp"
 		
 		goto _st30;
-		_ctr132:
+		_ctr125:
 		{
-#line 439 "crontab.rl"
+#line 437 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 604800 * *t; else {
 				ncs.parse_error = true;
@@ -2554,7 +2533,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2559 "crontab.cpp"
+#line 2537 "crontab.cpp"
 		
 		goto _st30;
 		_st30:
@@ -2576,21 +2555,21 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr44;
+				goto _ctr43;
 			}
 			goto _st0;
 		}
-		_ctr44:
+		_ctr43:
 		{
-#line 414 "crontab.rl"
+#line 412 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2590 "crontab.cpp"
+#line 2568 "crontab.cpp"
 		
 		goto _st31;
-		_ctr121:
+		_ctr114:
 		{
-#line 433 "crontab.rl"
+#line 431 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 86400 * *t; else {
 				ncs.parse_error = true;
@@ -2598,18 +2577,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2603 "crontab.cpp"
+#line 2581 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 412 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2609 "crontab.cpp"
+#line 2587 "crontab.cpp"
 		
 		goto _st31;
-		_ctr124:
+		_ctr117:
 		{
-#line 427 "crontab.rl"
+#line 425 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 3600 * *t; else {
 				ncs.parse_error = true;
@@ -2617,18 +2596,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2622 "crontab.cpp"
+#line 2600 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 412 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2628 "crontab.cpp"
+#line 2606 "crontab.cpp"
 		
 		goto _st31;
-		_ctr127:
+		_ctr120:
 		{
-#line 421 "crontab.rl"
+#line 419 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 60 * *t; else {
 				ncs.parse_error = true;
@@ -2636,18 +2615,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2641 "crontab.cpp"
+#line 2619 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 412 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2647 "crontab.cpp"
+#line 2625 "crontab.cpp"
 		
 		goto _st31;
-		_ctr130:
+		_ctr123:
 		{
-#line 415 "crontab.rl"
+#line 413 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += *t; else {
 				ncs.parse_error = true;
@@ -2655,18 +2634,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2660 "crontab.cpp"
+#line 2638 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 412 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2666 "crontab.cpp"
+#line 2644 "crontab.cpp"
 		
 		goto _st31;
-		_ctr133:
+		_ctr126:
 		{
-#line 439 "crontab.rl"
+#line 437 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 604800 * *t; else {
 				ncs.parse_error = true;
@@ -2674,13 +2653,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2679 "crontab.cpp"
+#line 2657 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 412 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2685 "crontab.cpp"
+#line 2663 "crontab.cpp"
 		
 		goto _st31;
 		_st31:
@@ -2695,19 +2674,19 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		else {
 			switch( ( (*( p))) ) {
 				case 100: {
-					goto _st86;
+					goto _st81;
 				}
 				case 104: {
-					goto _st87;
+					goto _st82;
 				}
 				case 109: {
-					goto _st88;
+					goto _st83;
 				}
 				case 115: {
-					goto _st89;
+					goto _st84;
 				}
 				case 119: {
-					goto _st90;
+					goto _st85;
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
@@ -2715,213 +2694,213 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 			goto _st0;
 		}
-		_ctr119:
+		_ctr112:
 		{
-#line 433 "crontab.rl"
+#line 431 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 86400 * *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 86; goto _out;}
+				{p+= 1; ncs.cs = 81; goto _out;}
 			}
 		}
 		
-#line 2730 "crontab.cpp"
+#line 2708 "crontab.cpp"
 		
 		{
-#line 505 "crontab.rl"
+#line 503 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2736 "crontab.cpp"
+#line 2714 "crontab.cpp"
 		
-		goto _st86;
-		_st86:
+		goto _st81;
+		_st81:
 		if ( p == eof )
-			goto _out86;
+			goto _out81;
 		p+= 1;
-		st_case_86:
+		st_case_81:
 		if ( p == pe && p != eof )
-			goto _out86;
+			goto _out81;
 		if ( p == eof ) {
-			goto _ctr119;}
+			goto _ctr112;}
 		else {
 			switch( ( (*( p))) ) {
 				case 9: {
-					goto _ctr120;
+					goto _ctr113;
 				}
 				case 32: {
-					goto _ctr120;
+					goto _ctr113;
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr121;
+				goto _ctr114;
 			}
 			goto _st0;
 		}
-		_ctr122:
+		_ctr115:
 		{
-#line 427 "crontab.rl"
+#line 425 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 3600 * *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 87; goto _out;}
+				{p+= 1; ncs.cs = 82; goto _out;}
 			}
 		}
 		
-#line 2772 "crontab.cpp"
+#line 2750 "crontab.cpp"
 		
 		{
-#line 505 "crontab.rl"
+#line 503 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2778 "crontab.cpp"
+#line 2756 "crontab.cpp"
 		
-		goto _st87;
-		_st87:
+		goto _st82;
+		_st82:
 		if ( p == eof )
-			goto _out87;
+			goto _out82;
 		p+= 1;
-		st_case_87:
+		st_case_82:
 		if ( p == pe && p != eof )
-			goto _out87;
+			goto _out82;
 		if ( p == eof ) {
-			goto _ctr122;}
+			goto _ctr115;}
 		else {
 			switch( ( (*( p))) ) {
 				case 9: {
-					goto _ctr123;
+					goto _ctr116;
 				}
 				case 32: {
-					goto _ctr123;
+					goto _ctr116;
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr124;
+				goto _ctr117;
 			}
 			goto _st0;
 		}
-		_ctr125:
+		_ctr118:
 		{
-#line 421 "crontab.rl"
+#line 419 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 60 * *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 88; goto _out;}
+				{p+= 1; ncs.cs = 83; goto _out;}
 			}
 		}
 		
-#line 2814 "crontab.cpp"
+#line 2792 "crontab.cpp"
 		
 		{
-#line 505 "crontab.rl"
+#line 503 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2820 "crontab.cpp"
+#line 2798 "crontab.cpp"
 		
-		goto _st88;
-		_st88:
+		goto _st83;
+		_st83:
 		if ( p == eof )
-			goto _out88;
+			goto _out83;
 		p+= 1;
-		st_case_88:
+		st_case_83:
 		if ( p == pe && p != eof )
-			goto _out88;
+			goto _out83;
 		if ( p == eof ) {
-			goto _ctr125;}
+			goto _ctr118;}
 		else {
 			switch( ( (*( p))) ) {
 				case 9: {
-					goto _ctr126;
+					goto _ctr119;
 				}
 				case 32: {
-					goto _ctr126;
+					goto _ctr119;
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr127;
+				goto _ctr120;
 			}
 			goto _st0;
 		}
-		_ctr128:
+		_ctr121:
 		{
-#line 415 "crontab.rl"
+#line 413 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 89; goto _out;}
+				{p+= 1; ncs.cs = 84; goto _out;}
 			}
 		}
 		
-#line 2856 "crontab.cpp"
+#line 2834 "crontab.cpp"
 		
 		{
-#line 505 "crontab.rl"
+#line 503 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2862 "crontab.cpp"
+#line 2840 "crontab.cpp"
 		
-		goto _st89;
-		_st89:
+		goto _st84;
+		_st84:
 		if ( p == eof )
-			goto _out89;
+			goto _out84;
 		p+= 1;
-		st_case_89:
+		st_case_84:
 		if ( p == pe && p != eof )
-			goto _out89;
+			goto _out84;
 		if ( p == eof ) {
-			goto _ctr128;}
+			goto _ctr121;}
 		else {
 			switch( ( (*( p))) ) {
 				case 9: {
-					goto _ctr129;
+					goto _ctr122;
 				}
 				case 32: {
-					goto _ctr129;
+					goto _ctr122;
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr130;
+				goto _ctr123;
 			}
 			goto _st0;
 		}
-		_ctr131:
+		_ctr124:
 		{
-#line 439 "crontab.rl"
+#line 437 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 604800 * *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 90; goto _out;}
+				{p+= 1; ncs.cs = 85; goto _out;}
 			}
 		}
 		
-#line 2898 "crontab.cpp"
+#line 2876 "crontab.cpp"
 		
 		{
-#line 505 "crontab.rl"
+#line 503 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2904 "crontab.cpp"
+#line 2882 "crontab.cpp"
 		
-		goto _st90;
-		_st90:
+		goto _st85;
+		_st85:
 		if ( p == eof )
-			goto _out90;
+			goto _out85;
 		p+= 1;
-		st_case_90:
+		st_case_85:
 		if ( p == pe && p != eof )
-			goto _out90;
+			goto _out85;
 		if ( p == eof ) {
-			goto _ctr131;}
+			goto _ctr124;}
 		else {
 			switch( ( (*( p))) ) {
 				case 9: {
-					goto _ctr132;
+					goto _ctr125;
 				}
 				case 32: {
-					goto _ctr132;
+					goto _ctr125;
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr133;
+				goto _ctr126;
 			}
 			goto _st0;
 		}
@@ -3037,31 +3016,31 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		else {
 			switch( ( (*( p))) ) {
 				case 76: {
-					goto _st91;
+					goto _st86;
 				}
 				case 108: {
-					goto _st91;
+					goto _st86;
 				}
 			}
 			goto _st0;
 		}
-		_ctr134:
+		_ctr127:
 		{
-#line 488 "crontab.rl"
+#line 486 "crontab.rl"
 			ncs.ce->journal = true; }
 		
-#line 3055 "crontab.cpp"
+#line 3033 "crontab.cpp"
 		
-		goto _st91;
-		_st91:
+		goto _st86;
+		_st86:
 		if ( p == eof )
-			goto _out91;
+			goto _out86;
 		p+= 1;
-		st_case_91:
+		st_case_86:
 		if ( p == pe && p != eof )
-			goto _out91;
+			goto _out86;
 		if ( p == eof ) {
-			goto _ctr134;}
+			goto _ctr127;}
 		else {
 			goto _st0;
 		}
@@ -3239,56 +3218,56 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr66;
+				goto _ctr65;
 			}
 			goto _st0;
 		}
-		_ctr66:
+		_ctr65:
 		{
-#line 446 "crontab.rl"
+#line 444 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 3257 "crontab.cpp"
+#line 3235 "crontab.cpp"
 		
-		goto _st92;
-		_ctr135:
+		goto _st87;
+		_ctr128:
 		{
-#line 451 "crontab.rl"
+#line 449 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 92; goto _out;}
+				{p+= 1; ncs.cs = 87; goto _out;}
 			}
 		}
 		
-#line 3270 "crontab.cpp"
+#line 3248 "crontab.cpp"
 		
 		{
-#line 497 "crontab.rl"
+#line 495 "crontab.rl"
 			
 			if (!ncs.runat)
 			ncs.ce->maxruns = ncs.v_int > 0 ? static_cast<unsigned>(ncs.v_int) : 0;
 		}
 		
-#line 3279 "crontab.cpp"
+#line 3257 "crontab.cpp"
 		
-		goto _st92;
-		_st92:
+		goto _st87;
+		_st87:
 		if ( p == eof )
-			goto _out92;
+			goto _out87;
 		p+= 1;
-		st_case_92:
+		st_case_87:
 		if ( p == pe && p != eof )
-			goto _out92;
+			goto _out87;
 		if ( p == eof ) {
-			goto _ctr135;}
+			goto _ctr128;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st92;
+				goto _st87;
 			}
 			goto _st0;
 		}
@@ -3414,62 +3393,62 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr72;
+				goto _ctr71;
 			}
 			goto _st0;
 		}
-		_ctr72:
+		_ctr71:
 		{
-#line 446 "crontab.rl"
+#line 444 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 3432 "crontab.cpp"
+#line 3410 "crontab.cpp"
 		
-		goto _st93;
-		_ctr137:
+		goto _st88;
+		_ctr130:
 		{
-#line 451 "crontab.rl"
+#line 449 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 93; goto _out;}
+				{p+= 1; ncs.cs = 88; goto _out;}
 			}
 		}
 		
-#line 3445 "crontab.cpp"
+#line 3423 "crontab.cpp"
 		
 		{
-#line 513 "crontab.rl"
+#line 511 "crontab.rl"
 			addcstlist(ncs, ncs.ce->minute, 60, 0, 59); }
 		
-#line 3451 "crontab.cpp"
+#line 3429 "crontab.cpp"
 		
-		goto _st93;
-		_st93:
+		goto _st88;
+		_st88:
 		if ( p == eof )
-			goto _out93;
+			goto _out88;
 		p+= 1;
-		st_case_93:
+		st_case_88:
 		if ( p == pe && p != eof )
-			goto _out93;
+			goto _out88;
 		if ( p == eof ) {
-			goto _ctr137;}
+			goto _ctr130;}
 		else {
 			if ( ( (*( p))) == 44 ) {
-				goto _ctr138;
+				goto _ctr131;
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st93;
+				goto _st88;
 			}
 			goto _st0;
 		}
-		_ctr138:
+		_ctr131:
 		{
-#line 451 "crontab.rl"
+#line 449 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -3477,7 +3456,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 3482 "crontab.cpp"
+#line 3460 "crontab.cpp"
 		
 		goto _st52;
 		_st52:
@@ -3491,50 +3470,50 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st52;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr74;
+				goto _ctr73;
 			}
 			goto _st0;
 		}
-		_ctr74:
+		_ctr73:
 		{
-#line 457 "crontab.rl"
+#line 455 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 3505 "crontab.cpp"
+#line 3483 "crontab.cpp"
 		
-		goto _st94;
-		_ctr140:
+		goto _st89;
+		_ctr133:
 		{
-#line 458 "crontab.rl"
+#line 456 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 94; goto _out;}
+				{p+= 1; ncs.cs = 89; goto _out;}
 			}
 			ncs.intv2_exist = true;
 		}
 		
-#line 3519 "crontab.cpp"
+#line 3497 "crontab.cpp"
 		
 		{
-#line 513 "crontab.rl"
+#line 511 "crontab.rl"
 			addcstlist(ncs, ncs.ce->minute, 60, 0, 59); }
 		
-#line 3525 "crontab.cpp"
+#line 3503 "crontab.cpp"
 		
-		goto _st94;
-		_st94:
+		goto _st89;
+		_st89:
 		if ( p == eof )
-			goto _out94;
+			goto _out89;
 		p+= 1;
-		st_case_94:
+		st_case_89:
 		if ( p == pe && p != eof )
-			goto _out94;
+			goto _out89;
 		if ( p == eof ) {
-			goto _ctr140;}
+			goto _ctr133;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st94;
+				goto _st89;
 			}
 			goto _st0;
 		}
@@ -3640,62 +3619,62 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				}
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr79;
+				goto _ctr78;
 			}
 			goto _st0;
 		}
-		_ctr79:
+		_ctr78:
 		{
-#line 446 "crontab.rl"
+#line 444 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 3658 "crontab.cpp"
+#line 3636 "crontab.cpp"
 		
-		goto _st95;
-		_ctr142:
+		goto _st90;
+		_ctr135:
 		{
-#line 451 "crontab.rl"
+#line 449 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 95; goto _out;}
+				{p+= 1; ncs.cs = 90; goto _out;}
 			}
 		}
 		
-#line 3671 "crontab.cpp"
+#line 3649 "crontab.cpp"
 		
 		{
-#line 509 "crontab.rl"
+#line 507 "crontab.rl"
 			addcstlist(ncs, ncs.ce->month, 0, 1, 12); }
 		
-#line 3677 "crontab.cpp"
+#line 3655 "crontab.cpp"
 		
-		goto _st95;
-		_st95:
+		goto _st90;
+		_st90:
 		if ( p == eof )
-			goto _out95;
+			goto _out90;
 		p+= 1;
-		st_case_95:
+		st_case_90:
 		if ( p == pe && p != eof )
-			goto _out95;
+			goto _out90;
 		if ( p == eof ) {
-			goto _ctr142;}
+			goto _ctr135;}
 		else {
 			if ( ( (*( p))) == 44 ) {
-				goto _ctr143;
+				goto _ctr136;
 			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st95;
+				goto _st90;
 			}
 			goto _st0;
 		}
-		_ctr143:
+		_ctr136:
 		{
-#line 451 "crontab.rl"
+#line 449 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -3703,7 +3682,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 3708 "crontab.cpp"
+#line 3686 "crontab.cpp"
 		
 		goto _st58;
 		_st58:
@@ -3717,50 +3696,50 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st58;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr81;
+				goto _ctr80;
 			}
 			goto _st0;
 		}
-		_ctr81:
+		_ctr80:
 		{
-#line 457 "crontab.rl"
+#line 455 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 3731 "crontab.cpp"
+#line 3709 "crontab.cpp"
 		
-		goto _st96;
-		_ctr145:
+		goto _st91;
+		_ctr138:
 		{
-#line 458 "crontab.rl"
+#line 456 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 96; goto _out;}
+				{p+= 1; ncs.cs = 91; goto _out;}
 			}
 			ncs.intv2_exist = true;
 		}
 		
-#line 3745 "crontab.cpp"
+#line 3723 "crontab.cpp"
 		
 		{
-#line 509 "crontab.rl"
+#line 507 "crontab.rl"
 			addcstlist(ncs, ncs.ce->month, 0, 1, 12); }
 		
-#line 3751 "crontab.cpp"
+#line 3729 "crontab.cpp"
 		
-		goto _st96;
-		_st96:
+		goto _st91;
+		_st91:
 		if ( p == eof )
-			goto _out96;
+			goto _out91;
 		p+= 1;
-		st_case_96:
+		st_case_91:
 		if ( p == pe && p != eof )
-			goto _out96;
+			goto _out91;
 		if ( p == eof ) {
-			goto _ctr145;}
+			goto _ctr138;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st96;
+				goto _st91;
 			}
 			goto _st0;
 		}
@@ -3775,10 +3754,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st59;}
 		else {
 			switch( ( (*( p))) ) {
-				case 65: {
+				case 85: {
 					goto _st60;
 				}
-				case 97: {
+				case 117: {
 					goto _st60;
 				}
 			}
@@ -3795,10 +3774,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st60;}
 		else {
 			switch( ( (*( p))) ) {
-				case 84: {
+				case 78: {
 					goto _st61;
 				}
-				case 116: {
+				case 110: {
 					goto _st61;
 				}
 			}
@@ -3815,10 +3794,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st61;}
 		else {
 			switch( ( (*( p))) ) {
-				case 72: {
+				case 65: {
 					goto _st62;
 				}
-				case 104: {
+				case 97: {
 					goto _st62;
 				}
 			}
@@ -3835,13 +3814,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st62;}
 		else {
 			switch( ( (*( p))) ) {
-				case 9: {
-					goto _st62;
+				case 84: {
+					goto _st63;
 				}
-				case 32: {
-					goto _st62;
-				}
-				case 61: {
+				case 116: {
 					goto _st63;
 				}
 			}
@@ -3858,126 +3834,17 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st63;}
 		else {
 			switch( ( (*( p))) ) {
-				case 0: {
-					goto _st0;
-				}
 				case 9: {
-					goto _ctr87;
-				}
-				case 10: {
-					goto _st0;
+					goto _st63;
 				}
 				case 32: {
-					goto _ctr87;
+					goto _st63;
+				}
+				case 61: {
+					goto _st64;
 				}
 			}
-			goto _ctr86;
-		}
-		_ctr86:
-		{
-#line 466 "crontab.rl"
-			ncs.strv_st = p; ncs.v_strlen = 0; }
-		
-#line 3883 "crontab.cpp"
-		
-		goto _st97;
-		_ctr147:
-		{
-#line 467 "crontab.rl"
-			
-			ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
-			if (!nstrcpyl(ncs.v_str, sizeof ncs.v_str, ncs.strv_st, ncs.v_strlen)) {
-				log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
-				std::exit(EXIT_FAILURE);
-			}
-		}
-		
-#line 3897 "crontab.cpp"
-		
-		{
-#line 522 "crontab.rl"
-			
-			ncs.ce->path = std::string(ncs.v_str, ncs.v_strlen);
-		}
-		
-#line 3905 "crontab.cpp"
-		
-		goto _st97;
-		_st97:
-		if ( p == eof )
-			goto _out97;
-		p+= 1;
-		st_case_97:
-		if ( p == pe && p != eof )
-			goto _out97;
-		if ( p == eof ) {
-			goto _ctr147;}
-		else {
-			switch( ( (*( p))) ) {
-				case 0: {
-					goto _st0;
-				}
-				case 10: {
-					goto _st0;
-				}
-			}
-			goto _st97;
-		}
-		_ctr87:
-		{
-#line 466 "crontab.rl"
-			ncs.strv_st = p; ncs.v_strlen = 0; }
-		
-#line 3933 "crontab.cpp"
-		
-		goto _st98;
-		_ctr149:
-		{
-#line 467 "crontab.rl"
-			
-			ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
-			if (!nstrcpyl(ncs.v_str, sizeof ncs.v_str, ncs.strv_st, ncs.v_strlen)) {
-				log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
-				std::exit(EXIT_FAILURE);
-			}
-		}
-		
-#line 3947 "crontab.cpp"
-		
-		{
-#line 522 "crontab.rl"
-			
-			ncs.ce->path = std::string(ncs.v_str, ncs.v_strlen);
-		}
-		
-#line 3955 "crontab.cpp"
-		
-		goto _st98;
-		_st98:
-		if ( p == eof )
-			goto _out98;
-		p+= 1;
-		st_case_98:
-		if ( p == pe && p != eof )
-			goto _out98;
-		if ( p == eof ) {
-			goto _ctr149;}
-		else {
-			switch( ( (*( p))) ) {
-				case 0: {
-					goto _st0;
-				}
-				case 9: {
-					goto _ctr87;
-				}
-				case 10: {
-					goto _st0;
-				}
-				case 32: {
-					goto _ctr87;
-				}
-			}
-			goto _ctr86;
+			goto _st0;
 		}
 		_st64:
 		if ( p == eof )
@@ -3990,12 +3857,66 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st64;}
 		else {
 			switch( ( (*( p))) ) {
-				case 85: {
-					goto _st65;
+				case 9: {
+					goto _st64;
 				}
-				case 117: {
-					goto _st65;
+				case 32: {
+					goto _st64;
 				}
+			}
+			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
+				goto _ctr86;
+			}
+			goto _st0;
+		}
+		_ctr86:
+		{
+#line 444 "crontab.rl"
+			
+			ncs.intv_st = p;
+			ncs.v_int = ncs.v_int2 = 0;
+			ncs.intv2_exist = false;
+		}
+		
+#line 3882 "crontab.cpp"
+		
+		goto _st92;
+		_ctr140:
+		{
+#line 449 "crontab.rl"
+			
+			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
+				ncs.parse_error = true;
+				{p+= 1; ncs.cs = 92; goto _out;}
+			}
+		}
+		
+#line 3895 "crontab.cpp"
+		
+		{
+#line 489 "crontab.rl"
+			
+			ncs.runat = true;
+			ncs.ce->exectime = ncs.v_int;
+			ncs.ce->maxruns = 1;
+			ncs.ce->journal = true;
+		}
+		
+#line 3906 "crontab.cpp"
+		
+		goto _st92;
+		_st92:
+		if ( p == eof )
+			goto _out92;
+		p+= 1;
+		st_case_92:
+		if ( p == pe && p != eof )
+			goto _out92;
+		if ( p == eof ) {
+			goto _ctr140;}
+		else {
+			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
+				goto _st92;
 			}
 			goto _st0;
 		}
@@ -4010,10 +3931,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st65;}
 		else {
 			switch( ( (*( p))) ) {
-				case 78: {
+				case 69: {
 					goto _st66;
 				}
-				case 110: {
+				case 101: {
 					goto _st66;
 				}
 			}
@@ -4030,10 +3951,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st66;}
 		else {
 			switch( ( (*( p))) ) {
-				case 65: {
+				case 69: {
 					goto _st67;
 				}
-				case 97: {
+				case 101: {
 					goto _st67;
 				}
 			}
@@ -4050,10 +3971,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st67;}
 		else {
 			switch( ( (*( p))) ) {
-				case 84: {
+				case 75: {
 					goto _st68;
 				}
-				case 116: {
+				case 107: {
 					goto _st68;
 				}
 			}
@@ -4070,13 +3991,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st68;}
 		else {
 			switch( ( (*( p))) ) {
-				case 9: {
-					goto _st68;
+				case 68: {
+					goto _st69;
 				}
-				case 32: {
-					goto _st68;
-				}
-				case 61: {
+				case 100: {
 					goto _st69;
 				}
 			}
@@ -4093,66 +4011,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st69;}
 		else {
 			switch( ( (*( p))) ) {
-				case 9: {
-					goto _st69;
+				case 65: {
+					goto _st70;
 				}
-				case 32: {
-					goto _st69;
+				case 97: {
+					goto _st70;
 				}
-			}
-			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr93;
-			}
-			goto _st0;
-		}
-		_ctr93:
-		{
-#line 446 "crontab.rl"
-			
-			ncs.intv_st = p;
-			ncs.v_int = ncs.v_int2 = 0;
-			ncs.intv2_exist = false;
-		}
-		
-#line 4119 "crontab.cpp"
-		
-		goto _st99;
-		_ctr150:
-		{
-#line 451 "crontab.rl"
-			
-			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
-				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 99; goto _out;}
-			}
-		}
-		
-#line 4132 "crontab.cpp"
-		
-		{
-#line 491 "crontab.rl"
-			
-			ncs.runat = true;
-			ncs.ce->exectime = ncs.v_int;
-			ncs.ce->maxruns = 1;
-			ncs.ce->journal = true;
-		}
-		
-#line 4143 "crontab.cpp"
-		
-		goto _st99;
-		_st99:
-		if ( p == eof )
-			goto _out99;
-		p+= 1;
-		st_case_99:
-		if ( p == pe && p != eof )
-			goto _out99;
-		if ( p == eof ) {
-			goto _ctr150;}
-		else {
-			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st99;
 			}
 			goto _st0;
 		}
@@ -4167,10 +4031,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st70;}
 		else {
 			switch( ( (*( p))) ) {
-				case 69: {
+				case 89: {
 					goto _st71;
 				}
-				case 101: {
+				case 121: {
 					goto _st71;
 				}
 			}
@@ -4187,10 +4051,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st71;}
 		else {
 			switch( ( (*( p))) ) {
-				case 69: {
-					goto _st72;
+				case 9: {
+					goto _st71;
 				}
-				case 101: {
+				case 32: {
+					goto _st71;
+				}
+				case 61: {
 					goto _st72;
 				}
 			}
@@ -4207,15 +4074,80 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			goto _st72;}
 		else {
 			switch( ( (*( p))) ) {
-				case 75: {
-					goto _st73;
+				case 9: {
+					goto _st72;
 				}
-				case 107: {
-					goto _st73;
+				case 32: {
+					goto _st72;
 				}
+			}
+			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
+				goto _ctr94;
 			}
 			goto _st0;
 		}
+		_ctr94:
+		{
+#line 444 "crontab.rl"
+			
+			ncs.intv_st = p;
+			ncs.v_int = ncs.v_int2 = 0;
+			ncs.intv2_exist = false;
+		}
+		
+#line 4099 "crontab.cpp"
+		
+		goto _st93;
+		_ctr142:
+		{
+#line 449 "crontab.rl"
+			
+			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
+				ncs.parse_error = true;
+				{p+= 1; ncs.cs = 93; goto _out;}
+			}
+		}
+		
+#line 4112 "crontab.cpp"
+		
+		{
+#line 509 "crontab.rl"
+			addcstlist(ncs, ncs.ce->weekday, 0, 1, 7); }
+		
+#line 4118 "crontab.cpp"
+		
+		goto _st93;
+		_st93:
+		if ( p == eof )
+			goto _out93;
+		p+= 1;
+		st_case_93:
+		if ( p == pe && p != eof )
+			goto _out93;
+		if ( p == eof ) {
+			goto _ctr142;}
+		else {
+			if ( ( (*( p))) == 44 ) {
+				goto _ctr143;
+			}
+			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
+				goto _st93;
+			}
+			goto _st0;
+		}
+		_ctr143:
+		{
+#line 449 "crontab.rl"
+			
+			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
+				ncs.parse_error = true;
+				{p+= 1; ncs.cs = 73; goto _out;}
+			}
+		}
+		
+#line 4149 "crontab.cpp"
+		
+		goto _st73;
 		_st73:
 		if ( p == eof )
 			goto _out73;
@@ -4226,226 +4158,58 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		if ( p == eof ) {
 			goto _st73;}
 		else {
-			switch( ( (*( p))) ) {
-				case 68: {
-					goto _st74;
-				}
-				case 100: {
-					goto _st74;
-				}
-			}
-			goto _st0;
-		}
-		_st74:
-		if ( p == eof )
-			goto _out74;
-		p+= 1;
-		st_case_74:
-		if ( p == pe && p != eof )
-			goto _out74;
-		if ( p == eof ) {
-			goto _st74;}
-		else {
-			switch( ( (*( p))) ) {
-				case 65: {
-					goto _st75;
-				}
-				case 97: {
-					goto _st75;
-				}
-			}
-			goto _st0;
-		}
-		_st75:
-		if ( p == eof )
-			goto _out75;
-		p+= 1;
-		st_case_75:
-		if ( p == pe && p != eof )
-			goto _out75;
-		if ( p == eof ) {
-			goto _st75;}
-		else {
-			switch( ( (*( p))) ) {
-				case 89: {
-					goto _st76;
-				}
-				case 121: {
-					goto _st76;
-				}
-			}
-			goto _st0;
-		}
-		_st76:
-		if ( p == eof )
-			goto _out76;
-		p+= 1;
-		st_case_76:
-		if ( p == pe && p != eof )
-			goto _out76;
-		if ( p == eof ) {
-			goto _st76;}
-		else {
-			switch( ( (*( p))) ) {
-				case 9: {
-					goto _st76;
-				}
-				case 32: {
-					goto _st76;
-				}
-				case 61: {
-					goto _st77;
-				}
-			}
-			goto _st0;
-		}
-		_st77:
-		if ( p == eof )
-			goto _out77;
-		p+= 1;
-		st_case_77:
-		if ( p == pe && p != eof )
-			goto _out77;
-		if ( p == eof ) {
-			goto _st77;}
-		else {
-			switch( ( (*( p))) ) {
-				case 9: {
-					goto _st77;
-				}
-				case 32: {
-					goto _st77;
-				}
-			}
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr101;
+				goto _ctr96;
 			}
 			goto _st0;
 		}
-		_ctr101:
+		_ctr96:
 		{
-#line 446 "crontab.rl"
-			
-			ncs.intv_st = p;
-			ncs.v_int = ncs.v_int2 = 0;
-			ncs.intv2_exist = false;
-		}
-		
-#line 4336 "crontab.cpp"
-		
-		goto _st100;
-		_ctr152:
-		{
-#line 451 "crontab.rl"
-			
-			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
-				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 100; goto _out;}
-			}
-		}
-		
-#line 4349 "crontab.cpp"
-		
-		{
-#line 511 "crontab.rl"
-			addcstlist(ncs, ncs.ce->weekday, 0, 1, 7); }
-		
-#line 4355 "crontab.cpp"
-		
-		goto _st100;
-		_st100:
-		if ( p == eof )
-			goto _out100;
-		p+= 1;
-		st_case_100:
-		if ( p == pe && p != eof )
-			goto _out100;
-		if ( p == eof ) {
-			goto _ctr152;}
-		else {
-			if ( ( (*( p))) == 44 ) {
-				goto _ctr153;
-			}
-			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st100;
-			}
-			goto _st0;
-		}
-		_ctr153:
-		{
-#line 451 "crontab.rl"
-			
-			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
-				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 78; goto _out;}
-			}
-		}
-		
-#line 4386 "crontab.cpp"
-		
-		goto _st78;
-		_st78:
-		if ( p == eof )
-			goto _out78;
-		p+= 1;
-		st_case_78:
-		if ( p == pe && p != eof )
-			goto _out78;
-		if ( p == eof ) {
-			goto _st78;}
-		else {
-			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _ctr103;
-			}
-			goto _st0;
-		}
-		_ctr103:
-		{
-#line 457 "crontab.rl"
+#line 455 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 4409 "crontab.cpp"
+#line 4172 "crontab.cpp"
 		
-		goto _st101;
-		_ctr155:
+		goto _st94;
+		_ctr145:
 		{
-#line 458 "crontab.rl"
+#line 456 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
-				{p+= 1; ncs.cs = 101; goto _out;}
+				{p+= 1; ncs.cs = 94; goto _out;}
 			}
 			ncs.intv2_exist = true;
 		}
 		
-#line 4423 "crontab.cpp"
+#line 4186 "crontab.cpp"
 		
 		{
-#line 511 "crontab.rl"
+#line 509 "crontab.rl"
 			addcstlist(ncs, ncs.ce->weekday, 0, 1, 7); }
 		
-#line 4429 "crontab.cpp"
+#line 4192 "crontab.cpp"
 		
-		goto _st101;
-		_st101:
+		goto _st94;
+		_st94:
 		if ( p == eof )
-			goto _out101;
+			goto _out94;
 		p+= 1;
-		st_case_101:
+		st_case_94:
 		if ( p == pe && p != eof )
-			goto _out101;
+			goto _out94;
 		if ( p == eof ) {
-			goto _ctr155;}
+			goto _ctr145;}
 		else {
 			if ( 48 <= ( (*( p))) && ( (*( p))) <= 57 ) {
-				goto _st101;
+				goto _st94;
 			}
 			goto _st0;
 		}
 		_out1: ncs.cs = 1; goto _out; 
 		_out0: ncs.cs = 0; goto _out; 
 		_out2: ncs.cs = 2; goto _out; 
-		_out79: ncs.cs = 79; goto _out; 
+		_out74: ncs.cs = 74; goto _out; 
 		_out3: ncs.cs = 3; goto _out; 
 		_out4: ncs.cs = 4; goto _out; 
 		_out5: ncs.cs = 5; goto _out; 
@@ -4454,23 +4218,23 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		_out8: ncs.cs = 8; goto _out; 
 		_out9: ncs.cs = 9; goto _out; 
 		_out10: ncs.cs = 10; goto _out; 
-		_out80: ncs.cs = 80; goto _out; 
-		_out81: ncs.cs = 81; goto _out; 
+		_out75: ncs.cs = 75; goto _out; 
+		_out76: ncs.cs = 76; goto _out; 
 		_out11: ncs.cs = 11; goto _out; 
 		_out12: ncs.cs = 12; goto _out; 
 		_out13: ncs.cs = 13; goto _out; 
 		_out14: ncs.cs = 14; goto _out; 
-		_out82: ncs.cs = 82; goto _out; 
+		_out77: ncs.cs = 77; goto _out; 
 		_out15: ncs.cs = 15; goto _out; 
-		_out83: ncs.cs = 83; goto _out; 
+		_out78: ncs.cs = 78; goto _out; 
 		_out16: ncs.cs = 16; goto _out; 
 		_out17: ncs.cs = 17; goto _out; 
 		_out18: ncs.cs = 18; goto _out; 
 		_out19: ncs.cs = 19; goto _out; 
 		_out20: ncs.cs = 20; goto _out; 
-		_out84: ncs.cs = 84; goto _out; 
+		_out79: ncs.cs = 79; goto _out; 
 		_out21: ncs.cs = 21; goto _out; 
-		_out85: ncs.cs = 85; goto _out; 
+		_out80: ncs.cs = 80; goto _out; 
 		_out22: ncs.cs = 22; goto _out; 
 		_out23: ncs.cs = 23; goto _out; 
 		_out24: ncs.cs = 24; goto _out; 
@@ -4481,18 +4245,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		_out29: ncs.cs = 29; goto _out; 
 		_out30: ncs.cs = 30; goto _out; 
 		_out31: ncs.cs = 31; goto _out; 
-		_out86: ncs.cs = 86; goto _out; 
-		_out87: ncs.cs = 87; goto _out; 
-		_out88: ncs.cs = 88; goto _out; 
-		_out89: ncs.cs = 89; goto _out; 
-		_out90: ncs.cs = 90; goto _out; 
+		_out81: ncs.cs = 81; goto _out; 
+		_out82: ncs.cs = 82; goto _out; 
+		_out83: ncs.cs = 83; goto _out; 
+		_out84: ncs.cs = 84; goto _out; 
+		_out85: ncs.cs = 85; goto _out; 
 		_out32: ncs.cs = 32; goto _out; 
 		_out33: ncs.cs = 33; goto _out; 
 		_out34: ncs.cs = 34; goto _out; 
 		_out35: ncs.cs = 35; goto _out; 
 		_out36: ncs.cs = 36; goto _out; 
 		_out37: ncs.cs = 37; goto _out; 
-		_out91: ncs.cs = 91; goto _out; 
+		_out86: ncs.cs = 86; goto _out; 
 		_out38: ncs.cs = 38; goto _out; 
 		_out39: ncs.cs = 39; goto _out; 
 		_out40: ncs.cs = 40; goto _out; 
@@ -4501,53 +4265,46 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		_out43: ncs.cs = 43; goto _out; 
 		_out44: ncs.cs = 44; goto _out; 
 		_out45: ncs.cs = 45; goto _out; 
-		_out92: ncs.cs = 92; goto _out; 
+		_out87: ncs.cs = 87; goto _out; 
 		_out46: ncs.cs = 46; goto _out; 
 		_out47: ncs.cs = 47; goto _out; 
 		_out48: ncs.cs = 48; goto _out; 
 		_out49: ncs.cs = 49; goto _out; 
 		_out50: ncs.cs = 50; goto _out; 
 		_out51: ncs.cs = 51; goto _out; 
-		_out93: ncs.cs = 93; goto _out; 
+		_out88: ncs.cs = 88; goto _out; 
 		_out52: ncs.cs = 52; goto _out; 
-		_out94: ncs.cs = 94; goto _out; 
+		_out89: ncs.cs = 89; goto _out; 
 		_out53: ncs.cs = 53; goto _out; 
 		_out54: ncs.cs = 54; goto _out; 
 		_out55: ncs.cs = 55; goto _out; 
 		_out56: ncs.cs = 56; goto _out; 
 		_out57: ncs.cs = 57; goto _out; 
-		_out95: ncs.cs = 95; goto _out; 
+		_out90: ncs.cs = 90; goto _out; 
 		_out58: ncs.cs = 58; goto _out; 
-		_out96: ncs.cs = 96; goto _out; 
+		_out91: ncs.cs = 91; goto _out; 
 		_out59: ncs.cs = 59; goto _out; 
 		_out60: ncs.cs = 60; goto _out; 
 		_out61: ncs.cs = 61; goto _out; 
 		_out62: ncs.cs = 62; goto _out; 
 		_out63: ncs.cs = 63; goto _out; 
-		_out97: ncs.cs = 97; goto _out; 
-		_out98: ncs.cs = 98; goto _out; 
 		_out64: ncs.cs = 64; goto _out; 
+		_out92: ncs.cs = 92; goto _out; 
 		_out65: ncs.cs = 65; goto _out; 
 		_out66: ncs.cs = 66; goto _out; 
 		_out67: ncs.cs = 67; goto _out; 
 		_out68: ncs.cs = 68; goto _out; 
 		_out69: ncs.cs = 69; goto _out; 
-		_out99: ncs.cs = 99; goto _out; 
 		_out70: ncs.cs = 70; goto _out; 
 		_out71: ncs.cs = 71; goto _out; 
 		_out72: ncs.cs = 72; goto _out; 
+		_out93: ncs.cs = 93; goto _out; 
 		_out73: ncs.cs = 73; goto _out; 
-		_out74: ncs.cs = 74; goto _out; 
-		_out75: ncs.cs = 75; goto _out; 
-		_out76: ncs.cs = 76; goto _out; 
-		_out77: ncs.cs = 77; goto _out; 
-		_out100: ncs.cs = 100; goto _out; 
-		_out78: ncs.cs = 78; goto _out; 
-		_out101: ncs.cs = 101; goto _out; 
+		_out94: ncs.cs = 94; goto _out; 
 		_out: {}
 	}
 	
-#line 554 "crontab.rl"
+#line 548 "crontab.rl"
 	
 	
 	if (ncs.parse_error) return -1;

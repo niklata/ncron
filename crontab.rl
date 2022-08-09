@@ -99,7 +99,6 @@ struct ParseCfgState
         log_line("id: %u", ce->id);
         log_line("command: %s", ce->command.c_str());
         log_line("args: %s", ce->args.c_str());
-        log_line("path: %s", ce->path.c_str());
         log_line("numruns: %u", ce->numruns);
         log_line("maxruns: %u", ce->maxruns);
         log_line("journal: %s", ce->journal ? "true" : "false");
@@ -518,14 +517,10 @@ static void parse_command_key(ParseCfgState &ncs)
     minute = 'minute'i eqsep intrangeval % MinuteEn;
 
     action CommandEn { parse_command_key(ncs); }
-    action PathEn {
-        ncs.ce->path = std::string(ncs.v_str, ncs.v_strlen);
-    }
 
     command = 'command'i eqsep stringval % CommandEn;
-    path = 'path'i eqsep stringval % PathEn;
 
-    cmds = command | path | minute | hour | weekday | day |
+    cmds = command | minute | hour | weekday | day |
            month | interval | maxruns | runat | journal;
 
     action JobIdSt { ncs.jobid_st = p; }

@@ -12,13 +12,14 @@
 #include <nk/scopeguard.hpp>
 extern "C" {
 #include "nk/log.h"
-#include "nk/exec.h"
 #include "nk/pspawn.h"
 #include "nk/privs.h"
 #include "nk/io.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
+
+extern char **environ;
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
 
@@ -306,18 +307,11 @@ void save_stack(const std::string &file,
 
 void cronentry_t::exec(const struct timespec &ts)
 {
-    nk_exec_env xe;
     pid_t pid;
-    if (const auto r = nk_generate_env(&xe, getuid(), nullptr,
-                                       path.empty() ? nullptr : path.c_str());
-        r < 0) {
-        nk_generate_env_print_error(r);
-        return;
-    }
     posix_spawn_file_actions_t fdact;
     posix_spawn_file_actions_init(&fdact);
     SCOPE_EXIT{ posix_spawn_file_actions_destroy(&fdact); };
-    if (int ret = nk_pspawn(&pid, command.c_str(), &fdact, nullptr, args.c_str(), xe.env)) {
+    if (int ret = nk_pspawn(&pid, command.c_str(), &fdact, nullptr, args.c_str(), environ)) {
         log_line("posix_spawn failed for '%s': %s\n", command.c_str(), strerror(ret));
         return;
     }
