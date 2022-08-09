@@ -37,7 +37,7 @@ extern "C" {
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
 
-#define NCRON_VERSION "0.99"
+#define NCRON_VERSION "2.0"
 
 int gflags_debug;
 static volatile sig_atomic_t pending_save_and_exit;
