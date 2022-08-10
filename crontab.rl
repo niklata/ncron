@@ -38,7 +38,7 @@ extern "C" {
 static int cfg_reload;    /* 0 on first call, 1 on subsequent calls */
 extern int gflags_debug;
 
-static void get_history(std::unique_ptr<cronentry_t> &item);
+static void get_history(cronentry_t *item);
 
 struct ParseCfgState
 {
@@ -145,7 +145,7 @@ struct ParseCfgState
         /* we have a job to insert */
         if (runat) { /* runat task */
             auto forced_exectime = ce->exectime;
-            get_history(ce);
+            get_history(ce.get());
             ce->exectime = forced_exectime;
             debug_print_ce_history();
 
@@ -155,7 +155,7 @@ struct ParseCfgState
             else
                 deadstack.emplace_back(std::move(ce));
         } else { /* interval task */
-            get_history(ce);
+            get_history(ce.get());
             debug_print_ce_history();
             set_initial_exectime(*ce);
 
@@ -290,7 +290,7 @@ static void parse_history(std::string_view path)
     }
 }
 
-static void get_history(std::unique_ptr<cronentry_t> &item)
+static void get_history(cronentry_t *item)
 {
     assert(item);
 
