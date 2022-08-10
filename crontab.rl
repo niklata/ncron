@@ -42,9 +42,9 @@ static void get_history(std::unique_ptr<cronentry_t> &item);
 
 struct ParseCfgState
 {
-    ParseCfgState(const std::string &ef, std::vector<StackItem> &stk,
+    ParseCfgState(std::string_view ef, std::vector<StackItem> &stk,
                   std::vector<StackItem> &dstk) :
-        stack(stk), deadstack(dstk), ce(nullptr), execfile(ef),
+        stack(stk), deadstack(dstk), ce(nullptr), execfile(ef.data(), ef.size()),
         jobid_st(nullptr), time_st(nullptr), intv_st(nullptr),
         intv2_st(nullptr), strv_st(nullptr), v_strlen(0), linenum(0), v_int(0),
         v_int2(0), cs(0), cmdret(0), intv2_exist(false), runat(false),
@@ -252,13 +252,13 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 
 static std::unordered_map<unsigned int, item_history> history_map;
 
-static void parse_history(const std::string &path)
+static void parse_history(std::string_view path)
 {
     char buf[MAX_LINE];
-    auto f = fopen(path.c_str(), "r");
+    auto f = fopen(path.data(), "r");
     if (!f) {
         log_line("%s: failed to open history file \"%s\" for read: %s",
-                 __func__, path.c_str(), strerror(errno));
+                 __func__, path.data(), strerror(errno));
         return;
     }
     SCOPE_EXIT{ fclose(f); };
@@ -266,7 +266,7 @@ static void parse_history(const std::string &path)
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))
-                log_line("%s: io error fetching line of '%s'", __func__, path.c_str());
+                log_line("%s: io error fetching line of '%s'", __func__, path.data());
             break;
         }
         auto llen = strlen(buf);
@@ -554,7 +554,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
     return 0;
 }
 
-void parse_config(const std::string &path, const std::string &execfile,
+void parse_config(std::string_view path, std::string_view execfile,
                   std::vector<StackItem> &stk,
                   std::vector<StackItem> &deadstk)
 {
@@ -562,16 +562,16 @@ void parse_config(const std::string &path, const std::string &execfile,
     parse_history(ncs.execfile);
 
     char buf[MAX_LINE];
-    auto f = fopen(path.c_str(), "r");
+    auto f = fopen(path.data(), "r");
     if (!f) {
-        log_line("%s: failed to open file: '%s': %s", __func__, path.c_str(), strerror(errno));
+        log_line("%s: failed to open file: '%s': %s", __func__, path.data(), strerror(errno));
         std::exit(EXIT_FAILURE);
     }
     SCOPE_EXIT{ fclose(f); };
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))
-                log_line("%s: io error fetching line of '%s'", __func__, path.c_str());
+                log_line("%s: io error fetching line of '%s'", __func__, path.data());
             break;
         }
         auto llen = strlen(buf);
@@ -581,7 +581,7 @@ void parse_config(const std::string &path, const std::string &execfile,
             buf[--llen] = 0;
         ++ncs.linenum;
         if (do_parse_config(ncs, buf, llen) < 0) {
-            log_line("%s: do_parse_config(%s) failed at line %zu", __func__, path.c_str(), ncs.linenum);
+            log_line("%s: do_parse_config(%s) failed at line %zu", __func__, path.data(), ncs.linenum);
             std::exit(EXIT_FAILURE);
         }
     }

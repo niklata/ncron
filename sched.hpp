@@ -52,7 +52,7 @@ static inline bool GtCronEntry(const StackItem &a,
 
 void set_initial_exectime(cronentry_t &entry);
 time_t get_next_time(const cronentry_t &entry);
-void save_stack(const std::string &file,
+void save_stack(std::string_view file,
                 const std::vector<StackItem> &stack,
                 const std::vector<StackItem> &deadstack);
 

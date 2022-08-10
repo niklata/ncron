@@ -120,9 +120,9 @@ static void fix_signals(void)
             suicide("sigaction failed");
 }
 
-static void fail_on_fdne(const std::string &file, int mode)
+static void fail_on_fdne(std::string_view file, int mode)
 {
-    if (access(file.c_str(), mode))
+    if (access(file.data(), mode))
         exit(EXIT_FAILURE);
 }
 
