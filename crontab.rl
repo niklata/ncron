@@ -22,7 +22,6 @@
 #include <nk/scopeguard.hpp>
 extern "C" {
 #include "nk/log.h"
-#include "nk/nstrcpy.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -463,10 +462,12 @@ static void parse_command_key(ParseCfgState &ncs)
     action StrValSt { ncs.strv_st = p; ncs.v_strlen = 0; }
     action StrValEn {
         ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
-        if (!nstrcpyl(ncs.v_str, sizeof ncs.v_str, ncs.strv_st, ncs.v_strlen)) {
-            log_line("error parsing line %zu in crontab; too long?", ncs.linenum);
+        if (ncs.v_strlen >= sizeof ncs.v_str) {
+            log_line("error parsing line %zu in crontab: too long", ncs.linenum);
             std::exit(EXIT_FAILURE);
         }
+        memcpy(ncs.v_str, ncs.strv_st, ncs.v_strlen);
+        ncs.v_str[ncs.v_strlen] = 0;
     }
 
     t_sec  = (digit+ > TUnitSt) 's' % TSecEn;
