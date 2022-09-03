@@ -42,7 +42,6 @@ extern "C" {
 int gflags_debug;
 static volatile sig_atomic_t pending_save_and_exit;
 static volatile sig_atomic_t pending_reload_config;
-static bool gflags_background{false};
 static std::optional<int> s6_notify_fd;
 
 /* Time (in msec) to sleep before dispatching events at startup.
@@ -223,7 +222,6 @@ static void usage()
            "Usage: ncron [options]...\n\nOptions:\n"
            "--help         -h    Print usage and exit.\n"
            "--version      -v    Print version and exit.\n"
-           "--background   -b    Run as a background daemon.\n"
            "--sleep        -s [] Initial sleep time in seconds.\n"
            "--noexecsave   -0    Don't save execution history at all.\n"
            "--journal      -j    Save exectimes at each job invocation.\n"
@@ -261,7 +259,6 @@ static void process_options(int ac, char *av[])
     static struct option long_options[] = {
         {"help", 0, (int *)0, 'h'},
         {"version", 0, (int *)0, 'v'},
-        {"background", 0, (int *)0, 'b'},
         {"sleep", 1, (int *)0, 's'},
         {"noexecsave", 0, (int *)0, '0'},
         {"journal", 0, (int *)0, 'j'},
@@ -277,7 +274,6 @@ static void process_options(int ac, char *av[])
         switch (c) {
             case 'h': usage(); std::exit(EXIT_SUCCESS); break;
             case 'v': print_version(); std::exit(EXIT_SUCCESS); break;
-            case 'b': gflags_background = true; break;
             case 's': if (auto t = nk::from_string<unsigned>(optarg)) g_initial_sleep = *t; else {
                           log_line("invalid sleep '%s' specified", optarg);
                           std::exit(EXIT_FAILURE);
@@ -304,13 +300,6 @@ int main(int argc, char* argv[])
     if (stack.empty()) {
         log_line("%s: no jobs, exiting", __func__);
         std::exit(EXIT_FAILURE);
-    }
-
-    if (gflags_background) {
-        if (daemon(0,0)) {
-            log_line("%s: daemon failed: %s", __func__, strerror(errno));
-            std::exit(EXIT_FAILURE);
-        }
     }
 
     umask(077);
