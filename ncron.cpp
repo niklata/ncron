@@ -105,7 +105,7 @@ static void fix_signals(void)
             suicide("sigdelset failed");
     if (sigaddset(&mask, SIGPIPE))
         suicide("sigaddset failed");
-    if (sigprocmask(SIG_SETMASK, &mask, (sigset_t *)0) < 0)
+    if (sigprocmask(SIG_SETMASK, &mask, nullptr) < 0)
         suicide("sigprocmask failed");
 
     struct sigaction sa;
@@ -257,19 +257,19 @@ static void print_version()
 static void process_options(int ac, char *av[])
 {
     static struct option long_options[] = {
-        {"help", 0, (int *)0, 'h'},
-        {"version", 0, (int *)0, 'v'},
-        {"sleep", 1, (int *)0, 's'},
-        {"noexecsave", 0, (int *)0, '0'},
-        {"journal", 0, (int *)0, 'j'},
-        {"crontab", 1, (int *)0, 't'},
-        {"history", 1, (int *)0, 'H'},
-        {"s6-notify", 1, (int *)0, 'd'},
-        {"verbose", 0, (int *)0, 'V'},
-        {(const char *)0, 0, (int *)0, 0 }
+        {"help", 0, nullptr, 'h'},
+        {"version", 0, nullptr, 'v'},
+        {"sleep", 1, nullptr, 's'},
+        {"noexecsave", 0, nullptr, '0'},
+        {"journal", 0, nullptr, 'j'},
+        {"crontab", 1, nullptr, 't'},
+        {"history", 1, nullptr, 'H'},
+        {"s6-notify", 1, nullptr, 'd'},
+        {"verbose", 0, nullptr, 'V'},
+        {nullptr, 0, nullptr, 0 }
     };
     for (;;) {
-        auto c = getopt_long(ac, av, "hvbs:0jt:H:d:V", long_options, (int *)0);
+        auto c = getopt_long(ac, av, "hvbs:0jt:H:d:V", long_options, nullptr);
         if (c == -1) break;
         switch (c) {
             case 'h': usage(); std::exit(EXIT_SUCCESS); break;

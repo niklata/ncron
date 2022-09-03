@@ -34,6 +34,10 @@ extern "C" {
 
 #define MAX_LINE 2048
 
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
+
 static int cfg_reload;    /* 0 on first call, 1 on subsequent calls */
 extern int gflags_debug;
 
