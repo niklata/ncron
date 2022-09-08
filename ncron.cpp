@@ -127,26 +127,23 @@ static void fail_on_fdne(std::string_view file, int mode)
 
 static void sleep_or_die(struct timespec *ts, bool pending_save)
 {
-    struct timespec rem;
-sleep:
-    if (nanosleep(ts, &rem)) {
-        switch (errno) {
-            case EINTR:
-                if (pending_save_and_exit)
-                    save_and_exit();
+retry:
+    auto r = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, ts, NULL);
+    if (r) {
+        if (r == EINTR) {
+            if (pending_save_and_exit)
+                save_and_exit();
 
-                if (g_ncron_execmode == 1 || pending_save)
-                    save_stack(g_ncron_execfile, stack, deadstack);
+            if (g_ncron_execmode == 1 || pending_save)
+                save_stack(g_ncron_execfile, stack, deadstack);
 
-                if (pending_reload_config)
-                    reload_config();
+            if (pending_reload_config)
+                reload_config();
 
-                memcpy(ts, &rem, sizeof(struct timespec));
-                goto sleep;
-            default:
-                log_line("%s: nanosleep failed: %s", __func__, strerror(errno));
-                std::exit(EXIT_FAILURE);
+            goto retry;
         }
+        log_line("%s: clock_nanosleep failed: %s", __func__, strerror(r));
+        std::exit(EXIT_FAILURE);
     }
 }
 
@@ -169,15 +166,16 @@ static inline void debug_stack_print(const struct timespec &ts) {
 static void do_work(unsigned initial_sleep)
 {
     struct timespec ts;
-    ts.tv_sec = 0;
-    ts.tv_nsec=initial_sleep * 1000000;
+    clock_or_die(&ts);
+    ts.tv_nsec += initial_sleep * 1000000;
+    if (ts.tv_nsec >= 1000000000) {
+        ts.tv_sec += 1;
+        ts.tv_nsec -= 1000000000;
+    }
 
-    sleep_or_die(&ts, false);
-
-    while (1) {
-        bool pending_save = false;
-
-        clock_or_die(&ts);
+    bool pending_save = false;
+    for (;;) {
+        sleep_or_die(&ts, pending_save);
 
         while (stack.front().exectime <= ts.tv_sec) {
             auto &i = *stack.front().ce;
@@ -199,18 +197,15 @@ static void do_work(unsigned initial_sleep)
             }
             if (stack.empty())
                 save_and_exit();
-
-            clock_or_die(&ts);
         }
 
         debug_stack_print(ts);
         if (ts.tv_sec <= stack.front().exectime) {
-            struct timespec sts;
-            sts.tv_sec = stack.front().exectime - ts.tv_sec;
-            sts.tv_nsec = 0;
+            auto tdelta = stack.front().exectime - ts.tv_sec;
+            ts.tv_sec = stack.front().exectime;
+            ts.tv_nsec = 0;
             if (gflags_debug)
-                log_line("do_work: SLEEP %zu seconds", sts.tv_sec);
-            sleep_or_die(&sts, pending_save);
+                log_line("do_work: SLEEP %zu seconds", tdelta);
         }
     }
 }
