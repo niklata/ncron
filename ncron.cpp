@@ -86,8 +86,6 @@ static void signal_handler(int sig)
         pending_save_and_exit = 1;
     } else if (sig == SIGHUP) {
         pending_reload_config = 1;
-    } else if (sig == SIGCHLD) {
-        while (waitpid(-1, NULL, WNOHANG) > 0);
     }
     errno = serrno;
 }
@@ -95,7 +93,7 @@ static void signal_handler(int sig)
 static void fix_signals(void)
 {
     static const int ss[] = {
-        SIGCHLD, SIGHUP, SIGINT, SIGTERM, SIGKILL
+        SIGHUP, SIGINT, SIGTERM, SIGKILL
     };
     sigset_t mask;
     if (sigprocmask(0, 0, &mask) < 0)
@@ -111,12 +109,16 @@ static void fix_signals(void)
     struct sigaction sa;
     memset(&sa, 0, sizeof sa);
     sa.sa_handler = signal_handler;
-    sa.sa_flags = SA_RESTART|SA_NOCLDWAIT;
+    sa.sa_flags = SA_RESTART;
     if (sigemptyset(&sa.sa_mask))
         suicide("sigemptyset failed");
     for (int i = 0; ss[i] != SIGKILL; ++i)
         if (sigaction(ss[i], &sa, NULL))
             suicide("sigaction failed");
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = SA_NOCLDWAIT;
+    if (sigaction(SIGCHLD, &sa, NULL))
+        suicide("sigaction failed");
 }
 
 static void fail_on_fdne(std::string_view file, int mode)
