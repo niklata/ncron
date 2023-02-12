@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <errno.h>
 #include <assert.h>
 #include <pwd.h>
@@ -200,11 +199,11 @@ struct hstm {
 #define MARKED_HST() hst.st, (p > hst.st ? static_cast<size_t>(p - hst.st) : 0)
 
 
-#line 236 "crontab.rl"
+#line 235 "crontab.rl"
 
 
 
-#line 208 "crontab.cpp"
+#line 207 "crontab.cpp"
 static const int history_m_start = 1;
 static const int history_m_first_final = 6;
 static const int history_m_error = 0;
@@ -212,7 +211,7 @@ static const int history_m_error = 0;
 static const int history_m_en_main = 1;
 
 
-#line 238 "crontab.rl"
+#line 237 "crontab.rl"
 
 
 static int do_parse_history(hstm &hst, const char *p, size_t plen)
@@ -221,15 +220,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 	const char *eof = pe;
 	
 	
-#line 225 "crontab.cpp"
+#line 224 "crontab.cpp"
 	{
 		hst.cs = (int)history_m_start;
 	}
 	
-#line 245 "crontab.rl"
+#line 244 "crontab.rl"
 	
 	
-#line 233 "crontab.cpp"
+#line 232 "crontab.cpp"
 	{
 		switch ( hst.cs ) {
 			case 1:
@@ -273,10 +272,10 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		goto _out0;
 		_ctr2:
 		{
-#line 205 "crontab.rl"
+#line 204 "crontab.rl"
 			hst.st = p; }
 		
-#line 280 "crontab.cpp"
+#line 279 "crontab.cpp"
 		
 		goto _st2;
 		_st2:
@@ -307,7 +306,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr4:
 		{
-#line 224 "crontab.rl"
+#line 223 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.id = *t; else {
 				hst.parse_error = true;
@@ -315,12 +314,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 319 "crontab.cpp"
+#line 318 "crontab.cpp"
 		
 		goto _st3;
 		_ctr15:
 		{
-#line 212 "crontab.rl"
+#line 211 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
 				hst.parse_error = true;
@@ -328,12 +327,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 332 "crontab.cpp"
+#line 331 "crontab.cpp"
 		
 		goto _st3;
 		_ctr20:
 		{
-#line 218 "crontab.rl"
+#line 217 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
 				hst.parse_error = true;
@@ -341,12 +340,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 345 "crontab.cpp"
+#line 344 "crontab.cpp"
 		
 		goto _st3;
 		_ctr25:
 		{
-#line 206 "crontab.rl"
+#line 205 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
 				hst.parse_error = true;
@@ -354,7 +353,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 358 "crontab.cpp"
+#line 357 "crontab.cpp"
 		
 		goto _st3;
 		_st3:
@@ -374,15 +373,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr8:
 		{
-#line 205 "crontab.rl"
+#line 204 "crontab.rl"
 			hst.st = p; }
 		
-#line 381 "crontab.cpp"
+#line 380 "crontab.cpp"
 		
 		goto _st6;
 		_ctr13:
 		{
-#line 212 "crontab.rl"
+#line 211 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
 				hst.parse_error = true;
@@ -390,7 +389,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 394 "crontab.cpp"
+#line 393 "crontab.cpp"
 		
 		goto _st6;
 		_st6:
@@ -421,7 +420,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr5:
 		{
-#line 224 "crontab.rl"
+#line 223 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.id = *t; else {
 				hst.parse_error = true;
@@ -429,12 +428,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 433 "crontab.cpp"
+#line 432 "crontab.cpp"
 		
 		goto _st4;
 		_ctr16:
 		{
-#line 212 "crontab.rl"
+#line 211 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
 				hst.parse_error = true;
@@ -442,12 +441,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 446 "crontab.cpp"
+#line 445 "crontab.cpp"
 		
 		goto _st4;
 		_ctr21:
 		{
-#line 218 "crontab.rl"
+#line 217 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
 				hst.parse_error = true;
@@ -455,12 +454,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 459 "crontab.cpp"
+#line 458 "crontab.cpp"
 		
 		goto _st4;
 		_ctr26:
 		{
-#line 206 "crontab.rl"
+#line 205 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
 				hst.parse_error = true;
@@ -468,7 +467,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 472 "crontab.cpp"
+#line 471 "crontab.cpp"
 		
 		goto _st4;
 		_st4:
@@ -488,15 +487,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr10:
 		{
-#line 205 "crontab.rl"
+#line 204 "crontab.rl"
 			hst.st = p; }
 		
-#line 495 "crontab.cpp"
+#line 494 "crontab.cpp"
 		
 		goto _st7;
 		_ctr18:
 		{
-#line 218 "crontab.rl"
+#line 217 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
 				hst.parse_error = true;
@@ -504,7 +503,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 508 "crontab.cpp"
+#line 507 "crontab.cpp"
 		
 		goto _st7;
 		_st7:
@@ -535,7 +534,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr6:
 		{
-#line 224 "crontab.rl"
+#line 223 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.id = *t; else {
 				hst.parse_error = true;
@@ -543,12 +542,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 547 "crontab.cpp"
+#line 546 "crontab.cpp"
 		
 		goto _st5;
 		_ctr17:
 		{
-#line 212 "crontab.rl"
+#line 211 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
 				hst.parse_error = true;
@@ -556,12 +555,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 560 "crontab.cpp"
+#line 559 "crontab.cpp"
 		
 		goto _st5;
 		_ctr22:
 		{
-#line 218 "crontab.rl"
+#line 217 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
 				hst.parse_error = true;
@@ -569,12 +568,12 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 573 "crontab.cpp"
+#line 572 "crontab.cpp"
 		
 		goto _st5;
 		_ctr27:
 		{
-#line 206 "crontab.rl"
+#line 205 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
 				hst.parse_error = true;
@@ -582,7 +581,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 586 "crontab.cpp"
+#line 585 "crontab.cpp"
 		
 		goto _st5;
 		_st5:
@@ -602,15 +601,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		}
 		_ctr12:
 		{
-#line 205 "crontab.rl"
+#line 204 "crontab.rl"
 			hst.st = p; }
 		
-#line 609 "crontab.cpp"
+#line 608 "crontab.cpp"
 		
 		goto _st8;
 		_ctr23:
 		{
-#line 206 "crontab.rl"
+#line 205 "crontab.rl"
 			
 			if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
 				hst.parse_error = true;
@@ -618,7 +617,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 			}
 		}
 		
-#line 622 "crontab.cpp"
+#line 621 "crontab.cpp"
 		
 		goto _st8;
 		_st8:
@@ -659,7 +658,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		_out: {}
 	}
 	
-#line 246 "crontab.rl"
+#line 245 "crontab.rl"
 	
 	
 	if (hst.parse_error) return -1;
@@ -761,11 +760,11 @@ struct pckm {
 #define MARKED_PCKM() pckm.st, (p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0)
 
 
-#line 363 "crontab.rl"
+#line 362 "crontab.rl"
 
 
 
-#line 769 "crontab.cpp"
+#line 768 "crontab.cpp"
 static const int parse_cmd_key_m_start = 1;
 static const int parse_cmd_key_m_first_final = 2;
 static const int parse_cmd_key_m_error = 0;
@@ -773,7 +772,7 @@ static const int parse_cmd_key_m_error = 0;
 static const int parse_cmd_key_m_en_main = 1;
 
 
-#line 365 "crontab.rl"
+#line 364 "crontab.rl"
 
 
 // cmdret = 0: Not parsed a command key yet.
@@ -796,15 +795,15 @@ static void parse_command_key(ParseCfgState &ncs)
 	}
 	
 	
-#line 800 "crontab.cpp"
+#line 799 "crontab.cpp"
 	{
 		pckm.cs = (int)parse_cmd_key_m_start;
 	}
 	
-#line 386 "crontab.rl"
+#line 385 "crontab.rl"
 	
 	
-#line 808 "crontab.cpp"
+#line 807 "crontab.cpp"
 	{
 		switch ( pckm.cs ) {
 			case 1:
@@ -854,22 +853,22 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr2:
 		{
-#line 350 "crontab.rl"
+#line 349 "crontab.rl"
 			pckm.st = p; }
 		
-#line 861 "crontab.cpp"
+#line 860 "crontab.cpp"
 		
 		goto _st2;
 		_ctr4:
 		{
-#line 351 "crontab.rl"
+#line 350 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 873 "crontab.cpp"
+#line 872 "crontab.cpp"
 		
 		goto _st2;
 		_st2:
@@ -905,54 +904,54 @@ static void parse_command_key(ParseCfgState &ncs)
 		goto _out0;
 		_ctr10:
 		{
-#line 350 "crontab.rl"
+#line 349 "crontab.rl"
 			pckm.st = p; }
 		
-#line 912 "crontab.cpp"
+#line 911 "crontab.cpp"
 		
 		goto _st3;
 		_ctr6:
 		{
-#line 351 "crontab.rl"
+#line 350 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 924 "crontab.cpp"
+#line 923 "crontab.cpp"
 		
 		goto _st3;
 		_ctr8:
 		{
-#line 350 "crontab.rl"
+#line 349 "crontab.rl"
 			pckm.st = p; }
 		
-#line 932 "crontab.cpp"
+#line 931 "crontab.cpp"
 		
 		{
-#line 356 "crontab.rl"
+#line 355 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 938 "crontab.cpp"
+#line 937 "crontab.cpp"
 		
 		goto _st3;
 		_ctr17:
 		{
-#line 351 "crontab.rl"
+#line 350 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 950 "crontab.cpp"
+#line 949 "crontab.cpp"
 		
 		{
-#line 350 "crontab.rl"
+#line 349 "crontab.rl"
 			pckm.st = p; }
 		
-#line 956 "crontab.cpp"
+#line 955 "crontab.cpp"
 		
 		goto _st3;
 		_st3:
@@ -980,18 +979,18 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr9:
 		{
-#line 350 "crontab.rl"
+#line 349 "crontab.rl"
 			pckm.st = p; }
 		
-#line 987 "crontab.cpp"
+#line 986 "crontab.cpp"
 		
 		goto _st4;
 		_ctr11:
 		{
-#line 356 "crontab.rl"
+#line 355 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 995 "crontab.cpp"
+#line 994 "crontab.cpp"
 		
 		goto _st4;
 		_st4:
@@ -1011,22 +1010,22 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr3:
 		{
-#line 350 "crontab.rl"
+#line 349 "crontab.rl"
 			pckm.st = p; }
 		
-#line 1018 "crontab.cpp"
+#line 1017 "crontab.cpp"
 		
 		goto _st5;
 		_ctr13:
 		{
-#line 351 "crontab.rl"
+#line 350 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1030 "crontab.cpp"
+#line 1029 "crontab.cpp"
 		
 		goto _st5;
 		_st5:
@@ -1057,38 +1056,38 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr14:
 		{
-#line 351 "crontab.rl"
+#line 350 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1068 "crontab.cpp"
+#line 1067 "crontab.cpp"
 		
 		goto _st6;
 		_ctr15:
 		{
-#line 351 "crontab.rl"
+#line 350 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1080 "crontab.cpp"
+#line 1079 "crontab.cpp"
 		
 		{
-#line 350 "crontab.rl"
+#line 349 "crontab.rl"
 			pckm.st = p; }
 		
-#line 1086 "crontab.cpp"
+#line 1085 "crontab.cpp"
 		
 		{
-#line 356 "crontab.rl"
+#line 355 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 1092 "crontab.cpp"
+#line 1091 "crontab.cpp"
 		
 		goto _st6;
 		_st6:
@@ -1119,28 +1118,28 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr16:
 		{
-#line 350 "crontab.rl"
+#line 349 "crontab.rl"
 			pckm.st = p; }
 		
-#line 1126 "crontab.cpp"
+#line 1125 "crontab.cpp"
 		
 		goto _st7;
 		_ctr19:
 		{
-#line 351 "crontab.rl"
+#line 350 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1138 "crontab.cpp"
+#line 1137 "crontab.cpp"
 		
 		{
-#line 356 "crontab.rl"
+#line 355 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 1144 "crontab.cpp"
+#line 1143 "crontab.cpp"
 		
 		goto _st7;
 		_st7:
@@ -1171,28 +1170,28 @@ static void parse_command_key(ParseCfgState &ncs)
 		}
 		_ctr18:
 		{
-#line 350 "crontab.rl"
+#line 349 "crontab.rl"
 			pckm.st = p; }
 		
-#line 1178 "crontab.cpp"
+#line 1177 "crontab.cpp"
 		
 		goto _st8;
 		_ctr22:
 		{
-#line 351 "crontab.rl"
+#line 350 "crontab.rl"
 			
 			ncs.ce->command = std::string(MARKED_PCKM());
 			string_replace_all(ncs.ce->command, "\\ ", 2, " ");
 			string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
 		}
 		
-#line 1190 "crontab.cpp"
+#line 1189 "crontab.cpp"
 		
 		{
-#line 356 "crontab.rl"
+#line 355 "crontab.rl"
 			ncs.ce->args = std::string(MARKED_PCKM()); }
 		
-#line 1196 "crontab.cpp"
+#line 1195 "crontab.cpp"
 		
 		goto _st8;
 		_st8:
@@ -1233,7 +1232,7 @@ static void parse_command_key(ParseCfgState &ncs)
 		_out: {}
 	}
 	
-#line 387 "crontab.rl"
+#line 386 "crontab.rl"
 	
 	
 	if (pckm.cs == parse_cmd_key_m_error) {
@@ -1255,11 +1254,11 @@ static void parse_command_key(ParseCfgState &ncs)
 #define MARKED_JOBID() ncs.jobid_st, (p > ncs.jobid_st ? static_cast<size_t>(p - ncs.jobid_st) : 0)
 
 
-#line 542 "crontab.rl"
+#line 541 "crontab.rl"
 
 
 
-#line 1263 "crontab.cpp"
+#line 1262 "crontab.cpp"
 static const int ncrontab_start = 1;
 static const int ncrontab_first_final = 74;
 static const int ncrontab_error = 0;
@@ -1267,7 +1266,7 @@ static const int ncrontab_error = 0;
 static const int ncrontab_en_main = 1;
 
 
-#line 544 "crontab.rl"
+#line 543 "crontab.rl"
 
 
 static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
@@ -1276,15 +1275,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 	const char *eof = pe;
 	
 	
-#line 1280 "crontab.cpp"
+#line 1279 "crontab.cpp"
 	{
 		ncs.cs = (int)ncrontab_start;
 	}
 	
-#line 551 "crontab.rl"
+#line 550 "crontab.rl"
 	
 	
-#line 1288 "crontab.cpp"
+#line 1287 "crontab.cpp"
 	{
 		switch ( ncs.cs ) {
 			case 1:
@@ -1550,10 +1549,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		goto _out0;
 		_ctr2:
 		{
-#line 537 "crontab.rl"
+#line 536 "crontab.rl"
 			ncs.finish_ce(); ncs.create_ce(); }
 		
-#line 1557 "crontab.cpp"
+#line 1556 "crontab.cpp"
 		
 		goto _st2;
 		_st2:
@@ -1573,15 +1572,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr12:
 		{
-#line 530 "crontab.rl"
+#line 529 "crontab.rl"
 			ncs.jobid_st = p; }
 		
-#line 1580 "crontab.cpp"
+#line 1579 "crontab.cpp"
 		
 		goto _st74;
 		_ctr97:
 		{
-#line 531 "crontab.rl"
+#line 530 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_JOBID())) ncs.ce->id = *t; else {
 				ncs.parse_error = true;
@@ -1589,7 +1588,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 1593 "crontab.cpp"
+#line 1592 "crontab.cpp"
 		
 		goto _st74;
 		_st74:
@@ -1778,15 +1777,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr20:
 		{
-#line 466 "crontab.rl"
+#line 465 "crontab.rl"
 			ncs.strv_st = p; ncs.v_strlen = 0; }
 		
-#line 1785 "crontab.cpp"
+#line 1784 "crontab.cpp"
 		
 		goto _st75;
 		_ctr99:
 		{
-#line 467 "crontab.rl"
+#line 466 "crontab.rl"
 			
 			ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
 			if (ncs.v_strlen >= sizeof ncs.v_str) {
@@ -1797,13 +1796,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			ncs.v_str[ncs.v_strlen] = 0;
 		}
 		
-#line 1801 "crontab.cpp"
+#line 1800 "crontab.cpp"
 		
 		{
-#line 523 "crontab.rl"
+#line 522 "crontab.rl"
 			parse_command_key(ncs); }
 		
-#line 1807 "crontab.cpp"
+#line 1806 "crontab.cpp"
 		
 		goto _st75;
 		_st75:
@@ -1828,15 +1827,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr21:
 		{
-#line 466 "crontab.rl"
+#line 465 "crontab.rl"
 			ncs.strv_st = p; ncs.v_strlen = 0; }
 		
-#line 1835 "crontab.cpp"
+#line 1834 "crontab.cpp"
 		
 		goto _st76;
 		_ctr101:
 		{
-#line 467 "crontab.rl"
+#line 466 "crontab.rl"
 			
 			ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
 			if (ncs.v_strlen >= sizeof ncs.v_str) {
@@ -1847,13 +1846,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			ncs.v_str[ncs.v_strlen] = 0;
 		}
 		
-#line 1851 "crontab.cpp"
+#line 1850 "crontab.cpp"
 		
 		{
-#line 523 "crontab.rl"
+#line 522 "crontab.rl"
 			parse_command_key(ncs); }
 		
-#line 1857 "crontab.cpp"
+#line 1856 "crontab.cpp"
 		
 		goto _st76;
 		_st76:
@@ -1970,19 +1969,19 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr25:
 		{
-#line 446 "crontab.rl"
+#line 445 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 1981 "crontab.cpp"
+#line 1980 "crontab.cpp"
 		
 		goto _st77;
 		_ctr102:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -1990,13 +1989,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 1994 "crontab.cpp"
+#line 1993 "crontab.cpp"
 		
 		{
-#line 512 "crontab.rl"
+#line 511 "crontab.rl"
 			addcstlist(ncs, ncs.ce->day, 0, 1, 31); }
 		
-#line 2000 "crontab.cpp"
+#line 1999 "crontab.cpp"
 		
 		goto _st77;
 		_st77:
@@ -2019,7 +2018,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr103:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -2027,7 +2026,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2031 "crontab.cpp"
+#line 2030 "crontab.cpp"
 		
 		goto _st15;
 		_st15:
@@ -2047,15 +2046,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr27:
 		{
-#line 457 "crontab.rl"
+#line 456 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 2054 "crontab.cpp"
+#line 2053 "crontab.cpp"
 		
 		goto _st78;
 		_ctr105:
 		{
-#line 458 "crontab.rl"
+#line 457 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
@@ -2064,13 +2063,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			ncs.intv2_exist = true;
 		}
 		
-#line 2068 "crontab.cpp"
+#line 2067 "crontab.cpp"
 		
 		{
-#line 512 "crontab.rl"
+#line 511 "crontab.rl"
 			addcstlist(ncs, ncs.ce->day, 0, 1, 31); }
 		
-#line 2074 "crontab.cpp"
+#line 2073 "crontab.cpp"
 		
 		goto _st78;
 		_st78:
@@ -2196,19 +2195,19 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr32:
 		{
-#line 446 "crontab.rl"
+#line 445 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 2207 "crontab.cpp"
+#line 2206 "crontab.cpp"
 		
 		goto _st79;
 		_ctr107:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -2216,13 +2215,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2220 "crontab.cpp"
+#line 2219 "crontab.cpp"
 		
 		{
-#line 514 "crontab.rl"
+#line 513 "crontab.rl"
 			addcstlist(ncs, ncs.ce->hour, 24, 0, 23); }
 		
-#line 2226 "crontab.cpp"
+#line 2225 "crontab.cpp"
 		
 		goto _st79;
 		_st79:
@@ -2245,7 +2244,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr108:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -2253,7 +2252,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2257 "crontab.cpp"
+#line 2256 "crontab.cpp"
 		
 		goto _st21;
 		_st21:
@@ -2273,15 +2272,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr34:
 		{
-#line 457 "crontab.rl"
+#line 456 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 2280 "crontab.cpp"
+#line 2279 "crontab.cpp"
 		
 		goto _st80;
 		_ctr110:
 		{
-#line 458 "crontab.rl"
+#line 457 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
@@ -2290,13 +2289,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			ncs.intv2_exist = true;
 		}
 		
-#line 2294 "crontab.cpp"
+#line 2293 "crontab.cpp"
 		
 		{
-#line 514 "crontab.rl"
+#line 513 "crontab.rl"
 			addcstlist(ncs, ncs.ce->hour, 24, 0, 23); }
 		
-#line 2300 "crontab.cpp"
+#line 2299 "crontab.cpp"
 		
 		goto _st80;
 		_st80:
@@ -2479,7 +2478,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr113:
 		{
-#line 433 "crontab.rl"
+#line 432 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 86400 * *t; else {
 				ncs.parse_error = true;
@@ -2487,12 +2486,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2491 "crontab.cpp"
+#line 2490 "crontab.cpp"
 		
 		goto _st30;
 		_ctr116:
 		{
-#line 427 "crontab.rl"
+#line 426 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 3600 * *t; else {
 				ncs.parse_error = true;
@@ -2500,12 +2499,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2504 "crontab.cpp"
+#line 2503 "crontab.cpp"
 		
 		goto _st30;
 		_ctr119:
 		{
-#line 421 "crontab.rl"
+#line 420 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 60 * *t; else {
 				ncs.parse_error = true;
@@ -2513,12 +2512,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2517 "crontab.cpp"
+#line 2516 "crontab.cpp"
 		
 		goto _st30;
 		_ctr122:
 		{
-#line 415 "crontab.rl"
+#line 414 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += *t; else {
 				ncs.parse_error = true;
@@ -2526,12 +2525,12 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2530 "crontab.cpp"
+#line 2529 "crontab.cpp"
 		
 		goto _st30;
 		_ctr125:
 		{
-#line 439 "crontab.rl"
+#line 438 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 604800 * *t; else {
 				ncs.parse_error = true;
@@ -2539,7 +2538,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2543 "crontab.cpp"
+#line 2542 "crontab.cpp"
 		
 		goto _st30;
 		_st30:
@@ -2567,15 +2566,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr43:
 		{
-#line 414 "crontab.rl"
+#line 413 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2574 "crontab.cpp"
+#line 2573 "crontab.cpp"
 		
 		goto _st31;
 		_ctr114:
 		{
-#line 433 "crontab.rl"
+#line 432 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 86400 * *t; else {
 				ncs.parse_error = true;
@@ -2583,18 +2582,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2587 "crontab.cpp"
+#line 2586 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 413 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2593 "crontab.cpp"
+#line 2592 "crontab.cpp"
 		
 		goto _st31;
 		_ctr117:
 		{
-#line 427 "crontab.rl"
+#line 426 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 3600 * *t; else {
 				ncs.parse_error = true;
@@ -2602,18 +2601,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2606 "crontab.cpp"
+#line 2605 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 413 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2612 "crontab.cpp"
+#line 2611 "crontab.cpp"
 		
 		goto _st31;
 		_ctr120:
 		{
-#line 421 "crontab.rl"
+#line 420 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 60 * *t; else {
 				ncs.parse_error = true;
@@ -2621,18 +2620,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2625 "crontab.cpp"
+#line 2624 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 413 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2631 "crontab.cpp"
+#line 2630 "crontab.cpp"
 		
 		goto _st31;
 		_ctr123:
 		{
-#line 415 "crontab.rl"
+#line 414 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += *t; else {
 				ncs.parse_error = true;
@@ -2640,18 +2639,18 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2644 "crontab.cpp"
+#line 2643 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 413 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2650 "crontab.cpp"
+#line 2649 "crontab.cpp"
 		
 		goto _st31;
 		_ctr126:
 		{
-#line 439 "crontab.rl"
+#line 438 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 604800 * *t; else {
 				ncs.parse_error = true;
@@ -2659,13 +2658,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2663 "crontab.cpp"
+#line 2662 "crontab.cpp"
 		
 		{
-#line 414 "crontab.rl"
+#line 413 "crontab.rl"
 			ncs.time_st = p; ncs.v_time = 0; }
 		
-#line 2669 "crontab.cpp"
+#line 2668 "crontab.cpp"
 		
 		goto _st31;
 		_st31:
@@ -2702,7 +2701,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr112:
 		{
-#line 433 "crontab.rl"
+#line 432 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 86400 * *t; else {
 				ncs.parse_error = true;
@@ -2710,13 +2709,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2714 "crontab.cpp"
+#line 2713 "crontab.cpp"
 		
 		{
-#line 507 "crontab.rl"
+#line 506 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2720 "crontab.cpp"
+#line 2719 "crontab.cpp"
 		
 		goto _st81;
 		_st81:
@@ -2744,7 +2743,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr115:
 		{
-#line 427 "crontab.rl"
+#line 426 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 3600 * *t; else {
 				ncs.parse_error = true;
@@ -2752,13 +2751,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2756 "crontab.cpp"
+#line 2755 "crontab.cpp"
 		
 		{
-#line 507 "crontab.rl"
+#line 506 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2762 "crontab.cpp"
+#line 2761 "crontab.cpp"
 		
 		goto _st82;
 		_st82:
@@ -2786,7 +2785,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr118:
 		{
-#line 421 "crontab.rl"
+#line 420 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 60 * *t; else {
 				ncs.parse_error = true;
@@ -2794,13 +2793,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2798 "crontab.cpp"
+#line 2797 "crontab.cpp"
 		
 		{
-#line 507 "crontab.rl"
+#line 506 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2804 "crontab.cpp"
+#line 2803 "crontab.cpp"
 		
 		goto _st83;
 		_st83:
@@ -2828,7 +2827,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr121:
 		{
-#line 415 "crontab.rl"
+#line 414 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += *t; else {
 				ncs.parse_error = true;
@@ -2836,13 +2835,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2840 "crontab.cpp"
+#line 2839 "crontab.cpp"
 		
 		{
-#line 507 "crontab.rl"
+#line 506 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2846 "crontab.cpp"
+#line 2845 "crontab.cpp"
 		
 		goto _st84;
 		_st84:
@@ -2870,7 +2869,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr124:
 		{
-#line 439 "crontab.rl"
+#line 438 "crontab.rl"
 			
 			if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 604800 * *t; else {
 				ncs.parse_error = true;
@@ -2878,13 +2877,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 2882 "crontab.cpp"
+#line 2881 "crontab.cpp"
 		
 		{
-#line 507 "crontab.rl"
+#line 506 "crontab.rl"
 			ncs.ce->interval = ncs.v_time; }
 		
-#line 2888 "crontab.cpp"
+#line 2887 "crontab.cpp"
 		
 		goto _st85;
 		_st85:
@@ -3032,10 +3031,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr127:
 		{
-#line 490 "crontab.rl"
+#line 489 "crontab.rl"
 			ncs.ce->journal = true; }
 		
-#line 3039 "crontab.cpp"
+#line 3038 "crontab.cpp"
 		
 		goto _st86;
 		_st86:
@@ -3230,19 +3229,19 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr65:
 		{
-#line 446 "crontab.rl"
+#line 445 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 3241 "crontab.cpp"
+#line 3240 "crontab.cpp"
 		
 		goto _st87;
 		_ctr128:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -3250,16 +3249,16 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 3254 "crontab.cpp"
+#line 3253 "crontab.cpp"
 		
 		{
-#line 499 "crontab.rl"
+#line 498 "crontab.rl"
 			
 			if (!ncs.runat)
 			ncs.ce->maxruns = ncs.v_int > 0 ? static_cast<unsigned>(ncs.v_int) : 0;
 		}
 		
-#line 3263 "crontab.cpp"
+#line 3262 "crontab.cpp"
 		
 		goto _st87;
 		_st87:
@@ -3405,19 +3404,19 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr71:
 		{
-#line 446 "crontab.rl"
+#line 445 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 3416 "crontab.cpp"
+#line 3415 "crontab.cpp"
 		
 		goto _st88;
 		_ctr130:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -3425,13 +3424,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 3429 "crontab.cpp"
+#line 3428 "crontab.cpp"
 		
 		{
-#line 515 "crontab.rl"
+#line 514 "crontab.rl"
 			addcstlist(ncs, ncs.ce->minute, 60, 0, 59); }
 		
-#line 3435 "crontab.cpp"
+#line 3434 "crontab.cpp"
 		
 		goto _st88;
 		_st88:
@@ -3454,7 +3453,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr131:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -3462,7 +3461,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 3466 "crontab.cpp"
+#line 3465 "crontab.cpp"
 		
 		goto _st52;
 		_st52:
@@ -3482,15 +3481,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr73:
 		{
-#line 457 "crontab.rl"
+#line 456 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 3489 "crontab.cpp"
+#line 3488 "crontab.cpp"
 		
 		goto _st89;
 		_ctr133:
 		{
-#line 458 "crontab.rl"
+#line 457 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
@@ -3499,13 +3498,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			ncs.intv2_exist = true;
 		}
 		
-#line 3503 "crontab.cpp"
+#line 3502 "crontab.cpp"
 		
 		{
-#line 515 "crontab.rl"
+#line 514 "crontab.rl"
 			addcstlist(ncs, ncs.ce->minute, 60, 0, 59); }
 		
-#line 3509 "crontab.cpp"
+#line 3508 "crontab.cpp"
 		
 		goto _st89;
 		_st89:
@@ -3631,19 +3630,19 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr78:
 		{
-#line 446 "crontab.rl"
+#line 445 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 3642 "crontab.cpp"
+#line 3641 "crontab.cpp"
 		
 		goto _st90;
 		_ctr135:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -3651,13 +3650,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 3655 "crontab.cpp"
+#line 3654 "crontab.cpp"
 		
 		{
-#line 511 "crontab.rl"
+#line 510 "crontab.rl"
 			addcstlist(ncs, ncs.ce->month, 0, 1, 12); }
 		
-#line 3661 "crontab.cpp"
+#line 3660 "crontab.cpp"
 		
 		goto _st90;
 		_st90:
@@ -3680,7 +3679,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr136:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -3688,7 +3687,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 3692 "crontab.cpp"
+#line 3691 "crontab.cpp"
 		
 		goto _st58;
 		_st58:
@@ -3708,15 +3707,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr80:
 		{
-#line 457 "crontab.rl"
+#line 456 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 3715 "crontab.cpp"
+#line 3714 "crontab.cpp"
 		
 		goto _st91;
 		_ctr138:
 		{
-#line 458 "crontab.rl"
+#line 457 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
@@ -3725,13 +3724,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			ncs.intv2_exist = true;
 		}
 		
-#line 3729 "crontab.cpp"
+#line 3728 "crontab.cpp"
 		
 		{
-#line 511 "crontab.rl"
+#line 510 "crontab.rl"
 			addcstlist(ncs, ncs.ce->month, 0, 1, 12); }
 		
-#line 3735 "crontab.cpp"
+#line 3734 "crontab.cpp"
 		
 		goto _st91;
 		_st91:
@@ -3877,19 +3876,19 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr86:
 		{
-#line 446 "crontab.rl"
+#line 445 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 3888 "crontab.cpp"
+#line 3887 "crontab.cpp"
 		
 		goto _st92;
 		_ctr140:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -3897,10 +3896,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 3901 "crontab.cpp"
+#line 3900 "crontab.cpp"
 		
 		{
-#line 493 "crontab.rl"
+#line 492 "crontab.rl"
 			
 			ncs.runat = true;
 			ncs.ce->exectime = ncs.v_int;
@@ -3908,7 +3907,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			ncs.ce->journal = true;
 		}
 		
-#line 3912 "crontab.cpp"
+#line 3911 "crontab.cpp"
 		
 		goto _st92;
 		_st92:
@@ -4094,19 +4093,19 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr94:
 		{
-#line 446 "crontab.rl"
+#line 445 "crontab.rl"
 			
 			ncs.intv_st = p;
 			ncs.v_int = ncs.v_int2 = 0;
 			ncs.intv2_exist = false;
 		}
 		
-#line 4105 "crontab.cpp"
+#line 4104 "crontab.cpp"
 		
 		goto _st93;
 		_ctr142:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -4114,13 +4113,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 4118 "crontab.cpp"
+#line 4117 "crontab.cpp"
 		
 		{
-#line 513 "crontab.rl"
+#line 512 "crontab.rl"
 			addcstlist(ncs, ncs.ce->weekday, 0, 1, 7); }
 		
-#line 4124 "crontab.cpp"
+#line 4123 "crontab.cpp"
 		
 		goto _st93;
 		_st93:
@@ -4143,7 +4142,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr143:
 		{
-#line 451 "crontab.rl"
+#line 450 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
 				ncs.parse_error = true;
@@ -4151,7 +4150,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			}
 		}
 		
-#line 4155 "crontab.cpp"
+#line 4154 "crontab.cpp"
 		
 		goto _st73;
 		_st73:
@@ -4171,15 +4170,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		_ctr96:
 		{
-#line 457 "crontab.rl"
+#line 456 "crontab.rl"
 			ncs.intv2_st = p; }
 		
-#line 4178 "crontab.cpp"
+#line 4177 "crontab.cpp"
 		
 		goto _st94;
 		_ctr145:
 		{
-#line 458 "crontab.rl"
+#line 457 "crontab.rl"
 			
 			if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
 				ncs.parse_error = true;
@@ -4188,13 +4187,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 			ncs.intv2_exist = true;
 		}
 		
-#line 4192 "crontab.cpp"
+#line 4191 "crontab.cpp"
 		
 		{
-#line 513 "crontab.rl"
+#line 512 "crontab.rl"
 			addcstlist(ncs, ncs.ce->weekday, 0, 1, 7); }
 		
-#line 4198 "crontab.cpp"
+#line 4197 "crontab.cpp"
 		
 		goto _st94;
 		_st94:
@@ -4310,7 +4309,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		_out: {}
 	}
 	
-#line 552 "crontab.rl"
+#line 551 "crontab.rl"
 	
 	
 	if (ncs.parse_error) return -1;
