@@ -89,10 +89,10 @@ struct StackItem {
     size_t jidx;
 };
 
-static inline bool GtCronEntry(const StackItem &a,
+static inline bool LtCronEntry(const StackItem &a,
                                const StackItem &b)
 {
-    return g_jobs[a.jidx] > g_jobs[b.jidx];
+    return g_jobs[a.jidx] < g_jobs[b.jidx];
 }
 
 void set_initial_exectime(Job &entry);

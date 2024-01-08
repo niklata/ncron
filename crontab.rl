@@ -606,7 +606,7 @@ void parse_config(std::string_view path, std::string_view execfile,
             std::exit(EXIT_FAILURE);
         }
     }
-    std::make_heap(stk->begin(), stk->end(), GtCronEntry);
+    std::sort(stk->begin(), stk->end(), LtCronEntry);
     history_lut.clear();
     cfg_reload = 1;
 }

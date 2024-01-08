@@ -179,19 +179,21 @@ static void do_work(unsigned initial_sleep)
         while (g_jobs[stack.front().jidx].exectime <= ts.tv_sec) {
             auto &i = g_jobs[stack.front().jidx];
             if (gflags_debug)
-                log_line("do_work: DISPATCH");
+                log_line("do_work: DISPATCH %u (%lu <= %lu)", i.id, i.exectime, ts.tv_sec);
 
             i.exec(ts);
             if (i.journal)
                 pending_save = true;
 
-            if ((i.numruns < i.maxruns || i.maxruns == 0)
-                && i.exectime != 0) {
-                std::make_heap(stack.begin(), stack.end(), GtCronEntry);
+            if ((i.numruns < i.maxruns || i.maxruns == 0) && i.exectime != 0) {
+                if (stack.size() > 1) {
+                    StackItem t = stack.front();
+                    stack.erase(stack.begin());
+                    stack.insert(std::upper_bound(stack.begin(), stack.end(), t, LtCronEntry), t);
+                }
             } else {
-                std::pop_heap(stack.begin(), stack.end(), GtCronEntry);
-                deadstack.emplace_back(std::move(stack.back()));
-                stack.pop_back();
+                deadstack.emplace_back(stack.front());
+                stack.erase(stack.begin());
             }
             if (stack.empty())
                 save_and_exit();
