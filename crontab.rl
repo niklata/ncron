@@ -1,7 +1,6 @@
 // Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #include <algorithm>
-#include <unordered_map>
 #include <cstdio>
 #include <unistd.h>
 #include <stdlib.h>
@@ -204,6 +203,16 @@ struct hstm {
     bool parse_error;
 };
 
+struct history_entry
+{
+    history_entry() {}
+    history_entry(unsigned int id_, item_history h_) : id(id_), h(std::move(h_)) {}
+
+    unsigned int id;
+    item_history h;
+};
+static std::vector<history_entry> history_lut;
+
 #define MARKED_HST() hst.st, (p > hst.st ? static_cast<size_t>(p - hst.st) : 0)
 
 %%{
@@ -261,8 +270,6 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
     return -2;
 }
 
-static std::unordered_map<unsigned int, item_history> history_map;
-
 static void parse_history(std::string_view path)
 {
     char buf[MAX_LINE];
@@ -297,21 +304,23 @@ static void parse_history(std::string_view path)
                          __func__, linenum);
             continue;
         }
-        history_map.emplace(std::make_pair(h.id, h.h));
+        history_lut.emplace_back(h.id, std::move(h.h));
     }
 }
 
 static void get_history(Job &item)
 {
-    auto i = history_map.find(item.id);
-    if (i == history_map.end())
-        return;
-    if (const auto exectm = i->second.exectime())
-        item.exectime = *exectm > 0 ? *exectm : 0;
-    if (const auto lasttm = i->second.lasttime())
-        item.lasttime = *lasttm > 0 ? *lasttm : 0;
-    if (const auto t = i->second.numruns())
-        item.numruns = *t;
+    for (const auto &i: history_lut) {
+        if (i.id == item.id) {
+            if (const auto exectm = i.h.exectime())
+                item.exectime = *exectm > 0 ? *exectm : 0;
+            if (const auto lasttm = i.h.lasttime())
+                item.lasttime = *lasttm > 0 ? *lasttm : 0;
+            if (const auto t = i.h.numruns())
+                item.numruns = *t;
+            return;
+        }
+    }
 }
 
 static void addcstlist(ParseCfgState &ncs, Job::cst_list &list,
@@ -598,7 +607,7 @@ void parse_config(std::string_view path, std::string_view execfile,
         }
     }
     std::make_heap(stk->begin(), stk->end(), GtCronEntry);
-    history_map.clear();
+    history_lut.clear();
     cfg_reload = 1;
 }
 
