@@ -1,13 +1,9 @@
-// Copyright 2003-2022 Nicholas J. Kain <njkain at gmail dot com>
+// Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
-#include <memory>
 #include <algorithm>
 
 #include <unistd.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -218,7 +214,7 @@ static void do_work(unsigned initial_sleep)
 static void usage()
 {
     printf("ncron " NCRON_VERSION ", cron/at daemon.\n"
-           "Copyright 2003-2022 Nicholas J. Kain\n"
+           "Copyright 2003-2024 Nicholas J. Kain\n"
            "Usage: ncron [options]...\n\nOptions:\n"
            "--help         -h    Print usage and exit.\n"
            "--version      -v    Print version and exit.\n"
@@ -234,7 +230,7 @@ static void usage()
 static void print_version()
 {
     log_line("ncron " NCRON_VERSION ", cron/at daemon.\n"
-             "Copyright 2003-2022 Nicholas J. Kain\n\n"
+             "Copyright 2003-2024 Nicholas J. Kain\n\n"
 "Permission is hereby granted, free of charge, to any person obtaining\n"
 "a copy of this software and associated documentation files (the\n"
 "\"Software\"), to deal in the Software without restriction, including\n"
