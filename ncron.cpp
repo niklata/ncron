@@ -61,9 +61,10 @@ static void reload_config(void)
     if (g_ncron_execmode != 2)
         save_stack(g_ncron_execfile, stack, deadstack);
 
+    g_jobs.clear();
     stack.clear();
     deadstack.clear();
-    parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
+    parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
     log_line("SIGHUP - Reloading config: %s.", g_ncron_conf.c_str());
     std::fflush(stdout);
     pending_reload_config = 0;
@@ -160,9 +161,9 @@ void clock_or_die(struct timespec *ts)
 static inline void debug_stack_print(const struct timespec &ts) {
     if (!gflags_debug)
         return;
-    log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, stack.front().exectime);
+    log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, g_jobs[stack.front().jidx].exectime);
     for (const auto &i: stack)
-        log_line("do_work: job %u exectime = %lu", i.ce->id, i.ce->exectime);
+        log_line("do_work: job %u exectime = %lu", g_jobs[i.jidx].id, g_jobs[i.jidx].exectime);
 }
 
 static void do_work(unsigned initial_sleep)
@@ -179,13 +180,12 @@ static void do_work(unsigned initial_sleep)
     for (;;) {
         sleep_or_die(&ts, pending_save);
 
-        while (stack.front().exectime <= ts.tv_sec) {
-            auto &i = *stack.front().ce;
+        while (g_jobs[stack.front().jidx].exectime <= ts.tv_sec) {
+            auto &i = g_jobs[stack.front().jidx];
             if (gflags_debug)
                 log_line("do_work: DISPATCH");
 
             i.exec(ts);
-            stack.front().exectime = i.exectime;
             if (i.journal)
                 pending_save = true;
 
@@ -202,12 +202,15 @@ static void do_work(unsigned initial_sleep)
         }
 
         debug_stack_print(ts);
-        if (ts.tv_sec <= stack.front().exectime) {
-            auto tdelta = stack.front().exectime - ts.tv_sec;
-            ts.tv_sec = stack.front().exectime;
-            ts.tv_nsec = 0;
-            if (gflags_debug)
-                log_line("do_work: SLEEP %zu seconds", tdelta);
+        {
+            const auto &i = g_jobs[stack.front().jidx];
+            if (ts.tv_sec <= i.exectime) {
+                auto tdelta = i.exectime - ts.tv_sec;
+                ts.tv_sec = i.exectime;
+                ts.tv_nsec = 0;
+                if (gflags_debug)
+                    log_line("do_work: SLEEP %zu seconds", tdelta);
+            }
         }
     }
 }
@@ -292,7 +295,7 @@ int main(int argc, char* argv[])
     process_options(argc, argv);
     fail_on_fdne(g_ncron_conf, R_OK);
     fail_on_fdne(g_ncron_execfile, R_OK | W_OK);
-    parse_config(g_ncron_conf, g_ncron_execfile, stack, deadstack);
+    parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
 
     if (stack.empty()) {
         log_line("%s: no jobs, exiting", __func__);

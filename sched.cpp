@@ -1,4 +1,4 @@
-// Copyright 2003-2016 Nicholas J. Kain <njkain at gmail dot com>
+// Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #include <unistd.h>
 #include <stdlib.h>
@@ -74,7 +74,7 @@ static inline int is_range_valid(const std::pair<int,int> &constraint,
  * range exists, then the next higher unit is incremented by one and the
  * smallest extant valid value is chosen for the constrained unit.
  */
-static int compare_list_range_v(const cronentry_t::cst_list &list, int *unit,
+static int compare_list_range_v(const Job::cst_list &list, int *unit,
                                 int *nextunit, const std::pair<int,int> &valid,
                                 int wildcard)
 {
@@ -123,7 +123,7 @@ static int compare_list_range_v(const cronentry_t::cst_list &list, int *unit,
 }
 
 /* same as above, but no check on range validity */
-static int compare_list_range(const cronentry_t::cst_list &list, int *unit,
+static int compare_list_range(const Job::cst_list &list, int *unit,
                               int *nextunit, int wildcard)
 {
     int t, smallunit = INT_MAX, dist = INT_MAX, tinyunit = INT_MAX;
@@ -163,7 +163,7 @@ static int compare_list_range(const cronentry_t::cst_list &list, int *unit,
     return 1;
 }
 
-static int compare_wday_range(const cronentry_t::cst_list &list, int *unit,
+static int compare_wday_range(const Job::cst_list &list, int *unit,
                               int *nextunit)
 {
     int dist = INT_MAX, t;
@@ -214,7 +214,7 @@ static std::pair<int,int> valid_day_of_month(int month, int year)
 
 /* entry is obvious, stime is the time we're constraining
  * returns a time value that has been appropriately constrained */
-static time_t constrain_time(const cronentry_t &entry, time_t stime)
+static time_t constrain_time(const Job &entry, time_t stime)
 {
     struct tm *rtime;
     time_t t;
@@ -249,7 +249,7 @@ static time_t constrain_time(const cronentry_t &entry, time_t stime)
 }
 
 /* Used when jobs without exectimes are first loaded. */
-void set_initial_exectime(cronentry_t &entry)
+void set_initial_exectime(Job &entry)
 {
     struct timespec ts;
     clock_or_die(&ts);
@@ -263,7 +263,7 @@ void set_initial_exectime(cronentry_t &entry)
 }
 
 /* stupidly advances to next time of execution; performs constraint.  */
-void cronentry_t::set_next_time()
+void Job::set_next_time()
 {
     struct timespec ts;
     clock_or_die(&ts);
@@ -286,10 +286,11 @@ void save_stack(std::string_view file,
 
     auto do_save = [&buf, &f](const std::vector<StackItem> &s) -> bool {
         for (auto &i: s) {
-            auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", i.ce->id,
-                                  i.ce->exectime, i.ce->numruns, i.ce->lasttime);
+            const auto &j = g_jobs[i.jidx];
+            auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", j.id,
+                                  j.exectime, j.numruns, j.lasttime);
             if (snlen < 0 || static_cast<std::size_t>(snlen) > sizeof buf) {
-                log_line("save_stack: Would truncate history entry for job %u; skipping.", i.ce->id);
+                log_line("save_stack: Would truncate history entry for job %u; skipping.", j.id);
                 continue;
             }
             auto bsize = strlen(buf);
@@ -304,7 +305,7 @@ void save_stack(std::string_view file,
     if (!do_save(deadstack)) return;
 }
 
-void cronentry_t::exec(const struct timespec &ts)
+void Job::exec(const struct timespec &ts)
 {
     pid_t pid;
     if (int ret = nk_pspawn(&pid, command.c_str(), nullptr, nullptr, args.c_str(), environ)) {

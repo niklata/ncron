@@ -1,17 +1,27 @@
-// Copyright 2003-2012 Nicholas J. Kain <njkain at gmail dot com>
+// Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #ifndef NCRON_SCHED_HPP_
 #define NCRON_SCHED_HPP_
+#include <cassert>
 #include <string>
 #include <vector>
-#include <memory>
 #include <sys/time.h>
-#include <sys/resource.h>
 
-struct cronentry_t
+struct Job
 {
-    cronentry_t() : id(0), exectime(0), lasttime(0), interval(0),
+    Job() : id(0), exectime(0), lasttime(0), interval(0),
                     numruns(0), maxruns(0), journal(false) {}
+    Job(Job &&o) noexcept
+    {
+        swap(o);
+        o.clear();
+    }
+    Job &operator=(Job &&o) noexcept
+    {
+        swap(o);
+        o.clear();
+        return *this;
+    }
     typedef std::vector<std::pair<int,int>> cst_list;
     unsigned int id;
     time_t exectime;        /* time at which we will execute in the future */
@@ -29,29 +39,64 @@ struct cronentry_t
     cst_list hour;        /* 0-23, l=24 is wildcard, h=l is no range */
     cst_list minute;      /* 0-59, l=60 is wildcard, h=l is no range */
 
-    inline bool operator<(const cronentry_t &o) const {
-        return exectime < o.exectime;
+    void swap(Job &o) noexcept
+    {
+        using std::swap;
+        swap(id, o.id);
+        swap(exectime, o.exectime);
+        swap(lasttime, o.lasttime);
+        swap(interval, o.interval);
+        swap(numruns, o.numruns);
+        swap(maxruns, o.maxruns);
+        swap(journal, o.journal);
+        swap(command, o.command);
+        swap(args, o.args);
+        swap(month, o.month);
+        swap(day, o.day);
+        swap(weekday, o.weekday);
+        swap(hour, o.hour);
+        swap(minute, o.minute);
     }
+    void clear()
+    {
+        id = 0;
+        exectime = 0;
+        lasttime = 0;
+        interval = 0;
+        numruns = 0;
+        maxruns = 0;
+        journal = false;
+        command.clear();
+        args.clear();
+        month.clear();
+        day.clear();
+        weekday.clear();
+        hour.clear();
+        minute.clear();
+    }
+
+    bool operator<(const Job &o) const { return exectime < o.exectime; }
+    bool operator>(const Job &o) const { return exectime > o.exectime; }
     void exec(const struct timespec &ts);
 private:
     void set_next_time();
 };
 
+extern std::vector<Job> g_jobs;
+
 struct StackItem {
-    StackItem(std::unique_ptr<cronentry_t> &&v) : ce(std::move(v)) {
-        exectime = ce ? ce->exectime : 0;
-    }
-    time_t exectime;
-    std::unique_ptr<cronentry_t> ce;
+    StackItem(size_t j) : jidx(j) { assert(g_jobs.size() > j); }
+    size_t jidx;
 };
 
 static inline bool GtCronEntry(const StackItem &a,
-                               const StackItem &b) {
-    return a.exectime > b.exectime;
+                               const StackItem &b)
+{
+    return g_jobs[a.jidx] > g_jobs[b.jidx];
 }
 
-void set_initial_exectime(cronentry_t &entry);
-time_t get_next_time(const cronentry_t &entry);
+void set_initial_exectime(Job &entry);
+time_t get_next_time(const Job &entry);
 void save_stack(std::string_view file,
                 const std::vector<StackItem> &stack,
                 const std::vector<StackItem> &deadstack);

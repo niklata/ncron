@@ -5,6 +5,6 @@
 #include <memory>
 #include "sched.hpp"
 void parse_config(std::string_view path, std::string_view execfile,
-                  std::vector<StackItem> &stack,
-                  std::vector<StackItem> &deadstack);
+                  std::vector<StackItem> *stack,
+                  std::vector<StackItem> *deadstack);
 #endif

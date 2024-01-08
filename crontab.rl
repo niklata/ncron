@@ -1,9 +1,7 @@
-// Copyright 2003-2016 Nicholas J. Kain <njkain at gmail dot com>
+// Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #include <algorithm>
-#include <utility>
 #include <unordered_map>
-#include <optional>
 #include <cstdio>
 #include <unistd.h>
 #include <stdlib.h>
@@ -40,13 +38,15 @@ extern "C" {
 static int cfg_reload;    /* 0 on first call, 1 on subsequent calls */
 extern int gflags_debug;
 
-static void get_history(cronentry_t *item);
+std::vector<Job> g_jobs;
+
+static void get_history(Job &item);
 
 struct ParseCfgState
 {
-    ParseCfgState(std::string_view ef, std::vector<StackItem> &stk,
-                  std::vector<StackItem> &dstk) :
-        stack(stk), deadstack(dstk), ce(nullptr), execfile(ef.data(), ef.size()),
+    ParseCfgState(std::string_view ef, std::vector<StackItem> *stk,
+                  std::vector<StackItem> *dstk) :
+        stack(stk), deadstack(dstk), execfile(ef.data(), ef.size()),
         jobid_st(nullptr), time_st(nullptr), intv_st(nullptr),
         intv2_st(nullptr), strv_st(nullptr), v_strlen(0), linenum(0), v_int(0),
         v_int2(0), cs(0), cmdret(0), intv2_exist(false), runat(false),
@@ -56,9 +56,10 @@ struct ParseCfgState
     }
     char v_str[1024];
 
-    std::vector<StackItem> &stack;
-    std::vector<StackItem> &deadstack;
-    std::unique_ptr<cronentry_t> ce;
+    std::vector<StackItem> *stack;
+    std::vector<StackItem> *deadstack;
+
+    Job ce;
 
     const std::string execfile;
 
@@ -86,8 +87,7 @@ struct ParseCfgState
 
     void create_ce()
     {
-        assert(!ce);
-        ce = std::make_unique<cronentry_t>();
+        ce.clear();
         cmdret = 0;
         runat = false;
     }
@@ -97,48 +97,46 @@ struct ParseCfgState
         if (!gflags_debug)
             return;
         log_line("-=- finish_ce -=-");
-        log_line("id: %u", ce->id);
-        log_line("command: %s", ce->command.c_str());
-        log_line("args: %s", ce->args.c_str());
-        log_line("numruns: %u", ce->numruns);
-        log_line("maxruns: %u", ce->maxruns);
-        log_line("journal: %s", ce->journal ? "true" : "false");
-        for (const auto &i: ce->month)
+        log_line("id: %u", ce.id);
+        log_line("command: %s", ce.command.c_str());
+        log_line("args: %s", ce.args.c_str());
+        log_line("numruns: %u", ce.numruns);
+        log_line("maxruns: %u", ce.maxruns);
+        log_line("journal: %s", ce.journal ? "true" : "false");
+        for (const auto &i: ce.month)
             log_line("month: [%u,%u]", i.first, i.second);
-        for (const auto &i: ce->day)
+        for (const auto &i: ce.day)
             log_line("day: [%u,%u]", i.first, i.second);
-        for (const auto &i: ce->weekday)
+        for (const auto &i: ce.weekday)
             log_line("weekday: [%u,%u]", i.first, i.second);
-        for (const auto &i: ce->hour)
+        for (const auto &i: ce.hour)
             log_line("hour: [%u,%u]", i.first, i.second);
-        for (const auto &i: ce->minute)
+        for (const auto &i: ce.minute)
             log_line("minute: [%u,%u]", i.first, i.second);
-        log_line("interval: %u", ce->interval);
-        log_line("exectime: %lu", ce->exectime);
-        log_line("lasttime: %lu", ce->lasttime);
+        log_line("interval: %u", ce.interval);
+        log_line("exectime: %lu", ce.exectime);
+        log_line("lasttime: %lu", ce.lasttime);
     }
 
     inline void debug_print_ce_history() const
     {
         if (!gflags_debug)
             return;
-        log_line("[%u]->numruns = %u", ce->id, ce->numruns);
-        log_line("[%u]->exectime = %lu", ce->id, ce->exectime);
-        log_line("[%u]->lasttime = %lu", ce->id, ce->lasttime);
+        log_line("[%u]->numruns = %u", ce.id, ce.numruns);
+        log_line("[%u]->exectime = %lu", ce.id, ce.exectime);
+        log_line("[%u]->lasttime = %lu", ce.id, ce.lasttime);
     }
 
     void finish_ce()
     {
-        if (!ce)
-            return;
         debug_print_ce();
 
-        if (ce->id <= 0
-            || (ce->interval <= 0 && ce->exectime <= 0)
-            || ce->command.empty() || cmdret < 1) {
+        if (ce.id <= 0
+            || (ce.interval <= 0 && ce.exectime <= 0)
+            || ce.command.empty() || cmdret < 1) {
             if (gflags_debug)
                 log_line("===> IGNORE");
-            ce.reset();
+            ce.clear();
             return;
         }
         if (gflags_debug)
@@ -146,29 +144,40 @@ struct ParseCfgState
 
         /* we have a job to insert */
         if (runat) { /* runat task */
-            auto forced_exectime = ce->exectime;
-            get_history(ce.get());
-            ce->exectime = forced_exectime;
+            auto forced_exectime = ce.exectime;
+            get_history(ce);
+            ce.exectime = forced_exectime;
             debug_print_ce_history();
+
+            auto numruns = ce.numruns;
+            g_jobs.emplace_back(std::move(ce));
+            ce.clear();
 
             /* insert iif we haven't exceeded maxruns */
-            if (!ce->numruns)
-                stack.emplace_back(std::move(ce));
+            assert(g_jobs.size() > 0);
+            if (!numruns)
+                stack->emplace_back(g_jobs.size() - 1);
             else
-                deadstack.emplace_back(std::move(ce));
+                deadstack->emplace_back(g_jobs.size() - 1);
         } else { /* interval task */
-            get_history(ce.get());
+            get_history(ce);
             debug_print_ce_history();
-            set_initial_exectime(*ce);
+            set_initial_exectime(ce);
+
+            auto numruns = ce.numruns;
+            auto maxruns = ce.maxruns;
+            auto exectime = ce.exectime;
+            g_jobs.emplace_back(std::move(ce));
+            ce.clear();
 
             /* insert iif numruns < maxruns and no constr error */
-            if ((ce->maxruns == 0 || ce->numruns < ce->maxruns)
-                && ce->exectime != 0)
-                stack.emplace_back(std::move(ce));
+            assert(g_jobs.size() > 0);
+            if ((maxruns == 0 || numruns < maxruns)
+                && exectime != 0)
+                stack->emplace_back(g_jobs.size() - 1);
             else
-                deadstack.emplace_back(std::move(ce));
+                deadstack->emplace_back(g_jobs.size() - 1);
         }
-        ce.reset();
     }
 };
 
@@ -292,22 +301,20 @@ static void parse_history(std::string_view path)
     }
 }
 
-static void get_history(cronentry_t *item)
+static void get_history(Job &item)
 {
-    assert(item);
-
-    auto i = history_map.find(item->id);
+    auto i = history_map.find(item.id);
     if (i == history_map.end())
         return;
     if (const auto exectm = i->second.exectime())
-        item->exectime = *exectm > 0 ? *exectm : 0;
+        item.exectime = *exectm > 0 ? *exectm : 0;
     if (const auto lasttm = i->second.lasttime())
-        item->lasttime = *lasttm > 0 ? *lasttm : 0;
+        item.lasttime = *lasttm > 0 ? *lasttm : 0;
     if (const auto t = i->second.numruns())
-        item->numruns = *t;
+        item.numruns = *t;
 }
 
-static void addcstlist(ParseCfgState &ncs, cronentry_t::cst_list &list,
+static void addcstlist(ParseCfgState &ncs, Job::cst_list &list,
                        int wildcard, int min, int max)
 {
     int low = ncs.v_int;
@@ -348,11 +355,11 @@ struct pckm {
 
     action St { pckm.st = p; }
     action CmdEn {
-        ncs.ce->command = std::string(MARKED_PCKM());
-        string_replace_all(ncs.ce->command, "\\ ", 2, " ");
-        string_replace_all(ncs.ce->command, "\\\\", 2, "\\");
+        ncs.ce.command = std::string(MARKED_PCKM());
+        string_replace_all(ncs.ce.command, "\\ ", 2, " ");
+        string_replace_all(ncs.ce.command, "\\\\", 2, "\\");
     }
-    action ArgEn { ncs.ce->args = std::string(MARKED_PCKM()); }
+    action ArgEn { ncs.ce.args = std::string(MARKED_PCKM()); }
 
     sptab = [ \t];
     cmdstr = ([^\0 \t] | '\\\\' | '\\ ')+;
@@ -486,32 +493,32 @@ static void parse_command_key(ParseCfgState &ncs)
                   (',' (digit+ > IntVal2St % IntVal2En))?;
     stringval = ([^\0\n]+ > StrValSt % StrValEn);
 
-    action JournalEn { ncs.ce->journal = true; }
+    action JournalEn { ncs.ce.journal = true; }
     journal = 'journal'i % JournalEn;
 
     action RunAtEn {
         ncs.runat = true;
-        ncs.ce->exectime = ncs.v_int;
-        ncs.ce->maxruns = 1;
-        ncs.ce->journal = true;
+        ncs.ce.exectime = ncs.v_int;
+        ncs.ce.maxruns = 1;
+        ncs.ce.journal = true;
     }
     action MaxRunsEn {
         if (!ncs.runat)
-            ncs.ce->maxruns = ncs.v_int > 0 ? static_cast<unsigned>(ncs.v_int) : 0;
+            ncs.ce.maxruns = ncs.v_int > 0 ? static_cast<unsigned>(ncs.v_int) : 0;
     }
 
     runat = 'runat'i eqsep intval % RunAtEn;
     maxruns = 'maxruns'i eqsep intval % MaxRunsEn;
 
-    action IntervalEn { ncs.ce->interval = ncs.v_time; }
+    action IntervalEn { ncs.ce.interval = ncs.v_time; }
 
     interval = 'interval'i eqsep timeval % IntervalEn;
 
-    action MonthEn { addcstlist(ncs, ncs.ce->month, 0, 1, 12); }
-    action DayEn { addcstlist(ncs, ncs.ce->day, 0, 1, 31); }
-    action WeekdayEn { addcstlist(ncs, ncs.ce->weekday, 0, 1, 7); }
-    action HourEn { addcstlist(ncs, ncs.ce->hour, 24, 0, 23); }
-    action MinuteEn { addcstlist(ncs, ncs.ce->minute, 60, 0, 59); }
+    action MonthEn { addcstlist(ncs, ncs.ce.month, 0, 1, 12); }
+    action DayEn { addcstlist(ncs, ncs.ce.day, 0, 1, 31); }
+    action WeekdayEn { addcstlist(ncs, ncs.ce.weekday, 0, 1, 7); }
+    action HourEn { addcstlist(ncs, ncs.ce.hour, 24, 0, 23); }
+    action MinuteEn { addcstlist(ncs, ncs.ce.minute, 60, 0, 59); }
 
     month = 'month'i eqsep intrangeval % MonthEn;
     day = 'day'i eqsep intrangeval % DayEn;
@@ -528,7 +535,7 @@ static void parse_command_key(ParseCfgState &ncs)
 
     action JobIdSt { ncs.jobid_st = p; }
     action JobIdEn {
-        if (auto t = nk::from_string<unsigned>(MARKED_JOBID())) ncs.ce->id = *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_JOBID())) ncs.ce.id = *t; else {
             ncs.parse_error = true;
             fbreak;
         }
@@ -559,9 +566,10 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 }
 
 void parse_config(std::string_view path, std::string_view execfile,
-                  std::vector<StackItem> &stk,
-                  std::vector<StackItem> &deadstk)
+                  std::vector<StackItem> *stk,
+                  std::vector<StackItem> *deadstk)
 {
+    g_jobs.clear();
     struct ParseCfgState ncs(execfile, stk, deadstk);
     parse_history(ncs.execfile);
 
@@ -589,7 +597,7 @@ void parse_config(std::string_view path, std::string_view execfile,
             std::exit(EXIT_FAILURE);
         }
     }
-    std::make_heap(stk.begin(), stk.end(), GtCronEntry);
+    std::make_heap(stk->begin(), stk->end(), GtCronEntry);
     history_map.clear();
     cfg_reload = 1;
 }
