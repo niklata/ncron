@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #ifndef NCRON_SCHED_HPP_
 #define NCRON_SCHED_HPP_
-#include <cassert>
+#include <assert.h>
 #include <string>
 #include <vector>
 #include <sys/time.h>
@@ -11,18 +11,22 @@ struct Job
 {
     Job() : id(0), exectime(0), lasttime(0), interval(0),
                     numruns(0), maxruns(0), journal(false) {}
+    Job(Job &) = delete;
     Job(Job &&o) noexcept
     {
         swap(o);
         o.clear();
     }
+    Job &operator=(Job &) = delete;
     Job &operator=(Job &&o) noexcept
     {
         swap(o);
         o.clear();
         return *this;
     }
-    typedef std::vector<std::pair<int,int>> cst_list;
+
+    using cst_list = std::vector<std::pair<int,int>>;
+
     unsigned int id;
     time_t exectime;        /* time at which we will execute in the future */
     time_t lasttime;        /* time that the job last ran */

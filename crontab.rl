@@ -1,7 +1,7 @@
 // Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #include <algorithm>
-#include <cstdio>
+#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,11 +22,6 @@ extern "C" {
 #include "ncron.hpp"
 #include "sched.hpp"
 #include "crontab.hpp"
-
-/* BSD uses OFILE rather than NOFILE... */
-#ifndef RLIMIT_NOFILE
-#  define RLIMIT_NOFILE RLIMIT_OFILE
-#endif
 
 #define MAX_LINE 2048
 
@@ -60,7 +55,7 @@ struct ParseCfgState
 
     Job ce;
 
-    const std::string execfile;
+    std::string execfile;
 
     const char *jobid_st;
     const char *time_st;
@@ -395,7 +390,7 @@ static void parse_command_key(ParseCfgState &ncs)
     if (ncs.cmdret != 0) {
         ncs.cmdret = -3;
         log_line("Duplicate 'command' value at line %zu", ncs.linenum);
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     %% write init;
@@ -404,13 +399,13 @@ static void parse_command_key(ParseCfgState &ncs)
     if (pckm.cs == parse_cmd_key_m_error) {
         ncs.cmdret = -1;
         log_line("Malformed 'command' value at line %zu", ncs.linenum);
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     } else if (pckm.cs >= parse_cmd_key_m_first_final)
         ncs.cmdret = 1;
     else {
         ncs.cmdret = -2;
         log_line("Incomplete 'command' value at line %zu", ncs.linenum);
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -483,7 +478,7 @@ static void parse_command_key(ParseCfgState &ncs)
         ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
         if (ncs.v_strlen >= sizeof ncs.v_str) {
             log_line("error parsing line %zu in crontab: too long", ncs.linenum);
-            std::exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
         }
         memcpy(ncs.v_str, ncs.strv_st, ncs.v_strlen);
         ncs.v_str[ncs.v_strlen] = 0;
@@ -586,7 +581,7 @@ void parse_config(std::string_view path, std::string_view execfile,
     auto f = fopen(path.data(), "r");
     if (!f) {
         log_line("%s: failed to open file: '%s': %s", __func__, path.data(), strerror(errno));
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     SCOPE_EXIT{ fclose(f); };
     while (!feof(f)) {
@@ -603,7 +598,7 @@ void parse_config(std::string_view path, std::string_view execfile,
         ++ncs.linenum;
         if (do_parse_config(ncs, buf, llen) < 0) {
             log_line("%s: do_parse_config(%s) failed at line %zu", __func__, path.data(), ncs.linenum);
-            std::exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
         }
     }
     std::sort(stk->begin(), stk->end(), LtCronEntry);

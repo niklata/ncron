@@ -62,7 +62,7 @@ static void reload_config(void)
     deadstack.clear();
     parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
     log_line("SIGHUP - Reloading config: %s.", g_ncron_conf.c_str());
-    std::fflush(stdout);
+    fflush(stdout);
     pending_reload_config = 0;
 }
 
@@ -142,7 +142,7 @@ retry:
             goto retry;
         }
         log_line("%s: clock_nanosleep failed: %s", __func__, strerror(r));
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -150,7 +150,7 @@ void clock_or_die(struct timespec *ts)
 {
     if (clock_gettime(CLOCK_REALTIME, ts)) {
         log_line("%s: clock_gettime failed: %s", __func__, strerror(errno));
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -270,11 +270,11 @@ static void process_options(int ac, char *av[])
         auto c = getopt_long(ac, av, "hvbs:0jt:H:d:V", long_options, nullptr);
         if (c == -1) break;
         switch (c) {
-            case 'h': usage(); std::exit(EXIT_SUCCESS); break;
-            case 'v': print_version(); std::exit(EXIT_SUCCESS); break;
+            case 'h': usage(); exit(EXIT_SUCCESS); break;
+            case 'v': print_version(); exit(EXIT_SUCCESS); break;
             case 's': if (auto t = nk::from_string<unsigned>(optarg)) g_initial_sleep = *t; else {
                           log_line("invalid sleep '%s' specified", optarg);
-                          std::exit(EXIT_FAILURE);
+                          exit(EXIT_FAILURE);
                       }
                       break;
             case '0': g_ncron_execmode = 2; break;
@@ -297,7 +297,7 @@ int main(int argc, char* argv[])
 
     if (stack.empty()) {
         log_line("%s: no jobs, exiting", __func__);
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     umask(077);

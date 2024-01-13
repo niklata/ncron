@@ -280,7 +280,7 @@ void save_stack(std::string_view file,
     auto f = fopen(file.data(), "w");
     if (!f) {
         log_line("%s: failed to open history file %s for write", __func__, file.data());
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     SCOPE_EXIT{ fclose(f); };
 
@@ -289,7 +289,7 @@ void save_stack(std::string_view file,
             const auto &j = g_jobs[i.jidx];
             auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", j.id,
                                   j.exectime, j.numruns, j.lasttime);
-            if (snlen < 0 || static_cast<std::size_t>(snlen) > sizeof buf) {
+            if (snlen < 0 || static_cast<size_t>(snlen) > sizeof buf) {
                 log_line("save_stack: Would truncate history entry for job %u; skipping.", j.id);
                 continue;
             }
