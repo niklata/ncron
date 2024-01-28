@@ -237,7 +237,7 @@ static std::vector<history_entry> history_lut;
     numruns = ':' digit+ > St % NumRunsEn;
     exectime = '=' digit+ > St % ExecTimeEn;
     id = digit+ > St % IdEn;
-    main := id (numruns | exectime | lasttime)+;
+    main := id exectime numruns lasttime;
 }%%
 
 %% write data;
