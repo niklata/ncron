@@ -97,15 +97,9 @@ private:
 
 extern std::vector<Job> g_jobs;
 
-struct StackItem {
-    StackItem(size_t j) : jidx(j) { assert(g_jobs.size() > j); }
-    size_t jidx;
-};
-
-static inline bool LtCronEntry(const StackItem &a,
-                               const StackItem &b)
+static inline bool LtCronEntry(size_t a, size_t b)
 {
-    return g_jobs[a.jidx] < g_jobs[b.jidx];
+    return g_jobs[a] < g_jobs[b];
 }
 
 void set_initial_exectime(Job &entry);

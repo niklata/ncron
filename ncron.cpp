@@ -57,8 +57,8 @@ enum class Execmode
 };
 static Execmode g_ncron_execmode = Execmode::normal;
 
-static std::vector<StackItem> stack;
-static std::vector<StackItem> deadstack;
+static std::vector<size_t> stack;
+static std::vector<size_t> deadstack;
 
 [[nodiscard]] static bool save_stack()
 {
@@ -67,9 +67,9 @@ static std::vector<StackItem> deadstack;
         log_line("%s: failed to open history file %s for write", __func__, g_ncron_execfile_tmp);
         return false;
     }
-    auto do_save = [&f](const std::vector<StackItem> &s) -> bool {
-        for (auto &i: s) {
-            const auto &j = g_jobs[i.jidx];
+    auto do_save = [&f](const std::vector<size_t> &s) -> bool {
+        for (auto i: s) {
+            const auto &j = g_jobs[i];
             if (fprintf(f, "%d=%li:%u|%lu\n", j.id, j.exectime, j.numruns, j.lasttime) < 0) {
                 log_line("%s: failed writing to history file %s", __func__, g_ncron_execfile_tmp);
                 return false;
@@ -198,9 +198,9 @@ void clock_or_die(struct timespec *ts)
 static inline void debug_stack_print(const struct timespec &ts) {
     if (!gflags_debug)
         return;
-    log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, g_jobs[stack.front().jidx].exectime);
-    for (const auto &i: stack)
-        log_line("do_work: job %d exectime = %lu", g_jobs[i.jidx].id, g_jobs[i.jidx].exectime);
+    log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, g_jobs[stack.front()].exectime);
+    for (auto i: stack)
+        log_line("do_work: job %d exectime = %lu", g_jobs[i].id, g_jobs[i].exectime);
 }
 
 static void do_work(unsigned initial_sleep)
@@ -222,8 +222,8 @@ static void do_work(unsigned initial_sleep)
         }
         sleep_or_die(&ts);
 
-        while (g_jobs[stack.front().jidx].exectime <= ts.tv_sec) {
-            auto &i = g_jobs[stack.front().jidx];
+        while (g_jobs[stack.front()].exectime <= ts.tv_sec) {
+            auto &i = g_jobs[stack.front()];
             if (gflags_debug)
                 log_line("do_work: DISPATCH %d (%lu <= %lu)", i.id, i.exectime, ts.tv_sec);
 
@@ -233,7 +233,7 @@ static void do_work(unsigned initial_sleep)
 
             if ((i.numruns < i.maxruns || i.maxruns == 0) && i.exectime != 0) {
                 if (stack.size() > 1) {
-                    StackItem t = stack.front();
+                    auto t = stack.front();
                     stack.erase(stack.begin());
                     stack.insert(std::upper_bound(stack.begin(), stack.end(), t, LtCronEntry), t);
                 }
@@ -247,7 +247,7 @@ static void do_work(unsigned initial_sleep)
 
         debug_stack_print(ts);
         {
-            const auto &i = g_jobs[stack.front().jidx];
+            const auto &i = g_jobs[stack.front()];
             if (ts.tv_sec <= i.exectime) {
                 auto tdelta = i.exectime - ts.tv_sec;
                 ts.tv_sec = i.exectime;

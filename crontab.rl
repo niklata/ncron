@@ -30,15 +30,15 @@ static void get_history(Job &item);
 
 struct ParseCfgState
 {
-    ParseCfgState(std::vector<StackItem> *stk, std::vector<StackItem> *dstk)
+    ParseCfgState(std::vector<size_t> *stk, std::vector<size_t> *dstk)
     : stack(stk), deadstack(dstk)
     {
         memset(v_str, 0, sizeof v_str);
     }
     char v_str[MAX_LINE];
 
-    std::vector<StackItem> *stack;
-    std::vector<StackItem> *deadstack;
+    std::vector<size_t> *stack;
+    std::vector<size_t> *deadstack;
 
     Job ce;
 
@@ -611,8 +611,8 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 }
 
 void parse_config(char const *path, char const *execfile,
-                  std::vector<StackItem> *stk,
-                  std::vector<StackItem> *deadstk)
+                  std::vector<size_t> *stk,
+                  std::vector<size_t> *deadstk)
 {
     g_jobs.clear();
     ParseCfgState ncs(stk, deadstk);
