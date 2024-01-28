@@ -92,6 +92,7 @@ struct ParseCfgState
             log_line("hour: [%u,%u]", i.first, i.second);
         for (const auto &i: ce.minute)
             log_line("minute: [%u,%u]", i.first, i.second);
+        log_line("runat: %s", runat ? "true" : "false");
         log_line("interval: %u", ce.interval);
         log_line("exectime: %lu", ce.exectime);
         log_line("lasttime: %lu", ce.lasttime);
@@ -130,6 +131,9 @@ struct ParseCfgState
 
         /* we have a job to insert */
         if (runat) { /* runat task */
+            if (ce.interval > 0) {
+                log_line("ERROR IN CRONTAB: interval is unused when runat is set: job %d", ce.id);
+            }
             auto forced_exectime = ce.exectime;
             get_history(ce);
             ce.exectime = forced_exectime;
