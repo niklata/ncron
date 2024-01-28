@@ -6,7 +6,6 @@
 #include <cmath>
 #include <limits>
 #include <type_traits>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <optional>
