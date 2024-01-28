@@ -46,9 +46,9 @@ static std::optional<int> s6_notify_fd;
    boot time. */
 static unsigned g_initial_sleep = 0;
 
-static std::string g_ncron_conf(CONFIG_FILE_DEFAULT);
-static std::string g_ncron_execfile(EXEC_FILE_DEFAULT);
-static std::string g_ncron_execfile_tmp(EXEC_FILE_DEFAULT "~");
+static char const *g_ncron_conf = CONFIG_FILE_DEFAULT;
+static char const *g_ncron_execfile = EXEC_FILE_DEFAULT;
+static char const *g_ncron_execfile_tmp = EXEC_FILE_DEFAULT "~";
 enum class Execmode
 {
     normal = 0,
@@ -62,31 +62,31 @@ static std::vector<StackItem> deadstack;
 
 [[nodiscard]] static bool save_stack()
 {
-    auto f = fopen(g_ncron_execfile_tmp.data(), "w");
+    auto f = fopen(g_ncron_execfile_tmp, "w");
     if (!f) {
-        log_line("%s: failed to open history file %s for write", __func__, g_ncron_execfile_tmp.data());
+        log_line("%s: failed to open history file %s for write", __func__, g_ncron_execfile_tmp);
         return false;
     }
     auto do_save = [&f](const std::vector<StackItem> &s) -> bool {
         for (auto &i: s) {
             const auto &j = g_jobs[i.jidx];
             if (fprintf(f, "%u=%li:%u|%lu\n", j.id, j.exectime, j.numruns, j.lasttime) < 0) {
-                log_line("%s: failed writing to history file %s", __func__, g_ncron_execfile_tmp.data());
+                log_line("%s: failed writing to history file %s", __func__, g_ncron_execfile_tmp);
                 return false;
             }
         }
         return true;
     };
-    nk::scope_guard remove_ftmp = []{ unlink(g_ncron_execfile_tmp.data()); };
+    nk::scope_guard remove_ftmp = []{ unlink(g_ncron_execfile_tmp); };
     {
         defer [&f]{ fclose(f); };
         if (!do_save(stack)) return false;
         if (!do_save(deadstack)) return false;
     }
 
-    if (rename(g_ncron_execfile_tmp.data(), g_ncron_execfile.data())) {
+    if (rename(g_ncron_execfile_tmp, g_ncron_execfile)) {
         log_line("%s: failed to update to new history file (%s => %s): %s", __func__,
-                 g_ncron_execfile_tmp.data(), g_ncron_execfile.data(), strerror(errno));
+                 g_ncron_execfile_tmp, g_ncron_execfile, strerror(errno));
         return false;
     }
     remove_ftmp.dismiss();
@@ -105,7 +105,7 @@ static void reload_config(void)
     stack.clear();
     deadstack.clear();
     parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
-    log_line("SIGHUP - Reloading config: %s.", g_ncron_conf.c_str());
+    log_line("SIGHUP - Reloading config: %s.", g_ncron_conf);
     fflush(stdout);
     pending_reload_config = 0;
 }
@@ -114,10 +114,10 @@ static void save_and_exit(void)
 {
     if (g_ncron_execmode != Execmode::nosave) {
         if (save_stack()) {
-            log_line("Saved stack to %s.", g_ncron_execfile.c_str());
+            log_line("Saved stack to %s.", g_ncron_execfile);
         } else {
             log_line("Failed to save stack to %s; some jobs may run again.",
-                     g_ncron_execfile.c_str());
+                     g_ncron_execfile);
         }
     }
     log_line("Exited.");
@@ -166,9 +166,9 @@ static void fix_signals(void)
         suicide("sigaction failed");
 }
 
-static void fail_on_fdne(std::string_view file, int mode)
+static void fail_on_fdne(char const *file, int mode)
 {
-    if (access(file.data(), mode))
+    if (access(file, mode))
         exit(EXIT_FAILURE);
 }
 
@@ -215,7 +215,7 @@ static void do_work(unsigned initial_sleep)
         if (pending_save) {
             if (!save_stack()) {
                 log_line("Failed to save stack to %s for a journalled job.",
-                         g_ncron_execfile.c_str());
+                         g_ncron_execfile);
             } else {
                 pending_save = false;
             }
@@ -327,12 +327,17 @@ static void process_options(int ac, char *av[])
                       break;
             case '0': g_ncron_execmode = Execmode::nosave; break;
             case 'j': g_ncron_execmode = Execmode::journal; break;
-            case 't': g_ncron_conf = optarg; break;
-            case 'H':
-                g_ncron_execfile = optarg;
-                g_ncron_execfile_tmp = g_ncron_execfile;
-                g_ncron_execfile_tmp.push_back('~');
+            case 't': g_ncron_conf = strdup(optarg); break;
+            case 'H': {
+                auto l = strlen(optarg);
+                g_ncron_execfile = strdup(optarg);
+                auto tmpf = static_cast<char *>(malloc(l + 2));
+                memcpy(tmpf, optarg, l);
+                tmpf[l] = '~';
+                tmpf[l+1] = 0;
+                g_ncron_execfile_tmp = tmpf;
                 break;
+            }
             case 'd': s6_notify_fd = atoi(optarg); break;
             case 'V': gflags_debug = 1; break;
             default: break;

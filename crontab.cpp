@@ -32,9 +32,8 @@ static void get_history(Job &item);
 
 struct ParseCfgState
 {
-	ParseCfgState(std::string_view ef, std::vector<StackItem> *stk,
-	std::vector<StackItem> *dstk)
-	: stack(stk), deadstack(dstk), execfile(ef.data(), ef.size())
+	ParseCfgState(std::vector<StackItem> *stk, std::vector<StackItem> *dstk)
+	: stack(stk), deadstack(dstk)
 	{
 		memset(v_str, 0, sizeof v_str);
 	}
@@ -44,8 +43,6 @@ struct ParseCfgState
 	std::vector<StackItem> *deadstack;
 	
 	Job ce;
-	
-	std::string execfile;
 	
 	const char *jobid_st = nullptr;
 	const char *time_st = nullptr;
@@ -201,11 +198,11 @@ static std::vector<history_entry> history_lut;
 #define MARKED_HST() hst.st, (p > hst.st ? static_cast<size_t>(p - hst.st) : 0)
 
 
-#line 245 "crontab.rl"
+#line 242 "crontab.rl"
 
 
 
-#line 206 "crontab.cpp"
+#line 203 "crontab.cpp"
 static const signed char _history_m_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1,
 	3, 1, 4, 0
@@ -266,7 +263,7 @@ static const int history_m_error = 0;
 static const int history_m_en_main = 1;
 
 
-#line 247 "crontab.rl"
+#line 244 "crontab.rl"
 
 
 static int do_parse_history(hstm &hst, const char *p, size_t plen)
@@ -275,15 +272,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 	const char *eof = pe;
 	
 
-#line 273 "crontab.cpp"
+#line 270 "crontab.cpp"
 	{
 		hst.cs = (int)history_m_start;
 	}
 	
-#line 254 "crontab.rl"
+#line 251 "crontab.rl"
 
 
-#line 278 "crontab.cpp"
+#line 275 "crontab.cpp"
 	{
 		int _klen;
 		unsigned int _trans = 0;
@@ -363,16 +360,16 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 				{
 					case 0:  {
 							{
-#line 206 "crontab.rl"
+#line 203 "crontab.rl"
 							hst.st = p; }
 						
-#line 360 "crontab.cpp"
+#line 357 "crontab.cpp"
 
 						break; 
 					}
 					case 1:  {
 							{
-#line 207 "crontab.rl"
+#line 204 "crontab.rl"
 							
 							if (auto t = nk::from_string<time_t>(MARKED_HST())) {
 								hst.h.set_lasttime(*t);
@@ -382,13 +379,13 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 							}
 						}
 						
-#line 375 "crontab.cpp"
+#line 372 "crontab.cpp"
 
 						break; 
 					}
 					case 2:  {
 							{
-#line 215 "crontab.rl"
+#line 212 "crontab.rl"
 							
 							if (auto t = nk::from_string<unsigned>(MARKED_HST())) {
 								hst.h.set_numruns(*t);
@@ -398,13 +395,13 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 							}
 						}
 						
-#line 390 "crontab.cpp"
+#line 387 "crontab.cpp"
 
 						break; 
 					}
 					case 3:  {
 							{
-#line 223 "crontab.rl"
+#line 220 "crontab.rl"
 							
 							if (auto t = nk::from_string<time_t>(MARKED_HST())) {
 								hst.h.set_exectime(*t);
@@ -414,13 +411,13 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 							}
 						}
 						
-#line 405 "crontab.cpp"
+#line 402 "crontab.cpp"
 
 						break; 
 					}
 					case 4:  {
 							{
-#line 231 "crontab.rl"
+#line 228 "crontab.rl"
 							
 							if (auto t = nk::from_string<unsigned>(MARKED_HST())) {
 								hst.id = *t;
@@ -430,7 +427,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 							}
 						}
 						
-#line 420 "crontab.cpp"
+#line 417 "crontab.cpp"
 
 						break; 
 					}
@@ -454,7 +451,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		_out: {}
 	}
 	
-#line 255 "crontab.rl"
+#line 252 "crontab.rl"
 
 	
 	if (hst.parse_error) return -1;
@@ -465,13 +462,13 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 	return -2;
 }
 
-static void parse_history(std::string_view path)
+static void parse_history(char const *path)
 {
 	char buf[MAX_LINE];
-	auto f = fopen(path.data(), "r");
+	auto f = fopen(path, "r");
 	if (!f) {
 		log_line("%s: failed to open history file \"%s\" for read: %s",
-		__func__, path.data(), strerror(errno));
+		__func__, path, strerror(errno));
 		return;
 	}
 	defer [&f]{ fclose(f); };
@@ -479,7 +476,7 @@ static void parse_history(std::string_view path)
 	while (!feof(f)) {
 		if (!fgets(buf, sizeof buf, f)) {
 			if (!feof(f))
-				log_line("%s: io error fetching line of '%s'", __func__, path.data());
+				log_line("%s: io error fetching line of '%s'", __func__, path);
 			break;
 		}
 		auto llen = strlen(buf);
@@ -554,11 +551,11 @@ struct Pckm {
 #define MARKED_PCKM() pckm.st, (p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0)
 
 
-#line 370 "crontab.rl"
+#line 367 "crontab.rl"
 
 
 
-#line 544 "crontab.cpp"
+#line 541 "crontab.cpp"
 static const signed char _parse_cmd_key_m_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 2,
 	0, 2, 2, 1, 0, 2, 1, 2,
@@ -622,7 +619,7 @@ static const int parse_cmd_key_m_error = 0;
 static const int parse_cmd_key_m_en_main = 1;
 
 
-#line 372 "crontab.rl"
+#line 369 "crontab.rl"
 
 
 // cmdret = 0: Not parsed a command key yet.
@@ -645,15 +642,15 @@ static void parse_command_key(ParseCfgState &ncs)
 	}
 	
 
-#line 628 "crontab.cpp"
+#line 625 "crontab.cpp"
 	{
 		pckm.cs = (int)parse_cmd_key_m_start;
 	}
 	
-#line 393 "crontab.rl"
+#line 390 "crontab.rl"
 
 
-#line 633 "crontab.cpp"
+#line 630 "crontab.cpp"
 	{
 		int _klen;
 		unsigned int _trans = 0;
@@ -733,32 +730,32 @@ static void parse_command_key(ParseCfgState &ncs)
 				{
 					case 0:  {
 							{
-#line 357 "crontab.rl"
+#line 354 "crontab.rl"
 							pckm.st = p; }
 						
-#line 715 "crontab.cpp"
+#line 712 "crontab.cpp"
 
 						break; 
 					}
 					case 1:  {
 							{
-#line 358 "crontab.rl"
+#line 355 "crontab.rl"
 							
 							ncs.ce.command = std::string(MARKED_PCKM());
 							string_replace_all(ncs.ce.command, "\\ ", 2, " ");
 							string_replace_all(ncs.ce.command, "\\\\", 2, "\\");
 						}
 						
-#line 727 "crontab.cpp"
+#line 724 "crontab.cpp"
 
 						break; 
 					}
 					case 2:  {
 							{
-#line 363 "crontab.rl"
+#line 360 "crontab.rl"
 							ncs.ce.args = std::string(MARKED_PCKM()); }
 						
-#line 735 "crontab.cpp"
+#line 732 "crontab.cpp"
 
 						break; 
 					}
@@ -782,7 +779,7 @@ static void parse_command_key(ParseCfgState &ncs)
 		_out: {}
 	}
 	
-#line 394 "crontab.rl"
+#line 391 "crontab.rl"
 
 	
 	if (pckm.cs == parse_cmd_key_m_error) {
@@ -804,11 +801,11 @@ static void parse_command_key(ParseCfgState &ncs)
 #define MARKED_JOBID() ncs.jobid_st, (p > ncs.jobid_st ? static_cast<size_t>(p - ncs.jobid_st) : 0)
 
 
-#line 565 "crontab.rl"
+#line 562 "crontab.rl"
 
 
 
-#line 781 "crontab.cpp"
+#line 778 "crontab.cpp"
 static const signed char _ncrontab_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1,
 	3, 1, 4, 1, 5, 1, 6, 1,
@@ -1052,7 +1049,7 @@ static const int ncrontab_error = 0;
 static const int ncrontab_en_main = 1;
 
 
-#line 567 "crontab.rl"
+#line 564 "crontab.rl"
 
 
 static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
@@ -1061,15 +1058,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 	const char *eof = pe;
 	
 
-#line 1031 "crontab.cpp"
+#line 1028 "crontab.cpp"
 	{
 		ncs.cs = (int)ncrontab_start;
 	}
 	
-#line 574 "crontab.rl"
+#line 571 "crontab.rl"
 
 
-#line 1036 "crontab.cpp"
+#line 1033 "crontab.cpp"
 	{
 		int _klen;
 		unsigned int _trans = 0;
@@ -1149,16 +1146,16 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				{
 					case 0:  {
 							{
-#line 421 "crontab.rl"
+#line 418 "crontab.rl"
 							ncs.time_st = p; ncs.v_time = 0; }
 						
-#line 1118 "crontab.cpp"
+#line 1115 "crontab.cpp"
 
 						break; 
 					}
 					case 1:  {
 							{
-#line 422 "crontab.rl"
+#line 419 "crontab.rl"
 							
 							if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
 								ncs.v_time += *t;
@@ -1168,13 +1165,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							}
 						}
 						
-#line 1133 "crontab.cpp"
+#line 1130 "crontab.cpp"
 
 						break; 
 					}
 					case 2:  {
 							{
-#line 430 "crontab.rl"
+#line 427 "crontab.rl"
 							
 							if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
 								ncs.v_time += 60 * *t;
@@ -1184,13 +1181,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							}
 						}
 						
-#line 1148 "crontab.cpp"
+#line 1145 "crontab.cpp"
 
 						break; 
 					}
 					case 3:  {
 							{
-#line 438 "crontab.rl"
+#line 435 "crontab.rl"
 							
 							if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
 								ncs.v_time += 3600 * *t;
@@ -1200,13 +1197,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							}
 						}
 						
-#line 1163 "crontab.cpp"
+#line 1160 "crontab.cpp"
 
 						break; 
 					}
 					case 4:  {
 							{
-#line 446 "crontab.rl"
+#line 443 "crontab.rl"
 							
 							if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
 								ncs.v_time += 86400 * *t;
@@ -1216,13 +1213,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							}
 						}
 						
-#line 1178 "crontab.cpp"
+#line 1175 "crontab.cpp"
 
 						break; 
 					}
 					case 5:  {
 							{
-#line 454 "crontab.rl"
+#line 451 "crontab.rl"
 							
 							if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
 								ncs.v_time += 604800 * *t;
@@ -1232,26 +1229,26 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							}
 						}
 						
-#line 1193 "crontab.cpp"
+#line 1190 "crontab.cpp"
 
 						break; 
 					}
 					case 6:  {
 							{
-#line 463 "crontab.rl"
+#line 460 "crontab.rl"
 							
 							ncs.intv_st = p;
 							ncs.v_int = ncs.v_int2 = 0;
 							ncs.intv2_exist = false;
 						}
 						
-#line 1205 "crontab.cpp"
+#line 1202 "crontab.cpp"
 
 						break; 
 					}
 					case 7:  {
 							{
-#line 468 "crontab.rl"
+#line 465 "crontab.rl"
 							
 							if (auto t = nk::from_string<int>(MARKED_INTV1())) {
 								ncs.v_int = *t;
@@ -1261,22 +1258,22 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							}
 						}
 						
-#line 1220 "crontab.cpp"
+#line 1217 "crontab.cpp"
 
 						break; 
 					}
 					case 8:  {
 							{
-#line 476 "crontab.rl"
+#line 473 "crontab.rl"
 							ncs.intv2_st = p; }
 						
-#line 1228 "crontab.cpp"
+#line 1225 "crontab.cpp"
 
 						break; 
 					}
 					case 9:  {
 							{
-#line 477 "crontab.rl"
+#line 474 "crontab.rl"
 							
 							if (auto t = nk::from_string<int>(MARKED_INTV2())) {
 								ncs.v_int2 = *t;
@@ -1287,22 +1284,22 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.intv2_exist = true;
 						}
 						
-#line 1244 "crontab.cpp"
+#line 1241 "crontab.cpp"
 
 						break; 
 					}
 					case 10:  {
 							{
-#line 487 "crontab.rl"
+#line 484 "crontab.rl"
 							ncs.strv_st = p; ncs.v_strlen = 0; }
 						
-#line 1252 "crontab.cpp"
+#line 1249 "crontab.cpp"
 
 						break; 
 					}
 					case 11:  {
 							{
-#line 488 "crontab.rl"
+#line 485 "crontab.rl"
 							
 							ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
 							if (ncs.v_strlen >= sizeof ncs.v_str) {
@@ -1313,22 +1310,22 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.v_str[ncs.v_strlen] = 0;
 						}
 						
-#line 1268 "crontab.cpp"
+#line 1265 "crontab.cpp"
 
 						break; 
 					}
 					case 12:  {
 							{
-#line 511 "crontab.rl"
+#line 508 "crontab.rl"
 							ncs.ce.journal = true; }
 						
-#line 1276 "crontab.cpp"
+#line 1273 "crontab.cpp"
 
 						break; 
 					}
 					case 13:  {
 							{
-#line 514 "crontab.rl"
+#line 511 "crontab.rl"
 							
 							ncs.runat = true;
 							ncs.ce.exectime = ncs.v_int;
@@ -1336,97 +1333,97 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.ce.journal = true;
 						}
 						
-#line 1289 "crontab.cpp"
+#line 1286 "crontab.cpp"
 
 						break; 
 					}
 					case 14:  {
 							{
-#line 520 "crontab.rl"
+#line 517 "crontab.rl"
 							
 							if (!ncs.runat)
 							ncs.ce.maxruns = ncs.v_int > 0 ? static_cast<unsigned>(ncs.v_int) : 0;
 						}
 						
-#line 1300 "crontab.cpp"
+#line 1297 "crontab.cpp"
 
 						break; 
 					}
 					case 15:  {
 							{
-#line 528 "crontab.rl"
+#line 525 "crontab.rl"
 							ncs.ce.interval = ncs.v_time; }
 						
-#line 1308 "crontab.cpp"
+#line 1305 "crontab.cpp"
 
 						break; 
 					}
 					case 16:  {
 							{
-#line 532 "crontab.rl"
+#line 529 "crontab.rl"
 							addcstlist(ncs, ncs.ce.month, 0, 1, 12); }
 						
-#line 1316 "crontab.cpp"
+#line 1313 "crontab.cpp"
 
 						break; 
 					}
 					case 17:  {
 							{
-#line 533 "crontab.rl"
+#line 530 "crontab.rl"
 							addcstlist(ncs, ncs.ce.day, 0, 1, 31); }
 						
-#line 1324 "crontab.cpp"
+#line 1321 "crontab.cpp"
 
 						break; 
 					}
 					case 18:  {
 							{
-#line 534 "crontab.rl"
+#line 531 "crontab.rl"
 							addcstlist(ncs, ncs.ce.weekday, 0, 1, 7); }
 						
-#line 1332 "crontab.cpp"
+#line 1329 "crontab.cpp"
 
 						break; 
 					}
 					case 19:  {
 							{
-#line 535 "crontab.rl"
+#line 532 "crontab.rl"
 							addcstlist(ncs, ncs.ce.hour, 24, 0, 23); }
 						
-#line 1340 "crontab.cpp"
+#line 1337 "crontab.cpp"
 
 						break; 
 					}
 					case 20:  {
 							{
-#line 536 "crontab.rl"
+#line 533 "crontab.rl"
 							addcstlist(ncs, ncs.ce.minute, 60, 0, 59); }
 						
-#line 1348 "crontab.cpp"
+#line 1345 "crontab.cpp"
 
 						break; 
 					}
 					case 21:  {
 							{
-#line 544 "crontab.rl"
+#line 541 "crontab.rl"
 							parse_command_key(ncs); }
 						
-#line 1356 "crontab.cpp"
+#line 1353 "crontab.cpp"
 
 						break; 
 					}
 					case 22:  {
 							{
-#line 551 "crontab.rl"
+#line 548 "crontab.rl"
 							ncs.jobid_st = p; }
 						
-#line 1364 "crontab.cpp"
+#line 1361 "crontab.cpp"
 
 						break; 
 					}
 					case 23:  {
 							{
-#line 552 "crontab.rl"
+#line 549 "crontab.rl"
 							
 							if (auto t = nk::from_string<unsigned>(MARKED_JOBID())) {
 								ncs.ce.id = *t;
@@ -1436,16 +1433,16 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							}
 						}
 						
-#line 1379 "crontab.cpp"
+#line 1376 "crontab.cpp"
 
 						break; 
 					}
 					case 24:  {
 							{
-#line 560 "crontab.rl"
+#line 557 "crontab.rl"
 							ncs.finish_ce(); ncs.create_ce(); }
 						
-#line 1387 "crontab.cpp"
+#line 1384 "crontab.cpp"
 
 						break; 
 					}
@@ -1469,7 +1466,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		_out: {}
 	}
 	
-#line 575 "crontab.rl"
+#line 572 "crontab.rl"
 
 	
 	if (ncs.parse_error) return -1;
@@ -1480,25 +1477,25 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 	return 0;
 }
 
-void parse_config(std::string_view path, std::string_view execfile,
+void parse_config(char const *path, char const *execfile,
 std::vector<StackItem> *stk,
 std::vector<StackItem> *deadstk)
 {
 	g_jobs.clear();
-	ParseCfgState ncs(execfile, stk, deadstk);
-	parse_history(ncs.execfile);
+	ParseCfgState ncs(stk, deadstk);
+	parse_history(execfile);
 	
 	char buf[MAX_LINE];
-	auto f = fopen(path.data(), "r");
+	auto f = fopen(path, "r");
 	if (!f) {
-		log_line("%s: failed to open file: '%s': %s", __func__, path.data(), strerror(errno));
+		log_line("%s: failed to open file: '%s': %s", __func__, path, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	defer [&f]{ fclose(f); };
 	while (!feof(f)) {
 		if (!fgets(buf, sizeof buf, f)) {
 			if (!feof(f))
-				log_line("%s: io error fetching line of '%s'", __func__, path.data());
+				log_line("%s: io error fetching line of '%s'", __func__, path);
 			break;
 		}
 		auto llen = strlen(buf);
@@ -1508,7 +1505,7 @@ std::vector<StackItem> *deadstk)
 			buf[--llen] = 0;
 		++ncs.linenum;
 		if (do_parse_config(ncs, buf, llen) < 0) {
-			log_line("%s: do_parse_config(%s) failed at line %zu", __func__, path.data(), ncs.linenum);
+			log_line("%s: do_parse_config(%s) failed at line %zu", __func__, path, ncs.linenum);
 			exit(EXIT_FAILURE);
 		}
 	}
