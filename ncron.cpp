@@ -39,7 +39,7 @@ extern "C" {
 int gflags_debug;
 static volatile sig_atomic_t pending_save_and_exit;
 static volatile sig_atomic_t pending_reload_config;
-static std::optional<int> s6_notify_fd;
+static int s6_notify_fd = -1;
 
 /* Time (in msec) to sleep before dispatching events at startup.
    Set to a nonzero value so as not to compete for cpu with init scripts at
@@ -366,10 +366,10 @@ int main(int argc, char* argv[])
     prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);
 #endif
 
-    if (s6_notify_fd) {
+    if (s6_notify_fd >= 0) {
         char buf[] = "\n";
-        safe_write(*s6_notify_fd, buf, 1);
-        close(*s6_notify_fd);
+        safe_write(s6_notify_fd, buf, 1);
+        close(s6_notify_fd);
     }
 
     do_work(g_initial_sleep);
