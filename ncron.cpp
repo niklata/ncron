@@ -70,7 +70,7 @@ static std::vector<StackItem> deadstack;
     auto do_save = [&f](const std::vector<StackItem> &s) -> bool {
         for (auto &i: s) {
             const auto &j = g_jobs[i.jidx];
-            if (fprintf(f, "%u=%li:%u|%lu\n", j.id, j.exectime, j.numruns, j.lasttime) < 0) {
+            if (fprintf(f, "%d=%li:%u|%lu\n", j.id, j.exectime, j.numruns, j.lasttime) < 0) {
                 log_line("%s: failed writing to history file %s", __func__, g_ncron_execfile_tmp);
                 return false;
             }
@@ -200,7 +200,7 @@ static inline void debug_stack_print(const struct timespec &ts) {
         return;
     log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, g_jobs[stack.front().jidx].exectime);
     for (const auto &i: stack)
-        log_line("do_work: job %u exectime = %lu", g_jobs[i.jidx].id, g_jobs[i.jidx].exectime);
+        log_line("do_work: job %d exectime = %lu", g_jobs[i.jidx].id, g_jobs[i.jidx].exectime);
 }
 
 static void do_work(unsigned initial_sleep)
@@ -225,7 +225,7 @@ static void do_work(unsigned initial_sleep)
         while (g_jobs[stack.front().jidx].exectime <= ts.tv_sec) {
             auto &i = g_jobs[stack.front().jidx];
             if (gflags_debug)
-                log_line("do_work: DISPATCH %u (%lu <= %lu)", i.id, i.exectime, ts.tv_sec);
+                log_line("do_work: DISPATCH %d (%lu <= %lu)", i.id, i.exectime, ts.tv_sec);
 
             i.exec(ts);
             if (i.journal || g_ncron_execmode == Execmode::journal)

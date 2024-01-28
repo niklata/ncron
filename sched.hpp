@@ -30,7 +30,7 @@ struct Job
 
     using cst_list = std::vector<std::pair<int,int>>;
 
-    unsigned int id = 0;
+    int id = -1;
     time_t exectime = 0;        /* time at which we will execute in the future */
     time_t lasttime = 0;        /* time that the job last ran */
     unsigned int interval = 0;  /* min interval between executions in seconds */
@@ -66,7 +66,7 @@ struct Job
     }
     void clear()
     {
-        id = 0;
+        id = -1;
         exectime = 0;
         lasttime = 0;
         interval = 0;

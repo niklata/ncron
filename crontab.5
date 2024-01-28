@@ -1,8 +1,8 @@
 .\" Man page for ncron
 .\"
-.\" Copyright (c) 2004-2022 Nicholas J. Kain
+.\" Copyright (c) 2004-2024 Nicholas J. Kain
 .\"
-.TH crontab 5 "August 9, 2022"
+.TH crontab 5 "January 28, 2024"
 .LO 1
 .SH NAME
 crontab \- ncron configuration file
@@ -28,18 +28,16 @@ JOB :=
 	journal
 	maxruns=integer
 	runat=integer
-	
+
 config file :=
 	JOB
 	...
 	JOB
-	!0
 .fi
 .PP
-A !0 must terminate the file, otherwise the last job will not
-be used.  Multiple constraints are allowed, but serve only to
-permit additional ranges in which jobs may be run (in other words,
-they are implicitly unioned).
+Multiple constraints are allowed, but serve only to permit additional
+ranges in which jobs may be run (in other words, they are implicitly
+unioned).
 .PP
 The default location for configure files is /var/lib/ncron/crontab.
 
@@ -118,7 +116,6 @@ first quarter of an hour".
 command=ls -laF
 day=10
 interval=1h
-!0
 .fi
 .PP
 This job will run "ls -laF" in ncron's working directory hourly on the 10th day

@@ -76,7 +76,7 @@ struct ParseCfgState
         if (!gflags_debug)
             return;
         log_line("-=- finish_ce -=-");
-        log_line("id: %u", ce.id);
+        log_line("id: %d", ce.id);
         log_line("command: %s", ce.command ? ce.command : "");
         log_line("args: %s", ce.args ? ce.args : "");
         log_line("numruns: %u", ce.numruns);
@@ -101,22 +101,29 @@ struct ParseCfgState
     {
         if (!gflags_debug)
             return;
-        log_line("[%u]->numruns = %u", ce.id, ce.numruns);
-        log_line("[%u]->exectime = %lu", ce.id, ce.exectime);
-        log_line("[%u]->lasttime = %lu", ce.id, ce.lasttime);
+        log_line("[%d]->numruns = %u", ce.id, ce.numruns);
+        log_line("[%d]->exectime = %lu", ce.id, ce.exectime);
+        log_line("[%d]->lasttime = %lu", ce.id, ce.lasttime);
     }
 
     void finish_ce()
     {
+        defer [this]{ create_ce(); };
         debug_print_ce();
 
-        if (ce.id <= 0
+        if (ce.id < 0
             || (ce.interval <= 0 && ce.exectime <= 0)
             || !ce.command || cmdret < 1) {
             if (gflags_debug)
                 log_line("===> IGNORE");
-            ce.clear();
             return;
+        }
+        // XXX: O(n^2) might be nice to avoid.
+        for (auto &i: g_jobs) {
+            if (i.id == ce.id) {
+                log_line("ERROR IN CRONTAB: ignoring duplicate entry for job %d", ce.id);
+                return;
+            }
         }
         if (gflags_debug)
             log_line("===> ADD");
@@ -130,7 +137,6 @@ struct ParseCfgState
 
             auto numruns = ce.numruns;
             g_jobs.emplace_back(std::move(ce));
-            ce.clear();
 
             /* insert iif we haven't exceeded maxruns */
             assert(g_jobs.size() > 0);
@@ -147,7 +153,6 @@ struct ParseCfgState
             auto maxruns = ce.maxruns;
             auto exectime = ce.exectime;
             g_jobs.emplace_back(std::move(ce));
-            ce.clear();
 
             /* insert iif numruns < maxruns and no constr error */
             assert(g_jobs.size() > 0);
@@ -178,7 +183,7 @@ struct hstm {
     hstm() {}
     const char *st = nullptr;
     int cs = 0;
-    unsigned int id = 0;
+    int id = -1;
     item_history h;
     bool parse_error = false;
 };
@@ -186,9 +191,9 @@ struct hstm {
 struct history_entry
 {
     history_entry() {}
-    history_entry(unsigned int id_, item_history h_) : id(id_), h(std::move(h_)) {}
+    history_entry(int id_, item_history h_) : id(id_), h(std::move(h_)) {}
 
-    unsigned int id;
+    int id;
     item_history h;
 };
 static std::vector<history_entry> history_lut;
@@ -225,7 +230,7 @@ static std::vector<history_entry> history_lut;
         }
     }
     action IdEn {
-        if (auto t = nk::from_string<unsigned>(MARKED_HST())) {
+        if (auto t = nk::from_string<int>(MARKED_HST())) {
             hst.id = *t;
         } else {
             hst.parse_error = true;
@@ -573,14 +578,14 @@ static void parse_command_key(ParseCfgState &ncs)
 
     action JobIdSt { ncs.jobid_st = p; }
     action JobIdEn {
-        if (auto t = nk::from_string<unsigned>(MARKED_JOBID())) {
+        if (auto t = nk::from_string<int>(MARKED_JOBID())) {
             ncs.ce.id = *t;
         } else {
             ncs.parse_error = true;
             fbreak;
         }
     }
-    action CreateCe { ncs.finish_ce(); ncs.create_ce(); }
+    action CreateCe { ncs.finish_ce(); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;
 
@@ -637,6 +642,7 @@ void parse_config(char const *path, char const *execfile,
             exit(EXIT_FAILURE);
         }
     }
+    ncs.finish_ce();
     std::sort(stk->begin(), stk->end(), LtCronEntry);
     history_lut.clear();
 }

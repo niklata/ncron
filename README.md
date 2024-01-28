@@ -1,5 +1,5 @@
 # ncron
-Copyright 2003-2022 Nicholas J. Kain.
+Copyright 2003-2024 Nicholas J. Kain.
 See LICENSE for licensing information.
 
 ## Introduction
@@ -73,7 +73,6 @@ A simple crontab file (remove the leading spaces if you copy/paste):
 !1
 command=/bin/echo 'Hello world!'
 interval=5m
-!0
 ```
 
 The exectimes file will be created by ncron; it stores the history of
