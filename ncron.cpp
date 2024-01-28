@@ -165,11 +165,8 @@ static void do_work(unsigned initial_sleep)
 {
     struct timespec ts;
     clock_or_die(&ts);
-    ts.tv_nsec += initial_sleep * 1000000;
-    if (ts.tv_nsec >= 1000000000) {
-        ts.tv_sec += 1;
-        ts.tv_nsec -= 1000000000;
-    }
+    ts.tv_sec += initial_sleep / 1000;
+    ts.tv_nsec += (initial_sleep % 1000) * 1000000;
 
     bool pending_save = false;
     for (;;) {
