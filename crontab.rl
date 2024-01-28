@@ -7,12 +7,6 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <pwd.h>
-#include <grp.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <limits.h>
 #include <nk/string_replace_all.hpp>
 #include <nk/from_string.hpp>
 #include <nk/scopeguard.hpp>
