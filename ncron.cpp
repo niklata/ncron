@@ -47,14 +47,20 @@ static unsigned g_initial_sleep = 0;
 
 static std::string g_ncron_conf(CONFIG_FILE_DEFAULT);
 static std::string g_ncron_execfile(EXEC_FILE_DEFAULT);
-static int g_ncron_execmode = 0;
+enum class Execmode
+{
+    normal = 0,
+    journal,
+    nosave,
+};
+static Execmode g_ncron_execmode = Execmode::normal;
 
 static std::vector<StackItem> stack;
 static std::vector<StackItem> deadstack;
 
 static void reload_config(void)
 {
-    if (g_ncron_execmode != 2)
+    if (g_ncron_execmode != Execmode::nosave)
         save_stack(g_ncron_execfile, stack, deadstack);
 
     g_jobs.clear();
@@ -68,7 +74,7 @@ static void reload_config(void)
 
 static void save_and_exit(void)
 {
-    if (g_ncron_execmode != 2) {
+    if (g_ncron_execmode != Execmode::nosave) {
         save_stack(g_ncron_execfile, stack, deadstack);
         log_line("Saving stack to %s.", g_ncron_execfile.c_str());
     }
@@ -124,21 +130,14 @@ static void fail_on_fdne(std::string_view file, int mode)
         exit(EXIT_FAILURE);
 }
 
-static void sleep_or_die(struct timespec *ts, bool pending_save)
+static void sleep_or_die(struct timespec *ts)
 {
 retry:
     auto r = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, ts, NULL);
     if (r) {
         if (r == EINTR) {
-            if (pending_save_and_exit)
-                save_and_exit();
-
-            if (g_ncron_execmode == 1 || pending_save)
-                save_stack(g_ncron_execfile, stack, deadstack);
-
-            if (pending_reload_config)
-                reload_config();
-
+            if (pending_save_and_exit) save_and_exit();
+            if (pending_reload_config) reload_config();
             goto retry;
         }
         log_line("%s: clock_nanosleep failed: %s", __func__, strerror(r));
@@ -174,7 +173,11 @@ static void do_work(unsigned initial_sleep)
 
     bool pending_save = false;
     for (;;) {
-        sleep_or_die(&ts, pending_save);
+        if (pending_save) {
+            save_stack(g_ncron_execfile, stack, deadstack);
+            pending_save = false;
+        }
+        sleep_or_die(&ts);
 
         while (g_jobs[stack.front().jidx].exectime <= ts.tv_sec) {
             auto &i = g_jobs[stack.front().jidx];
@@ -182,7 +185,7 @@ static void do_work(unsigned initial_sleep)
                 log_line("do_work: DISPATCH %u (%lu <= %lu)", i.id, i.exectime, ts.tv_sec);
 
             i.exec(ts);
-            if (i.journal)
+            if (i.journal || g_ncron_execmode == Execmode::journal)
                 pending_save = true;
 
             if ((i.numruns < i.maxruns || i.maxruns == 0) && i.exectime != 0) {
@@ -277,8 +280,8 @@ static void process_options(int ac, char *av[])
                           exit(EXIT_FAILURE);
                       }
                       break;
-            case '0': g_ncron_execmode = 2; break;
-            case 'j': g_ncron_execmode = 1; break;
+            case '0': g_ncron_execmode = Execmode::nosave; break;
+            case 'j': g_ncron_execmode = Execmode::journal; break;
             case 't': g_ncron_conf = optarg; break;
             case 'H': g_ncron_execfile = optarg; break;
             case 'd': s6_notify_fd = atoi(optarg); break;
