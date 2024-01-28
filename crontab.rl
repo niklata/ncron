@@ -26,7 +26,20 @@ extern int gflags_debug;
 
 std::vector<Job> g_jobs;
 
-static void get_history(Job &item);
+struct item_history {
+    time_t exectime = 0;
+    time_t lasttime = 0;
+    unsigned int numruns = 0;
+};
+
+struct history_entry
+{
+    history_entry(int id_, item_history h_) : id(id_), history(h_) {}
+
+    int id;
+    item_history history;
+};
+static std::vector<history_entry> history_lut;
 
 struct ParseCfgState
 {
@@ -63,6 +76,18 @@ struct ParseCfgState
     bool runat = false;
 
     bool parse_error = false;
+
+    void get_history()
+    {
+        for (const auto &i: history_lut) {
+            if (i.id == ce.id) {
+                ce.exectime = i.history.exectime;
+                ce.lasttime = i.history.lasttime;
+                ce.numruns = i.history.numruns;
+                return;
+            }
+        }
+    }
 
     void create_ce()
     {
@@ -136,7 +161,7 @@ struct ParseCfgState
 
         /* we have a job to insert */
         if (!runat) {
-            get_history(ce);
+            get_history();
             debug_print_ce_history();
             set_initial_exectime(ce);
 
@@ -152,7 +177,7 @@ struct ParseCfgState
                 log_line("ERROR IN CRONTAB: interval is unused when runat is set: job %d", ce.id);
             }
             auto forced_exectime = ce.exectime;
-            get_history(ce);
+            get_history();
             ce.exectime = forced_exectime;
             debug_print_ce_history();
 
@@ -165,12 +190,6 @@ struct ParseCfgState
     }
 };
 
-struct item_history {
-    time_t exectime = 0;
-    time_t lasttime = 0;
-    unsigned int numruns = 0;
-};
-
 struct hstm {
     const char *st = nullptr;
     int cs = 0;
@@ -178,15 +197,6 @@ struct hstm {
     item_history h;
     bool parse_error = false;
 };
-
-struct history_entry
-{
-    history_entry(int id_, item_history h_) : id(id_), history(h_) {}
-
-    int id;
-    item_history history;
-};
-static std::vector<history_entry> history_lut;
 
 #define MARKED_HST() hst.st, (p > hst.st ? static_cast<size_t>(p - hst.st) : 0)
 
@@ -284,18 +294,6 @@ static void parse_history(char const *path)
             continue;
         }
         history_lut.emplace_back(hst.id, hst.h);
-    }
-}
-
-static void get_history(Job &item)
-{
-    for (const auto &i: history_lut) {
-        if (i.id == item.id) {
-            item.exectime = i.history.exectime;
-            item.lasttime = i.history.lasttime;
-            item.numruns = i.history.numruns;
-            return;
-        }
     }
 }
 
