@@ -23,7 +23,6 @@ extern "C" {
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
 
-static int cfg_reload;    /* 0 on first call, 1 on subsequent calls */
 extern int gflags_debug;
 
 std::vector<Job> g_jobs;
@@ -617,6 +616,5 @@ void parse_config(std::string_view path, std::string_view execfile,
     }
     std::sort(stk->begin(), stk->end(), LtCronEntry);
     history_lut.clear();
-    cfg_reload = 1;
 }
 
