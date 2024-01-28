@@ -60,10 +60,43 @@ static Execmode g_ncron_execmode = Execmode::normal;
 static std::vector<StackItem> stack;
 static std::vector<StackItem> deadstack;
 
+[[nodiscard]] static bool save_stack()
+{
+    auto f = fopen(g_ncron_execfile_tmp.data(), "w");
+    if (!f) {
+        log_line("%s: failed to open history file %s for write", __func__, g_ncron_execfile_tmp.data());
+        return false;
+    }
+    auto do_save = [&f](const std::vector<StackItem> &s) -> bool {
+        for (auto &i: s) {
+            const auto &j = g_jobs[i.jidx];
+            if (fprintf(f, "%u=%li:%u|%lu\n", j.id, j.exectime, j.numruns, j.lasttime) < 0) {
+                log_line("%s: failed writing to history file %s", __func__, g_ncron_execfile_tmp.data());
+                return false;
+            }
+        }
+        return true;
+    };
+    nk::scope_guard remove_ftmp = []{ unlink(g_ncron_execfile_tmp.data()); };
+    {
+        defer [&f]{ fclose(f); };
+        if (!do_save(stack)) return false;
+        if (!do_save(deadstack)) return false;
+    }
+
+    if (rename(g_ncron_execfile_tmp.data(), g_ncron_execfile.data())) {
+        log_line("%s: failed to update to new history file (%s => %s): %s", __func__,
+                 g_ncron_execfile_tmp.data(), g_ncron_execfile.data(), strerror(errno));
+        return false;
+    }
+    remove_ftmp.dismiss();
+    return true;
+}
+
 static void reload_config(void)
 {
     if (g_ncron_execmode != Execmode::nosave) {
-        if (!save_stack(g_ncron_execfile, g_ncron_execfile_tmp, stack, deadstack)) {
+        if (!save_stack()) {
             log_line("SIGHUP - Failed to save exectimes; some jobs may run again.");
         }
     }
@@ -80,7 +113,7 @@ static void reload_config(void)
 static void save_and_exit(void)
 {
     if (g_ncron_execmode != Execmode::nosave) {
-        if (save_stack(g_ncron_execfile, g_ncron_execfile_tmp, stack, deadstack)) {
+        if (save_stack()) {
             log_line("Saved stack to %s.", g_ncron_execfile.c_str());
         } else {
             log_line("Failed to save stack to %s; some jobs may run again.",
@@ -180,7 +213,7 @@ static void do_work(unsigned initial_sleep)
     bool pending_save = false;
     for (;;) {
         if (pending_save) {
-            if (!save_stack(g_ncron_execfile, g_ncron_execfile_tmp, stack, deadstack)) {
+            if (!save_stack()) {
                 log_line("Failed to save stack to %s for a journalled job.",
                          g_ncron_execfile.c_str());
             } else {

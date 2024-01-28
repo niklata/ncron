@@ -9,7 +9,6 @@
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
-#include <nk/defer.hpp>
 extern "C" {
 #include "nk/log.h"
 #include "nk/pspawn.h"
@@ -269,42 +268,6 @@ void Job::set_next_time()
     clock_or_die(&ts);
     auto etime = constrain_time(*this, ts.tv_sec + interval);
     exectime = etime > ts.tv_sec ? etime : 0;
-}
-
-bool save_stack(std::string_view file,
-                std::string_view ftmp,
-                const std::vector<StackItem> &stack,
-                const std::vector<StackItem> &deadstack)
-{
-    auto f = fopen(ftmp.data(), "w");
-    if (!f) {
-        log_line("%s: failed to open history file %s for write", __func__, ftmp.data());
-        return false;
-    }
-    auto do_save = [&f, &ftmp](const std::vector<StackItem> &s) -> bool {
-        for (auto &i: s) {
-            const auto &j = g_jobs[i.jidx];
-            if (fprintf(f, "%u=%li:%u|%lu\n", j.id, j.exectime, j.numruns, j.lasttime) < 0) {
-                log_line("%s: failed writing to history file %s", __func__, ftmp.data());
-                return false;
-            }
-        }
-        return true;
-    };
-    nk::scope_guard remove_ftmp = [&ftmp]{ unlink(ftmp.data()); };
-    {
-        defer [&f]{ fclose(f); };
-        if (!do_save(stack)) return false;
-        if (!do_save(deadstack)) return false;
-    }
-
-    if (rename(ftmp.data(), file.data())) {
-        log_line("%s: failed to update to new history file (%s => %s): %s", __func__,
-                 ftmp.data(), file.data(), strerror(errno));
-        return false;
-    }
-    remove_ftmp.dismiss();
-    return true;
 }
 
 void Job::exec(const struct timespec &ts)
