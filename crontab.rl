@@ -39,12 +39,8 @@ static void get_history(Job &item);
 struct ParseCfgState
 {
     ParseCfgState(std::string_view ef, std::vector<StackItem> *stk,
-                  std::vector<StackItem> *dstk) :
-        stack(stk), deadstack(dstk), execfile(ef.data(), ef.size()),
-        jobid_st(nullptr), time_st(nullptr), intv_st(nullptr),
-        intv2_st(nullptr), strv_st(nullptr), v_strlen(0), linenum(0), v_int(0),
-        v_int2(0), cs(0), cmdret(0), intv2_exist(false), runat(false),
-        parse_error(false)
+                  std::vector<StackItem> *dstk)
+    : stack(stk), deadstack(dstk), execfile(ef.data(), ef.size())
     {
         memset(v_str, 0, sizeof v_str);
     }
@@ -57,27 +53,27 @@ struct ParseCfgState
 
     std::string execfile;
 
-    const char *jobid_st;
-    const char *time_st;
-    const char *intv_st;
-    const char *intv2_st;
-    const char *strv_st;
+    const char *jobid_st = nullptr;
+    const char *time_st = nullptr;
+    const char *intv_st = nullptr;
+    const char *intv2_st = nullptr;
+    const char *strv_st = nullptr;
 
-    size_t v_strlen;
-    size_t linenum;
+    size_t v_strlen = 0;
+    size_t linenum = 0;
 
     unsigned int v_time;
 
-    int v_int;
-    int v_int2;
+    int v_int = 0;
+    int v_int2 = 0;
 
-    int cs;
-    int cmdret;
+    int cs = 0;
+    int cmdret = 0;
 
-    bool intv2_exist;
-    bool runat;
+    bool intv2_exist = false;
+    bool runat = false;
 
-    bool parse_error;
+    bool parse_error = false;
 
     void create_ce()
     {
