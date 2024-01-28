@@ -7,7 +7,6 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <nk/string_replace_all.hpp>
 #include <nk/from_string.hpp>
 #include <nk/defer.hpp>
 extern "C" {
@@ -78,8 +77,8 @@ struct ParseCfgState
             return;
         log_line("-=- finish_ce -=-");
         log_line("id: %u", ce.id);
-        log_line("command: %s", ce.command.c_str());
-        log_line("args: %s", ce.args.c_str());
+        log_line("command: %s", ce.command ? ce.command : "");
+        log_line("args: %s", ce.args ? ce.args : "");
         log_line("numruns: %u", ce.numruns);
         log_line("maxruns: %u", ce.maxruns);
         log_line("journal: %s", ce.journal ? "true" : "false");
@@ -113,7 +112,7 @@ struct ParseCfgState
 
         if (ce.id <= 0
             || (ce.interval <= 0 && ce.exectime <= 0)
-            || ce.command.empty() || cmdret < 1) {
+            || !ce.command || cmdret < 1) {
             if (gflags_debug)
                 log_line("===> IGNORE");
             ce.clear();
@@ -353,14 +352,41 @@ struct Pckm {
 
     action St { pckm.st = p; }
     action CmdEn {
-        ncs.ce.command = std::string(MARKED_PCKM());
-        string_replace_all(ncs.ce.command, "\\ ", 2, " ");
-        string_replace_all(ncs.ce.command, "\\\\", 2, "\\");
+        size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
+        if (l) {
+            auto ts = static_cast<char *>(malloc(l + 1));
+            bool prior_bs = false;
+            auto d = ts;
+            for (auto c = pckm.st; c < p; ++c) {
+                if (!prior_bs) {
+                    switch (*c) {
+                    case 0: abort(); // should never happen by construction
+                    case '\\': prior_bs = true; break;
+                    default: *d++ = *c; break;
+                    }
+                } else {
+                    if (!*c) abort(); // should never happen by construction
+                    *d++ = *c;
+                    prior_bs = false;
+                }
+            }
+            if (prior_bs) *d++ = '\\';
+            *d++ = 0;
+            ncs.ce.command = ts;
+        }
     }
-    action ArgEn { ncs.ce.args = std::string(MARKED_PCKM()); }
+    action ArgEn {
+        size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
+        if (l) {
+            auto ts = static_cast<char *>(malloc(l + 1));
+            memcpy(ts, pckm.st, l);
+            ts[l] = 0;
+            ncs.ce.args = ts;
+        }
+    }
 
     sptab = [ \t];
-    cmdstr = ([^\0 \t] | '\\\\' | '\\ ')+;
+    cmdstr = ([^\0 \t] | '\\ ' | '\\\t')+;
     cmd = sptab* (cmdstr > St % CmdEn);
     args = sptab+ ([^\0])* > St % ArgEn;
     main := cmd args?;

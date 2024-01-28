@@ -46,8 +46,14 @@ The default location for configure files is /var/lib/ncron/crontab.
 .SH KEYWORDS
 .TP
 command=STRING
-Specifies the full path to a command, followed by any arguments that
-should be passed to the command.
+Specifies the full path to a program, followed by any arguments that should be
+passed to the program.  Arguments follow the first unescaped space or tab
+character and continue to the end of line.  The program name (but not the
+arguments) have simple escape rules to allow for program file names that
+contain spaces or tabs; backslash functions as an escape character so that the
+following character is treated as a literal character that is part of the
+program file name.  A terminal single backslash in a program file name passes
+through as a single literal backslash that is part of the program file name.
 .TP
 minute=RANGE
 Specifies a comma delimited range of minutes within which the job may run.

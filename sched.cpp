@@ -273,8 +273,8 @@ void Job::set_next_time()
 void Job::exec(const struct timespec &ts)
 {
     pid_t pid;
-    if (int ret = nk_pspawn(&pid, command.c_str(), nullptr, nullptr, args.c_str(), environ)) {
-        log_line("posix_spawn failed for '%s': %s", command.c_str(), strerror(ret));
+    if (int ret = nk_pspawn(&pid, command, nullptr, nullptr, args, environ)) {
+        log_line("posix_spawn failed for '%s': %s", command, strerror(ret));
         return;
     }
     ++numruns;

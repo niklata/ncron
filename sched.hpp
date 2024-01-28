@@ -3,14 +3,12 @@
 #ifndef NCRON_SCHED_HPP_
 #define NCRON_SCHED_HPP_
 #include <assert.h>
-#include <string>
 #include <vector>
 #include <sys/time.h>
 
 struct Job
 {
-    Job() : id(0), exectime(0), lasttime(0), interval(0),
-                    numruns(0), maxruns(0), journal(false) {}
+    Job() {}
     Job(Job &) = delete;
     Job(Job &&o) noexcept
     {
@@ -24,18 +22,23 @@ struct Job
         o.clear();
         return *this;
     }
+    ~Job()
+    {
+        if (command) free(command);
+        if (args) free(args);
+    }
 
     using cst_list = std::vector<std::pair<int,int>>;
 
-    unsigned int id;
-    time_t exectime;        /* time at which we will execute in the future */
-    time_t lasttime;        /* time that the job last ran */
-    unsigned int interval;  /* min interval between executions in seconds */
-    unsigned int numruns;   /* number of times a job has run */
-    unsigned int maxruns;   /* max # of times a job will run, 0 = nolim */
-    bool journal;
-    std::string command;
-    std::string args;
+    unsigned int id = 0;
+    time_t exectime = 0;        /* time at which we will execute in the future */
+    time_t lasttime = 0;        /* time that the job last ran */
+    unsigned int interval = 0;  /* min interval between executions in seconds */
+    unsigned int numruns = 0;   /* number of times a job has run */
+    unsigned int maxruns = 0;   /* max # of times a job will run, 0 = nolim */
+    bool journal = false;
+    char *command = nullptr;
+    char *args = nullptr;
 
     cst_list month;       /* 1-12, l=0  is wildcard, h=l is no range */
     cst_list day;         /* 1-31, l=0  is wildcard, h=l is no range */
@@ -70,8 +73,14 @@ struct Job
         numruns = 0;
         maxruns = 0;
         journal = false;
-        command.clear();
-        args.clear();
+        if (command) {
+            free(command);
+            command = nullptr;
+        }
+        if (args) {
+            free(args);
+            args = nullptr;
+        }
         month.clear();
         day.clear();
         weekday.clear();
