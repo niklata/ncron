@@ -166,21 +166,12 @@ struct ParseCfgState
 };
 
 struct item_history {
-    item_history() {}
-    void set_exectime(time_t v) { exectime_ = v; }
-    void set_lasttime(time_t v) { lasttime_ = v; }
-    void set_numruns(unsigned int v) { numruns_ = v; }
-    auto exectime() const { return exectime_; }
-    auto lasttime() const { return lasttime_; }
-    auto numruns() const { return numruns_; }
-private:
-    std::optional<time_t> exectime_;
-    std::optional<time_t> lasttime_;
-    std::optional<unsigned int> numruns_;
+    time_t exectime = 0;
+    time_t lasttime = 0;
+    unsigned int numruns = 0;
 };
 
 struct hstm {
-    hstm() {}
     const char *st = nullptr;
     int cs = 0;
     int id = -1;
@@ -190,11 +181,10 @@ struct hstm {
 
 struct history_entry
 {
-    history_entry() {}
-    history_entry(int id_, item_history h_) : id(id_), h(std::move(h_)) {}
+    history_entry(int id_, item_history h_) : id(id_), history(h_) {}
 
     int id;
-    item_history h;
+    item_history history;
 };
 static std::vector<history_entry> history_lut;
 
@@ -207,7 +197,7 @@ static std::vector<history_entry> history_lut;
     action St { hst.st = p; }
     action LastTimeEn {
         if (auto t = nk::from_string<time_t>(MARKED_HST())) {
-            hst.h.set_lasttime(*t);
+            hst.h.lasttime = *t;
         } else {
             hst.parse_error = true;
             fbreak;
@@ -215,7 +205,7 @@ static std::vector<history_entry> history_lut;
     }
     action NumRunsEn {
         if (auto t = nk::from_string<unsigned>(MARKED_HST())) {
-            hst.h.set_numruns(*t);
+            hst.h.numruns = *t;
         } else {
             hst.parse_error = true;
             fbreak;
@@ -223,7 +213,7 @@ static std::vector<history_entry> history_lut;
     }
     action ExecTimeEn {
         if (auto t = nk::from_string<time_t>(MARKED_HST())) {
-            hst.h.set_exectime(*t);
+            hst.h.exectime = *t;
         } else {
             hst.parse_error = true;
             fbreak;
@@ -286,8 +276,8 @@ static void parse_history(char const *path)
         if (buf[llen-1] == '\n')
             buf[--llen] = 0;
         ++linenum;
-        hstm h;
-        const auto r = do_parse_history(h, buf, llen);
+        hstm hst;
+        const auto r = do_parse_history(hst, buf, llen);
         if (r < 0) {
             if (r == -2)
                 log_line("%s: Incomplete configuration at line %zu; ignoring",
@@ -297,7 +287,7 @@ static void parse_history(char const *path)
                          __func__, linenum);
             continue;
         }
-        history_lut.emplace_back(h.id, std::move(h.h));
+        history_lut.emplace_back(hst.id, hst.h);
     }
 }
 
@@ -305,12 +295,9 @@ static void get_history(Job &item)
 {
     for (const auto &i: history_lut) {
         if (i.id == item.id) {
-            if (const auto exectm = i.h.exectime())
-                item.exectime = *exectm > 0 ? *exectm : 0;
-            if (const auto lasttm = i.h.lasttime())
-                item.lasttime = *lasttm > 0 ? *lasttm : 0;
-            if (const auto t = i.h.numruns())
-                item.numruns = *t;
+            item.exectime = i.history.exectime;
+            item.lasttime = i.history.lasttime;
+            item.numruns = i.history.numruns;
             return;
         }
     }
