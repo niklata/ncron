@@ -45,7 +45,7 @@ struct ParseCfgState
 	{
 		memset(v_str, 0, sizeof v_str);
 	}
-	char v_str[1024];
+	char v_str[MAX_LINE];
 	
 	std::vector<StackItem> *stack;
 	std::vector<StackItem> *deadstack;
