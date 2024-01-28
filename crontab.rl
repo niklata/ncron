@@ -279,12 +279,8 @@ static void parse_history(char const *path)
         hstm hst;
         const auto r = do_parse_history(hst, buf, llen);
         if (r < 0) {
-            if (r == -2)
-                log_line("%s: Incomplete configuration at line %zu; ignoring",
-                         __func__, linenum);
-            else
-                log_line("%s: Malformed configuration at line %zu; ignoring.",
-                         __func__, linenum);
+            log_line("%s: %s configuration at line %zu; ignoring",
+                     __func__, r == -2 ? "Incomplete" : "Malformed", linenum);
             continue;
         }
         history_lut.emplace_back(hst.id, hst.h);
