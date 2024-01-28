@@ -187,12 +187,12 @@ struct item_history {
 };
 
 struct hstm {
-	hstm() : st(nullptr), cs(0), id(0), parse_error(false) {}
-	const char *st;
-	int cs;
-	unsigned int id;
+	hstm() {}
+	const char *st = nullptr;
+	int cs = 0;
+	unsigned int id = 0;
 	item_history h;
-	bool parse_error;
+	bool parse_error = false;
 };
 
 struct history_entry
@@ -552,10 +552,10 @@ int wildcard, int min, int max)
 	}
 }
 
-struct pckm {
-	pckm() : st(nullptr), cs(0) {}
-	char *st;
-	int cs;
+struct Pckm {
+	Pckm() {}
+	char *st = nullptr;
+	int cs = 0;
 };
 
 #define MARKED_PCKM() pckm.st, (p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0)
@@ -643,7 +643,7 @@ static void parse_command_key(ParseCfgState &ncs)
 	const char *pe = ncs.v_str + ncs.v_strlen;
 	const char *eof = pe;
 	
-	struct pckm pckm;
+	Pckm pckm;
 	
 	if (ncs.cmdret != 0) {
 		ncs.cmdret = -3;
@@ -1492,7 +1492,7 @@ std::vector<StackItem> *stk,
 std::vector<StackItem> *deadstk)
 {
 	g_jobs.clear();
-	struct ParseCfgState ncs(execfile, stk, deadstk);
+	ParseCfgState ncs(execfile, stk, deadstk);
 	parse_history(ncs.execfile);
 	
 	char buf[MAX_LINE];
