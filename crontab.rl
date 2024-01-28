@@ -109,6 +109,11 @@ struct ParseCfgState
 
     void finish_ce()
     {
+        const auto append_stack = [this](bool is_alive) {
+            assert(g_jobs.size() > 0);
+            (is_alive ? stack : deadstack)->emplace_back(g_jobs.size() - 1);
+        };
+
         defer [this]{ create_ce(); };
         debug_print_ce();
 
@@ -130,7 +135,19 @@ struct ParseCfgState
             log_line("===> ADD");
 
         /* we have a job to insert */
-        if (runat) { /* runat task */
+        if (!runat) {
+            get_history(ce);
+            debug_print_ce_history();
+            set_initial_exectime(ce);
+
+            auto numruns = ce.numruns;
+            auto maxruns = ce.maxruns;
+            auto exectime = ce.exectime;
+            g_jobs.emplace_back(std::move(ce));
+
+            /* insert iif numruns < maxruns and no constr error */
+            append_stack((maxruns == 0 || numruns < maxruns) && exectime != 0);
+        } else {
             if (ce.interval > 0) {
                 log_line("ERROR IN CRONTAB: interval is unused when runat is set: job %d", ce.id);
             }
@@ -143,28 +160,7 @@ struct ParseCfgState
             g_jobs.emplace_back(std::move(ce));
 
             /* insert iif we haven't exceeded maxruns */
-            assert(g_jobs.size() > 0);
-            if (!numruns)
-                stack->emplace_back(g_jobs.size() - 1);
-            else
-                deadstack->emplace_back(g_jobs.size() - 1);
-        } else { /* interval task */
-            get_history(ce);
-            debug_print_ce_history();
-            set_initial_exectime(ce);
-
-            auto numruns = ce.numruns;
-            auto maxruns = ce.maxruns;
-            auto exectime = ce.exectime;
-            g_jobs.emplace_back(std::move(ce));
-
-            /* insert iif numruns < maxruns and no constr error */
-            assert(g_jobs.size() > 0);
-            if ((maxruns == 0 || numruns < maxruns)
-                && exectime != 0)
-                stack->emplace_back(g_jobs.size() - 1);
-            else
-                deadstack->emplace_back(g_jobs.size() - 1);
+            append_stack(numruns == 0);
         }
     }
 };
