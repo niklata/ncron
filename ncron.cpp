@@ -22,6 +22,7 @@
 #endif
 
 #include <nk/from_string.hpp>
+#include <nk/defer.hpp>
 extern "C" {
 #include "nk/log.h"
 #include "nk/io.h"
@@ -47,6 +48,7 @@ static unsigned g_initial_sleep = 0;
 
 static std::string g_ncron_conf(CONFIG_FILE_DEFAULT);
 static std::string g_ncron_execfile(EXEC_FILE_DEFAULT);
+static std::string g_ncron_execfile_tmp(EXEC_FILE_DEFAULT "~");
 enum class Execmode
 {
     normal = 0,
@@ -60,8 +62,11 @@ static std::vector<StackItem> deadstack;
 
 static void reload_config(void)
 {
-    if (g_ncron_execmode != Execmode::nosave)
-        save_stack(g_ncron_execfile, stack, deadstack);
+    if (g_ncron_execmode != Execmode::nosave) {
+        if (!save_stack(g_ncron_execfile, g_ncron_execfile_tmp, stack, deadstack)) {
+            log_line("SIGHUP - Failed to save exectimes; some jobs may run again.");
+        }
+    }
 
     g_jobs.clear();
     stack.clear();
@@ -75,8 +80,12 @@ static void reload_config(void)
 static void save_and_exit(void)
 {
     if (g_ncron_execmode != Execmode::nosave) {
-        save_stack(g_ncron_execfile, stack, deadstack);
-        log_line("Saving stack to %s.", g_ncron_execfile.c_str());
+        if (save_stack(g_ncron_execfile, g_ncron_execfile_tmp, stack, deadstack)) {
+            log_line("Saved stack to %s.", g_ncron_execfile.c_str());
+        } else {
+            log_line("Failed to save stack to %s; some jobs may run again.",
+                     g_ncron_execfile.c_str());
+        }
     }
     log_line("Exited.");
     exit(EXIT_SUCCESS);
@@ -171,8 +180,12 @@ static void do_work(unsigned initial_sleep)
     bool pending_save = false;
     for (;;) {
         if (pending_save) {
-            save_stack(g_ncron_execfile, stack, deadstack);
-            pending_save = false;
+            if (!save_stack(g_ncron_execfile, g_ncron_execfile_tmp, stack, deadstack)) {
+                log_line("Failed to save stack to %s for a journalled job.",
+                         g_ncron_execfile.c_str());
+            } else {
+                pending_save = false;
+            }
         }
         sleep_or_die(&ts);
 
@@ -282,7 +295,11 @@ static void process_options(int ac, char *av[])
             case '0': g_ncron_execmode = Execmode::nosave; break;
             case 'j': g_ncron_execmode = Execmode::journal; break;
             case 't': g_ncron_conf = optarg; break;
-            case 'H': g_ncron_execfile = optarg; break;
+            case 'H':
+                g_ncron_execfile = optarg;
+                g_ncron_execfile_tmp = g_ncron_execfile;
+                g_ncron_execfile_tmp.push_back('~');
+                break;
             case 'd': s6_notify_fd = atoi(optarg); break;
             case 'V': gflags_debug = 1; break;
             default: break;

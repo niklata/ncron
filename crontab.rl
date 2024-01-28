@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <nk/string_replace_all.hpp>
 #include <nk/from_string.hpp>
-#include <nk/scopeguard.hpp>
+#include <nk/defer.hpp>
 extern "C" {
 #include "nk/log.h"
 }
@@ -271,7 +271,7 @@ static void parse_history(std::string_view path)
                  __func__, path.data(), strerror(errno));
         return;
     }
-    SCOPE_EXIT{ fclose(f); };
+    defer [&f]{ fclose(f); };
     size_t linenum = 0;
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
@@ -596,7 +596,7 @@ void parse_config(std::string_view path, std::string_view execfile,
         log_line("%s: failed to open file: '%s': %s", __func__, path.data(), strerror(errno));
         exit(EXIT_FAILURE);
     }
-    SCOPE_EXIT{ fclose(f); };
+    defer [&f]{ fclose(f); };
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))

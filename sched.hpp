@@ -101,8 +101,9 @@ static inline bool LtCronEntry(const StackItem &a,
 
 void set_initial_exectime(Job &entry);
 time_t get_next_time(const Job &entry);
-void save_stack(std::string_view file,
-                const std::vector<StackItem> &stack,
-                const std::vector<StackItem> &deadstack);
+[[nodiscard]] bool save_stack(std::string_view file,
+                              std::string_view ftmp,
+                              const std::vector<StackItem> &stack,
+                              const std::vector<StackItem> &deadstack);
 
 #endif

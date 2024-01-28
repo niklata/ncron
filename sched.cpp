@@ -9,7 +9,7 @@
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
-#include <nk/scopeguard.hpp>
+#include <nk/defer.hpp>
 extern "C" {
 #include "nk/log.h"
 #include "nk/pspawn.h"
@@ -271,45 +271,47 @@ void Job::set_next_time()
     exectime = etime > ts.tv_sec ? etime : 0;
 }
 
-void save_stack(std::string_view file,
+bool save_stack(std::string_view file,
+                std::string_view ftmp,
                 const std::vector<StackItem> &stack,
                 const std::vector<StackItem> &deadstack)
 {
-    char buf[MAXLINE];
-
-    auto f = fopen(file.data(), "w");
+    auto f = fopen(ftmp.data(), "w");
     if (!f) {
-        log_line("%s: failed to open history file %s for write", __func__, file.data());
-        exit(EXIT_FAILURE);
+        log_line("%s: failed to open history file %s for write", __func__, ftmp.data());
+        return false;
     }
-    SCOPE_EXIT{ fclose(f); };
-
-    auto do_save = [&buf, &f](const std::vector<StackItem> &s) -> bool {
+    auto do_save = [&f, &ftmp](const std::vector<StackItem> &s) -> bool {
         for (auto &i: s) {
             const auto &j = g_jobs[i.jidx];
-            auto snlen = snprintf(buf, sizeof buf, "%u=%li:%u|%lu\n", j.id,
-                                  j.exectime, j.numruns, j.lasttime);
-            if (snlen < 0 || static_cast<size_t>(snlen) > sizeof buf) {
-                log_line("save_stack: Would truncate history entry for job %u; skipping.", j.id);
-                continue;
-            }
-            auto bsize = strlen(buf);
-            while (!fwrite(buf, bsize, 1, f)) {
-                if (ferror(f))
-                    return false;
+            if (fprintf(f, "%u=%li:%u|%lu\n", j.id, j.exectime, j.numruns, j.lasttime) < 0) {
+                log_line("%s: failed writing to history file %s", __func__, ftmp.data());
+                return false;
             }
         }
         return true;
     };
-    if (!do_save(stack)) return;
-    if (!do_save(deadstack)) return;
+    nk::scope_guard remove_ftmp = [&ftmp]{ unlink(ftmp.data()); };
+    {
+        defer [&f]{ fclose(f); };
+        if (!do_save(stack)) return false;
+        if (!do_save(deadstack)) return false;
+    }
+
+    if (rename(ftmp.data(), file.data())) {
+        log_line("%s: failed to update to new history file (%s => %s): %s", __func__,
+                 ftmp.data(), file.data(), strerror(errno));
+        return false;
+    }
+    remove_ftmp.dismiss();
+    return true;
 }
 
 void Job::exec(const struct timespec &ts)
 {
     pid_t pid;
     if (int ret = nk_pspawn(&pid, command.c_str(), nullptr, nullptr, args.c_str(), environ)) {
-        log_line("posix_spawn failed for '%s': %s\n", command.c_str(), strerror(ret));
+        log_line("posix_spawn failed for '%s': %s", command.c_str(), strerror(ret));
         return;
     }
     ++numruns;
