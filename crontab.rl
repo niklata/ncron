@@ -57,7 +57,7 @@ struct ParseCfgState
     int v_int2 = 0;
 
     int cs = 0;
-    int cmdret = 0;
+    bool have_command = false;
 
     bool intv2_exist = false;
     bool runat = false;
@@ -67,7 +67,7 @@ struct ParseCfgState
     void create_ce()
     {
         ce.clear();
-        cmdret = 0;
+        have_command = false;
         runat = false;
     }
 
@@ -119,7 +119,7 @@ struct ParseCfgState
 
         if (ce.id < 0
             || (ce.interval <= 0 && ce.exectime <= 0)
-            || !ce.command || cmdret < 1) {
+            || !ce.command || !have_command) {
             if (gflags_debug)
                 log_line("===> IGNORE");
             return;
@@ -382,11 +382,6 @@ struct Pckm {
 
 %% write data;
 
-// cmdret = 0: Not parsed a command key yet.
-// cmdret = 1: Success.  Got a command key.
-// cmdret = -1: Error: malformed command key.
-// cmdret = -2: Error: incomplete command key.
-// cmdret = -3: Error: duplicate command key.
 static void parse_command_key(ParseCfgState &ncs)
 {
     char *p = ncs.v_str;
@@ -395,8 +390,7 @@ static void parse_command_key(ParseCfgState &ncs)
 
     Pckm pckm;
 
-    if (ncs.cmdret != 0) {
-        ncs.cmdret = -3;
+    if (ncs.have_command) {
         log_line("Duplicate 'command' value at line %zu", ncs.linenum);
         exit(EXIT_FAILURE);
     }
@@ -405,13 +399,11 @@ static void parse_command_key(ParseCfgState &ncs)
     %% write exec;
 
     if (pckm.cs == parse_cmd_key_m_error) {
-        ncs.cmdret = -1;
         log_line("Malformed 'command' value at line %zu", ncs.linenum);
         exit(EXIT_FAILURE);
-    } else if (pckm.cs >= parse_cmd_key_m_first_final)
-        ncs.cmdret = 1;
-    else {
-        ncs.cmdret = -2;
+    } else if (pckm.cs >= parse_cmd_key_m_first_final) {
+        ncs.have_command = true;
+    } else {
         log_line("Incomplete 'command' value at line %zu", ncs.linenum);
         exit(EXIT_FAILURE);
     }
