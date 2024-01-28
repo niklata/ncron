@@ -216,25 +216,33 @@ static std::vector<history_entry> history_lut;
 
     action St { hst.st = p; }
     action LastTimeEn {
-        if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_lasttime(*t); else {
+        if (auto t = nk::from_string<time_t>(MARKED_HST())) {
+            hst.h.set_lasttime(*t);
+        } else {
             hst.parse_error = true;
             fbreak;
         }
     }
     action NumRunsEn {
-        if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.h.set_numruns(*t); else {
+        if (auto t = nk::from_string<unsigned>(MARKED_HST())) {
+            hst.h.set_numruns(*t);
+        } else {
             hst.parse_error = true;
             fbreak;
         }
     }
     action ExecTimeEn {
-        if (auto t = nk::from_string<time_t>(MARKED_HST())) hst.h.set_exectime(*t); else {
+        if (auto t = nk::from_string<time_t>(MARKED_HST())) {
+            hst.h.set_exectime(*t);
+        } else {
             hst.parse_error = true;
             fbreak;
         }
     }
     action IdEn {
-        if (auto t = nk::from_string<unsigned>(MARKED_HST())) hst.id = *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_HST())) {
+            hst.id = *t;
+        } else {
             hst.parse_error = true;
             fbreak;
         }
@@ -423,31 +431,41 @@ static void parse_command_key(ParseCfgState &ncs)
 
     action TUnitSt { ncs.time_st = p; ncs.v_time = 0; }
     action TSecEn  {
-        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
+            ncs.v_time += *t;
+        } else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action TMinEn  {
-        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 60 * *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
+            ncs.v_time += 60 * *t;
+        } else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action THrEn   {
-        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 3600 * *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
+            ncs.v_time += 3600 * *t;
+        } else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action TDayEn  {
-        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 86400 * *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
+            ncs.v_time += 86400 * *t;
+        } else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action TWeekEn {
-        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) ncs.v_time += 604800 * *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_TIME())) {
+            ncs.v_time += 604800 * *t;
+        } else {
             ncs.parse_error = true;
             fbreak;
         }
@@ -459,14 +477,18 @@ static void parse_command_key(ParseCfgState &ncs)
         ncs.intv2_exist = false;
     }
     action IntValEn {
-        if (auto t = nk::from_string<int>(MARKED_INTV1())) ncs.v_int = *t; else {
+        if (auto t = nk::from_string<int>(MARKED_INTV1())) {
+            ncs.v_int = *t;
+        } else {
             ncs.parse_error = true;
             fbreak;
         }
     }
     action IntVal2St { ncs.intv2_st = p; }
     action IntVal2En {
-        if (auto t = nk::from_string<int>(MARKED_INTV2())) ncs.v_int2 = *t; else {
+        if (auto t = nk::from_string<int>(MARKED_INTV2())) {
+            ncs.v_int2 = *t;
+        } else {
             ncs.parse_error = true;
             fbreak;
         }
@@ -539,7 +561,9 @@ static void parse_command_key(ParseCfgState &ncs)
 
     action JobIdSt { ncs.jobid_st = p; }
     action JobIdEn {
-        if (auto t = nk::from_string<unsigned>(MARKED_JOBID())) ncs.ce.id = *t; else {
+        if (auto t = nk::from_string<unsigned>(MARKED_JOBID())) {
+            ncs.ce.id = *t;
+        } else {
             ncs.parse_error = true;
             fbreak;
         }
