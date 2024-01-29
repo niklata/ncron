@@ -1,24 +1,20 @@
 #ifndef NKLIB_FROM_STRING_HPP_
 #define NKLIB_FROM_STRING_HPP_
 
-#include <cstdint>
-#include <cstdlib>
-#include <cmath>
+#include <stdint.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include <limits>
 #include <type_traits>
 #include <string>
 #include <string_view>
-#include <optional>
-#ifdef _MSC_VER
 #include <charconv>
-#else
-#include <cstring>
-#endif
 
 namespace nk {
     namespace detail {
         template <typename T>
-        constexpr std::optional<T> str_to_signed_integer(const char *s)
+        [[nodiscard]] constexpr bool str_to_signed_integer(const char *s, T *result)
         {
             using ut = typename std::make_unsigned<T>::type;
             constexpr auto maxut = static_cast<typename std::make_unsigned<T>::type>(std::numeric_limits<T>::max());
@@ -28,7 +24,7 @@ namespace nk {
             if (!(s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))) {
                 do {
                     if (*s < '0' || *s > '9')
-                        return {};
+                        return false;
                     if (ret > maxut / 10) {
                         ret = std::numeric_limits<ut>::max();
                         break;
@@ -46,7 +42,7 @@ namespace nk {
                     else if (*s >= 'a' && *s <= 'f')
                         digit = static_cast<ut>(*s) - 'a' + ut{ 10 };
                     else
-                        return {};
+                        return false;
                     if (ret > maxut / 16) {
                         ret = std::numeric_limits<ut>::max();
                         break;
@@ -55,25 +51,26 @@ namespace nk {
                 } while (*++s);
             }
             if (ret > maxut + neg)
-                return {}; // out of range
-            return neg ? -static_cast<T>(ret) : static_cast<T>(ret);
+                return false; // out of range
+            *result = neg ? -static_cast<T>(ret) : static_cast<T>(ret);
+            return true;
         }
         template <typename T>
-        constexpr std::optional<T> str_to_signed_integer(const char *s, size_t c)
+        [[nodiscard]] constexpr bool str_to_signed_integer(const char *s, size_t c, T *result)
         {
             using ut = typename std::make_unsigned<T>::type;
             constexpr auto maxut = static_cast<typename std::make_unsigned<T>::type>(std::numeric_limits<T>::max());
             ut ret(0), digit(0);
             if (c == 0)
-                return {};
+                return false;
             const ut neg = (*s == '-');
             if (neg) ++s, c--;
             if (c == 0)
-                return {};
+                return false;
             if (!(c > 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))) {
                 do {
                     if (*s < '0' || *s > '9')
-                        return {};
+                        return false;
                     if (ret > maxut / 10) {
                         ret = std::numeric_limits<ut>::max();
                         break;
@@ -91,7 +88,7 @@ namespace nk {
                     else if (*s >= 'a' && *s <= 'f')
                         digit = static_cast<ut>(*s) - 'a' + ut{ 10 };
                     else
-                        return {};
+                        return false;
                     if (ret > maxut / 16) {
                         ret = std::numeric_limits<ut>::max();
                         break;
@@ -100,22 +97,23 @@ namespace nk {
                 } while (++s, --c);
             }
             if (ret > maxut + neg)
-                return {}; // out of range
-            return neg ? -static_cast<T>(ret) : static_cast<T>(ret);
+                return false; // out of range
+            *result = neg ? -static_cast<T>(ret) : static_cast<T>(ret);
+            return true;
         }
         template <typename T>
-        constexpr std::optional<T> str_to_unsigned_integer(const char *s)
+        [[nodiscard]] constexpr bool str_to_unsigned_integer(const char *s, T *result)
         {
             T ret(0), digit(0);
             const bool neg = (*s == '-');
             if (neg)
-                return {}; // out of range
+                return false; // out of range
             if (!(s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))) {
                 do {
                     if (*s < '0' || *s > '9')
-                        return {};
+                        return false;
                     if (ret > std::numeric_limits<T>::max() / 10)
-                        return {}; // out of range
+                        return false; // out of range
                     digit = static_cast<T>(*s) - '0';
                     ret = ret * 10u + digit;
                 } while (*++s);
@@ -129,29 +127,30 @@ namespace nk {
                     else if (*s >= 'a' && *s <= 'f')
                         digit = static_cast<T>(*s) - 'a' + T{ 10 };
                     else
-                        return {};
+                        return false;
                     if (ret > std::numeric_limits<T>::max() / 16)
-                        return {}; // out of range
+                        return false; // out of range
                     ret = ret * 16u + digit;
                 } while (*++s);
             }
-            return ret;
+            *result = ret;
+            return true;
         }
         template <typename T>
-        constexpr std::optional<T> str_to_unsigned_integer(const char *s, size_t c)
+        [[nodiscard]] constexpr bool str_to_unsigned_integer(const char *s, size_t c, T *result)
         {
             T ret(0), digit(0);
             if (c == 0)
-                return {};
+                return false;
             const bool neg = (*s == '-');
             if (neg)
-                return {}; // out of range
+                return false; // out of range
             if (!(c > 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))) {
                 do {
                     if (*s < '0' || *s > '9')
-                        return {};
+                        return false;
                     if (ret > std::numeric_limits<T>::max() / 10)
-                        return {}; // out of range
+                        return false; // out of range
                     digit = static_cast<T>(*s) - '0';
                     ret = ret * 10u + digit;
                 } while (++s, --c);
@@ -165,195 +164,120 @@ namespace nk {
                     else if (*s >= 'a' && *s <= 'f')
                         digit = static_cast<T>(*s) - 'a' + T{ 10 };
                     else
-                        return {};
+                        return false;
                     if (ret > std::numeric_limits<T>::max() / 16)
-                        return {}; // out of range
+                        return false; // out of range
                     ret = ret * 16u + digit;
                 } while (++s, --c);
             }
-            return ret;
+            *result = ret;
+            return true;
         }
 
-// 2018-10-27: libstdc++ doesn't support std::from_chars with fp types.
-#ifdef _MSC_VER
-        static inline std::optional<double> str_to_double(const char *s, size_t c)
+        [[nodiscard]] static inline bool str_to_double(const char *s, size_t c, double *result)
         {
             double v;
             const auto ret = std::from_chars(s, s + c, v);
-            if (ret.ec == std::errc{}) return v;
-            return {};
+            if (ret.ec == std::errc{}) {
+                *result = v;
+                return true;
+            }
+            return false;
         }
-        static inline std::optional<float> str_to_float(const char *s, size_t c)
+        [[nodiscard]] static inline bool str_to_float(const char *s, size_t c, float *result)
         {
             float v;
             const auto ret = std::from_chars(s, s + c, v);
-            if (ret.ec == std::errc{}) return v;
-            return {};
+            if (ret.ec == std::errc{}) {
+                *result = v;
+                return true;
+            }
+            return false;
         }
-        static inline std::optional<long double> str_to_long_double(const char *s, size_t c)
+        [[nodiscard]] static inline bool str_to_long_double(const char *s, size_t c, long double *result)
         {
             long double v;
             const auto ret = std::from_chars(s, s + c, v);
-            if (ret.ec == std::errc{}) return v;
-            return {};
+            if (ret.ec == std::errc{}) {
+                *result = v;
+                return true;
+            }
+            return false;
         }
-        static inline std::optional<double> str_to_double(const char *s)
+        [[nodiscard]] static inline bool str_to_double(const char *s, double *result)
         {
-            return str_to_double(s, strlen(s));
+            return str_to_double(s, strlen(s), result);
         }
-        static inline std::optional<float> str_to_float(const char *s)
+        [[nodiscard]] static inline bool str_to_float(const char *s, float *result)
         {
-            return str_to_float(s, strlen(s));
+            return str_to_float(s, strlen(s), result);
         }
-        static inline std::optional<long double> str_to_long_double(const char *s)
+        [[nodiscard]] static inline bool str_to_long_double(const char *s, long double *result)
         {
-            return str_to_long_double(s, strlen(s));
+            return str_to_long_double(s, strlen(s), result);
         }
-#else
-        static inline std::optional<double> str_to_double(const char *s, size_t c)
-        {
-            if (c == 0)
-                return {};
-            char buf[128];
-            const auto slen = std::min(c, sizeof buf) - 1;
-            memcpy(buf, s, slen);
-            buf[slen] = 0;
-
-            char *endptr;
-            const auto ret = std::strtod(buf, &endptr);
-            if (endptr == buf)
-                return {};
-            if ((ret == HUGE_VAL || ret == -HUGE_VAL || ret == 0.) && errno == ERANGE)
-                return {}; // out of range
-            return ret;
-        }
-        static inline std::optional<float> str_to_float(const char *s, size_t c)
-        {
-            if (c == 0)
-                return {};
-            char buf[128];
-            const auto slen = std::min(c, sizeof buf) - 1;
-            memcpy(buf, s, slen);
-            buf[slen] = 0;
-
-            char *endptr;
-            const auto ret = std::strtof(buf, &endptr);
-            if (endptr == buf)
-                return {};
-            if ((ret == HUGE_VALF || ret == -HUGE_VALF || ret == 0.f) && errno == ERANGE)
-                return {}; // out of range
-            return ret;
-        }
-        static inline std::optional<long double> str_to_long_double(const char *s, size_t c)
-        {
-            if (c == 0)
-                return {};
-            char buf[128];
-            const auto slen = std::min(c, sizeof buf) - 1;
-            memcpy(buf, s, slen);
-            buf[slen] = 0;
-
-            char *endptr;
-            const auto ret = std::strtold(buf, &endptr);
-            if (endptr == buf)
-                return {};
-            if ((ret == HUGE_VALL || ret == -HUGE_VALL || ret == 0.l) && errno == ERANGE)
-                return {}; // out of range
-            return ret;
-        }
-        static inline std::optional<double> str_to_double(const char *s)
-        {
-            char *endptr;
-            const auto ret = std::strtod(s, &endptr);
-            if (endptr == s)
-                return {};
-            if ((ret == HUGE_VAL || ret == -HUGE_VAL || ret == 0.) && errno == ERANGE)
-                return {}; // out of range
-            return ret;
-        }
-        static inline std::optional<float> str_to_float(const char *s)
-        {
-            char *endptr;
-            const auto ret = std::strtof(s, &endptr);
-            if (endptr == s)
-                return {};
-            if ((ret == HUGE_VALF || ret == -HUGE_VALF || ret == 0.f) && errno == ERANGE)
-                return {}; // out of range
-            return ret;
-        }
-        static inline std::optional<long double> str_to_long_double(const char *s)
-        {
-            char *endptr;
-            const auto ret = std::strtold(s, &endptr);
-            if (endptr == s)
-                return {};
-            if ((ret == HUGE_VALL || ret == -HUGE_VALL || ret == 0.l) && errno == ERANGE)
-                return {}; // out of range
-            return ret;
-        }
-#endif
 
         template <typename T>
-        std::optional<T> do_from_string(const char *s)
+        [[nodiscard]] bool do_from_string(const char *s, T *result)
         {
             static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "T must be integer or floating point type");
             if constexpr (std::is_integral_v<T>) {
                 if constexpr (std::is_signed_v<T>) {
-                    return detail::str_to_signed_integer<T>(s);
+                    return detail::str_to_signed_integer<T>(s, result);
                 } else {
-                    return detail::str_to_unsigned_integer<T>(s);
+                    return detail::str_to_unsigned_integer<T>(s, result);
                 }
             } else if constexpr (std::is_floating_point_v<T>) {
                 if constexpr (std::is_same_v<typename std::remove_cv<T>::type, double>) {
-                    return str_to_double(s);
+                    return str_to_double(s, result);
                 } else if constexpr (std::is_same_v<typename std::remove_cv<T>::type, float>) {
-                    return str_to_float(s);
+                    return str_to_float(s, result);
                 } else if constexpr (std::is_same_v<typename std::remove_cv<T>::type, long double>) {
-                    return str_to_long_double(s);
+                    return str_to_long_double(s, result);
                 }
             }
         }
         template <typename T>
-        std::optional<T> do_from_string(const char *s, size_t c)
+        [[nodiscard]] bool do_from_string(const char *s, size_t c, T *result)
         {
             static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "T must be integer or floating point type");
             if constexpr (std::is_integral_v<T>) {
                 if constexpr (std::is_signed_v<T>) {
-                    return detail::str_to_signed_integer<T>(s, c);
+                    return detail::str_to_signed_integer<T>(s, c, result);
                 } else {
-                    return detail::str_to_unsigned_integer<T>(s, c);
+                    return detail::str_to_unsigned_integer<T>(s, c, result);
                 }
             } else if constexpr (std::is_floating_point_v<T>) {
                 if constexpr (std::is_same_v<typename std::remove_cv<T>::type, double>) {
-                    return str_to_double(s, c);
+                    return str_to_double(s, c, result);
                 } else if constexpr (std::is_same_v<typename std::remove_cv<T>::type, float>) {
-                    return str_to_float(s, c);
+                    return str_to_float(s, c, result);
                 } else if constexpr (std::is_same_v<typename std::remove_cv<T>::type, long double>) {
-                    return str_to_long_double(s, c);
+                    return str_to_long_double(s, c, result);
                 }
             }
         }
     }
 
-    template <typename Target>
-    [[nodiscard]] std::optional<Target> from_string(const char *s)
+    template <typename T>
+    [[nodiscard]] bool from_string(const char *s, T *result)
     {
-        return detail::do_from_string<Target>(s);
+        return detail::do_from_string<T>(s, result);
     }
-    template <typename Target>
-    [[nodiscard]] std::optional<Target> from_string(const char *s, size_t c)
+    template <typename T>
+    [[nodiscard]] bool from_string(const char *s, size_t c, T *result)
     {
-        return detail::do_from_string<Target>(s, c);
+        return detail::do_from_string<T>(s, c, result);
     }
-    template <typename Target>
-    [[nodiscard]] std::optional<Target> from_string(const std::string &s)
+    template <typename T>
+    [[nodiscard]] bool from_string(const std::string &s, T *result)
     {
-        return detail::do_from_string<Target>(s.data(), s.size());
+        return detail::do_from_string<T>(s.data(), s.size(), result);
     }
-    template <typename Target>
-    [[nodiscard]] std::optional<Target> from_string(std::string_view s)
+    template <typename T>
+    [[nodiscard]] bool from_string(std::string_view s, T *result)
     {
-        return detail::do_from_string<Target>(s.data(), s.size());
+        return detail::do_from_string<T>(s.data(), s.size(), result);
     }
 }
 #endif

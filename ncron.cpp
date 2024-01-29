@@ -297,9 +297,7 @@ static void process_options(int ac, char *av[])
         switch (c) {
             case 'h': usage(); exit(EXIT_SUCCESS); break;
             case 'v': print_version(); exit(EXIT_SUCCESS); break;
-            case 's': if (auto t = nk::from_string<unsigned>(optarg)) {
-                          g_initial_sleep = *t;
-                      } else {
+            case 's': if (!nk::from_string<unsigned>(optarg, &g_initial_sleep)) {
                           log_line("invalid sleep '%s' specified", optarg);
                           exit(EXIT_FAILURE);
                       }
