@@ -14,12 +14,49 @@ extern "C" {
 #include "nk/pspawn.h"
 #include "nk/io.h"
 }
+#include <algorithm>
 #include "ncron.hpp"
 #include "sched.hpp"
 
 extern char **environ;
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
+
+static bool constraint_lt(const std::pair<int, int> &a, const std::pair<int, int> &b)
+{
+    if (a.first < b.first) return true;
+    if (a.first == b.first) {
+        return a.second < b.second;
+    } else return false;
+}
+// PRECONDITION: al <= bl; because the constraints are sorted
+// So, we can merge (al,ah) and (bl, bh) iif
+// ah >= bl => (al, ah < bh ? bh : ah)
+static void merge_constraint_list(Job::cst_list &list)
+{
+    auto a = list.begin();
+    for (;;) {
+        if (list.size() < 2) return;
+        auto b = a + 1;
+        if (b == list.end()) return;
+        assert(a->first <= b->first);
+        if (a->second >= b->first) {
+            a->second = a->second < b->second ? b->second : a->second;
+            list.erase(b);
+            continue;
+        }
+        ++a;
+    }
+}
+
+void Job::merge_constraints()
+{
+    merge_constraint_list(month);
+    merge_constraint_list(day);
+    merge_constraint_list(weekday);
+    merge_constraint_list(hour);
+    merge_constraint_list(minute);
+}
 
 bool Job::add_constraint(cst_list &list, int low, int high, int wildcard, int min, int max)
 {
@@ -32,13 +69,17 @@ bool Job::add_constraint(cst_list &list, int low, int high, int wildcard, int mi
     if (low == wildcard && high == wildcard)
         return false;
 
+    // Keep the constraint lists sorted as we go so that merging is easier.
     if (low > high) {
         /* discontinuous range, split into two continuous rules... */
-        list.emplace_back(std::make_pair(low, max));
-        list.emplace_back(std::make_pair(min, high));
+        auto a = std::make_pair(low, max);
+        auto b = std::make_pair(min, high);
+        list.insert(std::upper_bound(list.begin(), list.end(), a, constraint_lt), a);
+        list.insert(std::upper_bound(list.begin(), list.end(), b, constraint_lt), b);
     } else {
         /* handle continuous ranges normally */
-        list.emplace_back(std::make_pair(low, high));
+        auto a = std::make_pair(low, high);
+        list.insert(std::upper_bound(list.begin(), list.end(), a, constraint_lt), a);
     }
     return true;
 }

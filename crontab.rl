@@ -584,6 +584,7 @@ void parse_config(char const *path, char const *execfile,
         }
     }
     ncs.finish_ce();
+    for (auto &i: g_jobs) i.merge_constraints();
     std::sort(stk->begin(), stk->end(), LtCronEntry);
     history_lut.clear();
 }

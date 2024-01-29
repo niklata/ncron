@@ -89,6 +89,7 @@ struct Job
     }
 
     bool add_constraint(cst_list &list, int low, int high, int wildcard, int min, int max);
+    void merge_constraints();
 
     bool operator<(const Job &o) const { return exectime < o.exectime; }
     bool operator>(const Job &o) const { return exectime > o.exectime; }
