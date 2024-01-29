@@ -38,7 +38,6 @@ extern "C" {
 
 int gflags_debug;
 static volatile sig_atomic_t pending_save_and_exit;
-static volatile sig_atomic_t pending_reload_config;
 static int s6_notify_fd = -1;
 
 /* Time (in msec) to sleep before dispatching events at startup.
@@ -93,23 +92,6 @@ static std::vector<size_t> deadstack;
     return true;
 }
 
-static void reload_config(void)
-{
-    if (g_ncron_execmode != Execmode::nosave) {
-        if (!save_stack()) {
-            log_line("SIGHUP - Failed to save exectimes; some jobs may run again.");
-        }
-    }
-
-    g_jobs.clear();
-    stack.clear();
-    deadstack.clear();
-    parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
-    log_line("SIGHUP - Reloading config: %s.", g_ncron_conf);
-    fflush(stdout);
-    pending_reload_config = 0;
-}
-
 static void save_and_exit(void)
 {
     if (g_ncron_execmode != Execmode::nosave) {
@@ -127,10 +109,8 @@ static void save_and_exit(void)
 static void signal_handler(int sig)
 {
     int serrno = errno;
-    if (sig == SIGTERM || sig == SIGINT) {
+    if (sig == SIGTERM || sig == SIGINT || sig == SIGHUP) {
         pending_save_and_exit = 1;
-    } else if (sig == SIGHUP) {
-        pending_reload_config = 1;
     }
     errno = serrno;
 }
@@ -179,7 +159,6 @@ retry:
     if (r) {
         if (r == EINTR) {
             if (pending_save_and_exit) save_and_exit();
-            if (pending_reload_config) reload_config();
             goto retry;
         }
         log_line("%s: clock_nanosleep failed: %s", __func__, strerror(r));

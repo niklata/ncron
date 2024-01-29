@@ -47,7 +47,7 @@ command=STRING
 Specifies the full path to a program, followed by any arguments that should be
 passed to the program.  Arguments follow the first unescaped space or tab
 character and continue to the end of line.  The program name (but not the
-arguments) have simple escape rules to allow for program file names that
+arguments) has simple escape rules to allow for program file names that
 contain spaces or tabs; backslash functions as an escape character so that the
 following character is treated as a literal character that is part of the
 program file name.  A terminal single backslash in a program file name passes
@@ -110,6 +110,8 @@ Ranges that are not continuous ([x,y] where x>y rather than x<y) are treated as
 continuous ranges modulo the base of the unit of time. EG, [45,15] in minutes
 would correspond to "run this task in the last quarter of an hour or in the
 first quarter of an hour".
+.SH SIGNALS
+SIGHUP, SIGINT, SIGTERM all cause ncron to save state to disk and shut down.
 .SH EXAMPLE
 .nf
 !1
