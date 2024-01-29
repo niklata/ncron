@@ -16,18 +16,18 @@ JOBID := integer
 UNIT := "s", "m", "h", "d", "w"
 INTERVAL := integer(NOT integer OR NOT UNIT)[UNIT][INTERVAL]
 IPAIR := integer,integer OR integer
-JOB :=
-	!JOBID
-	command=string
-	minute=IPAIR
-	hour=IPAIR
-	weekday=IPAIR
-	day=IPAIR
-	month=IPAIR
-	interval=INTERVAL
-	journal
-	maxruns=integer
-	runat=integer
+JOB :=  !JOBID
+        command=string
+        minute=IPAIR
+        hour=IPAIR
+        weekday=IPAIR
+        day=IPAIR
+        month=IPAIR
+        interval=INTERVAL
+        journal
+        maxruns=integer
+        runat=integer
+COMMENT := '#' OR ';' ANY
 
 config file :=
 	JOB
@@ -38,6 +38,10 @@ config file :=
 Multiple constraints are allowed, but serve only to permit additional
 ranges in which jobs may be run (in other words, they are implicitly
 unioned).
+.PP.
+Comments are denoted by a '#' or ';' at the start of a line.
+Whitespace (or any other characters) may not preceed the '#' or ';'.
+Comments may be started on any line.
 .PP
 The default location for configure files is /var/lib/ncron/crontab.
 

@@ -547,8 +547,9 @@ static void parse_command_key(ParseCfgState &ncs)
     action CreateCe { ncs.finish_ce(); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;
+    comment = (';'|'#') any*;
 
-    main := jobid | cmds;
+    main := jobid | cmds | comment;
 }%%
 
 %% write data;
