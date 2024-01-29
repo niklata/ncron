@@ -21,6 +21,28 @@ extern char **environ;
 
 #define COUNT_THRESH 500 /* Arbitrary and untested */
 
+bool Job::add_constraint(cst_list &list, int low, int high, int wildcard, int min, int max)
+{
+    if (low > max || low < min)
+        low = wildcard;
+    if (high > max || high < min)
+        high = wildcard;
+
+    /* we don't allow meaningless 'rules' */
+    if (low == wildcard && high == wildcard)
+        return false;
+
+    if (low > high) {
+        /* discontinuous range, split into two continuous rules... */
+        list.emplace_back(std::make_pair(low, max));
+        list.emplace_back(std::make_pair(min, high));
+    } else {
+        /* handle continuous ranges normally */
+        list.emplace_back(std::make_pair(low, high));
+    }
+    return true;
+}
+
 /*
  * returns -1 if below range
  * returns 0 if within range

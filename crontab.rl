@@ -289,31 +289,12 @@ static void parse_history(char const *path)
     }
 }
 
-static void addcstlist(ParseCfgState &ncs, Job::cst_list &list,
-                       int wildcard, int min, int max)
+static inline bool addcstlist(ParseCfgState &ncs, Job::cst_list &list,
+                              int wildcard, int min, int max)
 {
     int low = ncs.v_int;
-    int high = wildcard;
-    if (ncs.intv2_exist)
-        high = ncs.v_int2;
-
-    if (low > max || low < min)
-        low = wildcard;
-    if (high > max || high < min)
-        high = wildcard;
-
-    /* we don't allow meaningless 'rules' */
-    if (low == wildcard && high == wildcard)
-        return;
-
-    if (low > high) {
-        /* discontinuous range, split into two continuous rules... */
-        list.emplace_back(std::make_pair(low, max));
-        list.emplace_back(std::make_pair(min, high));
-    } else {
-        /* handle continuous ranges normally */
-        list.emplace_back(std::make_pair(low, high));
-    }
+    int high = ncs.intv2_exist ? ncs.v_int2 : wildcard;
+    return ncs.ce.add_constraint(list, low, high, wildcard, min, max);
 }
 
 struct Pckm {
