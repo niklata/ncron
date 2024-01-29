@@ -119,21 +119,35 @@ SIGHUP, SIGINT, SIGTERM all cause ncron to save state to disk and shut down.
 .SH EXAMPLE
 .nf
 !1
-command=ls -laF
+command=/bin/echo hihi
 day=10
-interval=1h
+interval=10s
 .fi
 .PP
-This job will run "ls -laF" in ncron's working directory hourly on the 10th day
-of every month.
+This job will run "/bin/echo" with a single argument of "hihi" in
+ncron's working directory every ten seconds on the 10th day of every
+month.  If the 'day=10' line is removed, this configuration is a decent
+way to test whether ncron is working; if it is, "hihi" will be printed
+to the terminal that ncron is running on every ten seconds.
 .SH "SEE ALSO"
 ncron(1).
 .SH LIMITATIONS
 Constraints may not vary as a function of other constraint values (eg, it is
 not possible to express unique weekday constraints for each month). This
-limitation is unlikely to be removed. It would be a major change for little
+limitation won't be removed. It would be a major change for little
 gain and greatly increased program and config file format complexity.
+.PP.
+Years may not be used as constraints.  Generally periodic jobs on a
+computer don't vary by year.  Technically it would be possible to
+support year constraints but it doesn't seem worth the work and complexity.
 .SH TIPS
+Note that when a job is removed, the history entries will be removed
+automatically for interval / non-runat jobs if ncron is shut down and
+restarted twice.  Alternatively, lines starting with job ids no longer
+in use can be deleted from the history file so long as ncron is not
+running.  If ncron is running, it will overwrite any changes made when
+it saves out the current history state to disk on shutdown.
+.PP.
 The "runat" keyword allows ncron to function as either a cron daemon (which
 runs tasks at periodic intervals of time) or an at daemon (which runs tasks at
 defined times).
@@ -143,5 +157,4 @@ multiplexing between multiple user accounts, or as a per-user cron daemon, with
 one daemon for each user account.  Both models run efficiently, but have
 different administrative and security characteristics.
 .SH AUTHOR
-Nicholas J. Kain <njkain (at) gmail.com>
-
+Nicholas J. Kain : njkain at gmail dot com
