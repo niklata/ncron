@@ -123,7 +123,12 @@ struct day_sieve
             ++sday;
             assert(sday < 7);
         }
-        return true;
+        // At least one day should be allowed, otherwise
+        // the job will never run.
+        for (size_t i = 0; i < sizeof filter; ++i) {
+            if (filter[i] == 7) return true;
+        }
+        return false;
     }
 };
 
