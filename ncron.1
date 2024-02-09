@@ -73,7 +73,7 @@ specified interval within the specified constraint.
 Examples are probably the clearest way of explaining this system.  Suppose we
 would like a locatedb to run weekly between 1 and 5am.  Since we want the
 program to run weekly, we would specify an interval of interval=7w.  We would
-then specify a constraint of hour=1,5.  ncron would then make sure that our job
+then specify a constraint of time=1:00-5:00.  ncron would then make sure that our job
 only ran weekly between 1 and 5am.
 .PP
 The astute reader might wonder why ncron deals with constraints in terms of

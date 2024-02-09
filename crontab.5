@@ -16,10 +16,11 @@ JOBID := integer
 UNIT := "s", "m", "h", "d", "w"
 INTERVAL := integer(NOT integer OR NOT UNIT)[UNIT][INTERVAL]
 IPAIR := integer,integer OR integer
+HH := 0-23
+MM := 0-59
 JOB :=  !JOBID
         command=string
-        minute=IPAIR
-        hour=IPAIR
+        time=HH:MM OR HH:MM-HH:MM
         weekday=IPAIR
         day=IPAIR
         month=IPAIR
@@ -57,19 +58,16 @@ following character is treated as a literal character that is part of the
 program file name.  A terminal single backslash in a program file name passes
 through as a single literal backslash that is part of the program file name.
 .TP
-minute=RANGE
-Specifies a comma delimited range of minutes within which the job may run.
-Valid minutes are within the interval [0,59].  Ranges will be interpreted
-modulo 60.  In other words, ncron will properly understand ranges such as 40,20
-as being "after the 39th minute of an hour or before the 21st minute of an
-hour, but not between".  Multiple ranges will be unioned together.
-.TP
-hour=RANGE
-As above.  Valid hours are within the interval [0,23], interpreted modulo 24.
+time=HH:MM or HH:MM-HH:MM
+Specifies a time or time range in which the job may run.  The time is in
+24 hour format.  Leading zeros are not allowed.  If a range is provided,
+the first time in the range must preceed the second time in the range.
+Multiple ranges will be unioned together.
 .TP
 weekday=RANGE
-As above.  Valid weekdays are within the range [1,7], where 1 corresponds to
-Saturday and 7 maps to Sunday.
+Either a single weekday value or a comma-separated range of allowed
+weekdays.  Valid weekdays are within the range [1,7], where 1
+corresponds to Saturday and 7 maps to Sunday.
 .TP
 day=RANGE
 As above.  Valid days are within the range [1,31].

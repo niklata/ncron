@@ -67,8 +67,10 @@ struct ParseCfgState
 	
 	unsigned int v_time;
 	
-	int v_int = 0;
+	int v_int1 = 0;
 	int v_int2 = 0;
+	int v_int3 = -1;
+	int v_int4 = -1;
 	
 	int cs = 0;
 	bool have_command = false;
@@ -77,6 +79,11 @@ struct ParseCfgState
 	bool runat = false;
 	
 	bool parse_error = false;
+	
+	bool seen_cst_hhmm = false;
+	bool seen_cst_wday = false;
+	bool seen_cst_mday = false;
+	bool seen_cst_mon = false;
 	
 	void get_history()
 	{
@@ -95,6 +102,10 @@ struct ParseCfgState
 		ce.clear();
 		have_command = false;
 		runat = false;
+		seen_cst_hhmm = false;
+		seen_cst_wday = false;
+		seen_cst_mday = false;
+		seen_cst_mon = false;
 	}
 	
 	inline void debug_print_ce() const
@@ -108,16 +119,6 @@ struct ParseCfgState
 		log_line("numruns: %u", ce.numruns);
 		log_line("maxruns: %u", ce.maxruns);
 		log_line("journal: %s", ce.journal ? "true" : "false");
-		for (const auto &i: ce.month)
-		log_line("month: [%u,%u]", i.first, i.second);
-		for (const auto &i: ce.day)
-		log_line("day: [%u,%u]", i.first, i.second);
-		for (const auto &i: ce.weekday)
-		log_line("weekday: [%u,%u]", i.first, i.second);
-		for (const auto &i: ce.hour)
-		log_line("hour: [%u,%u]", i.first, i.second);
-		for (const auto &i: ce.minute)
-		log_line("minute: [%u,%u]", i.first, i.second);
 		log_line("runat: %s", runat ? "true" : "false");
 		log_line("interval: %u", ce.interval);
 		log_line("exectime: %lu", ce.exectime);
@@ -202,11 +203,11 @@ struct hstm {
 #define MARKED_HST() hst.st, (p > hst.st ? static_cast<size_t>(p - hst.st) : 0)
 
 
-#line 238 "crontab.rl"
+#line 239 "crontab.rl"
 
 
 
-#line 207 "crontab.cpp"
+#line 208 "crontab.cpp"
 static const signed char _history_m_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1,
 	3, 1, 4, 0
@@ -264,7 +265,7 @@ static const int history_m_error = 0;
 static const int history_m_en_main = 1;
 
 
-#line 240 "crontab.rl"
+#line 241 "crontab.rl"
 
 
 static int do_parse_history(hstm &hst, const char *p, size_t plen)
@@ -273,15 +274,15 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 	const char *eof = pe;
 	
 
-#line 271 "crontab.cpp"
+#line 272 "crontab.cpp"
 	{
 		hst.cs = (int)history_m_start;
 	}
 	
-#line 247 "crontab.rl"
+#line 248 "crontab.rl"
 
 
-#line 276 "crontab.cpp"
+#line 277 "crontab.cpp"
 	{
 		int _klen;
 		unsigned int _trans = 0;
@@ -361,16 +362,16 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 				{
 					case 0:  {
 							{
-#line 207 "crontab.rl"
+#line 208 "crontab.rl"
 							hst.st = p; }
 						
-#line 358 "crontab.cpp"
+#line 359 "crontab.cpp"
 
 						break; 
 					}
 					case 1:  {
 							{
-#line 208 "crontab.rl"
+#line 209 "crontab.rl"
 							
 							if (!nk::from_string<time_t>(MARKED_HST(), &hst.h.lasttime)) {
 								hst.parse_error = true;
@@ -378,13 +379,13 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 							}
 						}
 						
-#line 371 "crontab.cpp"
+#line 372 "crontab.cpp"
 
 						break; 
 					}
 					case 2:  {
 							{
-#line 214 "crontab.rl"
+#line 215 "crontab.rl"
 							
 							if (!nk::from_string<unsigned>(MARKED_HST(), &hst.h.numruns)) {
 								hst.parse_error = true;
@@ -392,13 +393,13 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 							}
 						}
 						
-#line 384 "crontab.cpp"
+#line 385 "crontab.cpp"
 
 						break; 
 					}
 					case 3:  {
 							{
-#line 220 "crontab.rl"
+#line 221 "crontab.rl"
 							
 							if (!nk::from_string<time_t>(MARKED_HST(), &hst.h.exectime)) {
 								hst.parse_error = true;
@@ -406,13 +407,13 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 							}
 						}
 						
-#line 397 "crontab.cpp"
+#line 398 "crontab.cpp"
 
 						break; 
 					}
 					case 4:  {
 							{
-#line 226 "crontab.rl"
+#line 227 "crontab.rl"
 							
 							if (!nk::from_string<int>(MARKED_HST(), &hst.id)) {
 								hst.parse_error = true;
@@ -420,7 +421,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 							}
 						}
 						
-#line 410 "crontab.cpp"
+#line 411 "crontab.cpp"
 
 						break; 
 					}
@@ -444,7 +445,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 		_out: {}
 	}
 	
-#line 248 "crontab.rl"
+#line 249 "crontab.rl"
 
 	
 	if (hst.parse_error) return -1;
@@ -489,12 +490,84 @@ static void parse_history(char const *path)
 	}
 }
 
-static inline bool addcstlist(ParseCfgState &ncs, Job::cst_list &list,
-int wildcard, int min, int max)
+static bool add_cst_mon(ParseCfgState &ncs)
 {
-	int low = ncs.v_int;
-	int high = ncs.intv2_exist ? ncs.v_int2 : wildcard;
-	return ncs.ce.add_constraint(list, low, high, wildcard, min, max);
+	int min = ncs.v_int1;
+	int max = ncs.intv2_exist ? ncs.v_int2 : -1;
+	if (max < 0) max = min;
+		assert(min > 0 && min <= 12);
+	assert(max > 0 && max <= 12);
+	if (max < min) return false;
+		if (min <= 0 || min > 12) return false;
+		if (max <= 0 || max > 12) return false;
+		if (!ncs.seen_cst_mon) {
+		memset(&ncs.ce.cst_mon, 0, sizeof ncs.ce.cst_mon);
+		ncs.seen_cst_mon = true;
+	}
+	for (int i = min; i <= max; ++i)
+	ncs.ce.cst_mon[i - 1] = true;
+	return true;
+}
+
+static bool add_cst_mday(ParseCfgState &ncs)
+{
+	int min = ncs.v_int1;
+	int max = ncs.intv2_exist ? ncs.v_int2 : -1;
+	if (max < 0) max = min;
+		assert(min > 0 && min <= 31);
+	assert(max > 0 && max <= 31);
+	if (max < min) return false;
+		if (min <= 0 || min > 31) return false;
+		if (max <= 0 || max > 31) return false;
+		if (!ncs.seen_cst_mday) {
+		memset(&ncs.ce.cst_mday, 0, sizeof ncs.ce.cst_mday);
+		ncs.seen_cst_mday = true;
+	}
+	for (int i = min; i <= max; ++i)
+	ncs.ce.cst_mday[i - 1] = true;
+	return true;
+}
+
+static bool add_cst_wday(ParseCfgState &ncs)
+{
+	int min = ncs.v_int1;
+	int max = ncs.intv2_exist ? ncs.v_int2 : -1;
+	if (max < 0) max = min;
+		assert(min > 0 && min <= 7);
+	assert(max > 0 && max <= 7);
+	if (max < min) return false;
+		if (min <= 0 || min > 7) return false;
+		if (max <= 0 || max > 7) return false;
+		if (!ncs.seen_cst_wday) {
+		memset(&ncs.ce.cst_wday, 0, sizeof ncs.ce.cst_wday);
+		ncs.seen_cst_wday = true;
+	}
+	for (int i = min; i <= max; ++i)
+	ncs.ce.cst_wday[i - 1] = true;
+	return true;
+}
+
+static bool add_cst_time(ParseCfgState &ncs)
+{
+	bool single_value = ncs.v_int3 == -1 && ncs.v_int4 == -1;
+	// Enforce that range is low-high.
+	if (!single_value) {
+		if (ncs.v_int3 < ncs.v_int1) return false;
+			if (ncs.v_int3 == ncs.v_int1) {
+			if (ncs.v_int4 < ncs.v_int2) return false;
+			}
+	}
+	if (!ncs.seen_cst_hhmm) {
+		memset(&ncs.ce.cst_hhmm, 0, sizeof ncs.ce.cst_hhmm);
+		ncs.seen_cst_hhmm = true;
+	}
+	int min = ncs.v_int1 * 60 + ncs.v_int2;
+	int max = ncs.v_int3 * 60 + ncs.v_int4;
+	assert(min >= 0 && min < 1440);
+	assert(max >= 0 && max < 1440);
+	for (int i = min; i <= max; ++i)
+	ncs.ce.cst_hhmm[i] = true;
+	return true;
 }
 
 struct Pckm {
@@ -506,11 +579,11 @@ struct Pckm {
 #define MARKED_PCKM() pckm.st, (p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0)
 
 
-#line 352 "crontab.rl"
+#line 425 "crontab.rl"
 
 
 
-#line 496 "crontab.cpp"
+#line 569 "crontab.cpp"
 static const signed char _parse_cmd_key_m_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 2,
 	0, 2, 2, 1, 0, 2, 1, 2,
@@ -574,7 +647,7 @@ static const int parse_cmd_key_m_error = 0;
 static const int parse_cmd_key_m_en_main = 1;
 
 
-#line 354 "crontab.rl"
+#line 427 "crontab.rl"
 
 
 static void parse_command_key(ParseCfgState &ncs)
@@ -591,15 +664,15 @@ static void parse_command_key(ParseCfgState &ncs)
 	}
 	
 
-#line 574 "crontab.cpp"
+#line 647 "crontab.cpp"
 	{
 		pckm.cs = (int)parse_cmd_key_m_start;
 	}
 	
-#line 369 "crontab.rl"
+#line 442 "crontab.rl"
 
 
-#line 579 "crontab.cpp"
+#line 652 "crontab.cpp"
 	{
 		int _klen;
 		unsigned int _trans = 0;
@@ -679,16 +752,16 @@ static void parse_command_key(ParseCfgState &ncs)
 				{
 					case 0:  {
 							{
-#line 312 "crontab.rl"
+#line 385 "crontab.rl"
 							pckm.st = p; }
 						
-#line 661 "crontab.cpp"
+#line 734 "crontab.cpp"
 
 						break; 
 					}
 					case 1:  {
 							{
-#line 313 "crontab.rl"
+#line 386 "crontab.rl"
 							
 							size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
 							if (l) {
@@ -714,13 +787,13 @@ static void parse_command_key(ParseCfgState &ncs)
 							}
 						}
 						
-#line 692 "crontab.cpp"
+#line 765 "crontab.cpp"
 
 						break; 
 					}
 					case 2:  {
 							{
-#line 337 "crontab.rl"
+#line 410 "crontab.rl"
 							
 							size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
 							if (l) {
@@ -731,7 +804,7 @@ static void parse_command_key(ParseCfgState &ncs)
 							}
 						}
 						
-#line 708 "crontab.cpp"
+#line 781 "crontab.cpp"
 
 						break; 
 					}
@@ -755,7 +828,7 @@ static void parse_command_key(ParseCfgState &ncs)
 		_out: {}
 	}
 	
-#line 370 "crontab.rl"
+#line 443 "crontab.rl"
 
 	
 	if (pckm.cs == parse_cmd_key_m_error) {
@@ -775,180 +848,181 @@ static void parse_command_key(ParseCfgState &ncs)
 #define MARKED_JOBID() ncs.jobid_st, (p > ncs.jobid_st ? static_cast<size_t>(p - ncs.jobid_st) : 0)
 
 
-#line 534 "crontab.rl"
+#line 619 "crontab.rl"
 
 
 
-#line 752 "crontab.cpp"
+#line 825 "crontab.cpp"
 static const signed char _ncrontab_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1,
 	3, 1, 4, 1, 5, 1, 6, 1,
-	7, 1, 8, 1, 10, 1, 12, 1,
-	22, 1, 23, 1, 24, 2, 1, 0,
-	2, 1, 15, 2, 2, 0, 2, 2,
-	15, 2, 3, 0, 2, 3, 15, 2,
-	4, 0, 2, 4, 15, 2, 5, 0,
-	2, 5, 15, 2, 7, 13, 2, 7,
-	14, 2, 7, 16, 2, 7, 17, 2,
-	7, 18, 2, 7, 19, 2, 7, 20,
-	2, 9, 16, 2, 9, 17, 2, 9,
-	18, 2, 9, 19, 2, 9, 20, 2,
-	11, 21, 0
+	7, 1, 8, 1, 12, 1, 14, 1,
+	23, 1, 24, 1, 25, 2, 1, 0,
+	2, 1, 17, 2, 2, 0, 2, 2,
+	17, 2, 3, 0, 2, 3, 17, 2,
+	4, 0, 2, 4, 17, 2, 5, 0,
+	2, 5, 17, 2, 7, 15, 2, 7,
+	16, 2, 7, 18, 2, 7, 19, 2,
+	7, 20, 2, 9, 10, 2, 9, 18,
+	2, 9, 19, 2, 9, 20, 2, 11,
+	6, 2, 13, 22, 3, 9, 10, 21,
+	0
 };
 
 static const short _ncrontab_key_offsets[] = {
 	0, 0, 19, 21, 23, 25, 27, 29,
 	31, 33, 36, 40, 42, 44, 47, 51,
-	53, 55, 57, 59, 62, 66, 68, 70,
-	72, 74, 76, 78, 80, 82, 85, 89,
-	96, 98, 100, 102, 104, 106, 108, 114,
-	116, 118, 120, 122, 124, 127, 131, 133,
-	135, 137, 139, 142, 146, 148, 150, 152,
-	154, 157, 161, 163, 165, 167, 169, 171,
-	174, 178, 180, 182, 184, 186, 188, 190,
-	193, 197, 199, 201, 201, 203, 207, 210,
-	212, 215, 217, 221, 225, 229, 233, 237,
-	237, 239, 242, 244, 247, 249, 251, 254,
-	0
+	53, 55, 57, 59, 61, 63, 65, 67,
+	70, 74, 81, 83, 85, 87, 89, 91,
+	93, 97, 99, 101, 103, 105, 107, 110,
+	114, 116, 118, 120, 123, 127, 129, 131,
+	133, 135, 137, 140, 144, 146, 148, 150,
+	153, 159, 160, 162, 164, 167, 173, 174,
+	176, 178, 181, 184, 187, 190, 192, 194,
+	196, 198, 200, 202, 205, 209, 211, 213,
+	213, 215, 219, 222, 224, 228, 232, 236,
+	240, 244, 244, 246, 249, 251, 253, 256,
+	256, 259, 0
 };
 
 static const char _ncrontab_trans_keys[] = {
-	33, 35, 59, 67, 68, 72, 73, 74,
-	77, 82, 87, 99, 100, 104, 105, 106,
-	109, 114, 119, 48, 57, 79, 111, 77,
+	33, 35, 59, 67, 68, 73, 74, 77,
+	82, 84, 87, 99, 100, 105, 106, 109,
+	114, 116, 119, 48, 57, 79, 111, 77,
 	109, 77, 109, 65, 97, 78, 110, 68,
 	100, 9, 32, 61, 0, 9, 10, 32,
 	65, 97, 89, 121, 9, 32, 61, 9,
-	32, 48, 57, 48, 57, 79, 111, 85,
-	117, 82, 114, 9, 32, 61, 9, 32,
-	48, 57, 48, 57, 78, 110, 84, 116,
-	69, 101, 82, 114, 86, 118, 65, 97,
-	76, 108, 9, 32, 61, 9, 32, 48,
-	57, 100, 104, 109, 115, 119, 48, 57,
-	79, 111, 85, 117, 82, 114, 78, 110,
-	65, 97, 76, 108, 65, 73, 79, 97,
-	105, 111, 88, 120, 82, 114, 85, 117,
-	78, 110, 83, 115, 9, 32, 61, 9,
-	32, 48, 57, 78, 110, 85, 117, 84,
-	116, 69, 101, 9, 32, 61, 9, 32,
-	48, 57, 48, 57, 78, 110, 84, 116,
-	72, 104, 9, 32, 61, 9, 32, 48,
-	57, 48, 57, 85, 117, 78, 110, 65,
-	97, 84, 116, 9, 32, 61, 9, 32,
-	48, 57, 69, 101, 69, 101, 75, 107,
-	68, 100, 65, 97, 89, 121, 9, 32,
-	61, 9, 32, 48, 57, 48, 57, 48,
-	57, 0, 10, 0, 9, 10, 32, 44,
-	48, 57, 48, 57, 44, 48, 57, 48,
-	57, 9, 32, 48, 57, 9, 32, 48,
-	57, 9, 32, 48, 57, 9, 32, 48,
-	57, 9, 32, 48, 57, 48, 57, 44,
-	48, 57, 48, 57, 44, 48, 57, 48,
-	57, 48, 57, 44, 48, 57, 48, 57,
-	0
+	32, 48, 57, 48, 57, 78, 110, 84,
+	116, 69, 101, 82, 114, 86, 118, 65,
+	97, 76, 108, 9, 32, 61, 9, 32,
+	48, 57, 100, 104, 109, 115, 119, 48,
+	57, 79, 111, 85, 117, 82, 114, 78,
+	110, 65, 97, 76, 108, 65, 79, 97,
+	111, 88, 120, 82, 114, 85, 117, 78,
+	110, 83, 115, 9, 32, 61, 9, 32,
+	48, 57, 78, 110, 84, 116, 72, 104,
+	9, 32, 61, 9, 32, 48, 57, 48,
+	57, 85, 117, 78, 110, 65, 97, 84,
+	116, 9, 32, 61, 9, 32, 48, 57,
+	73, 105, 77, 109, 69, 101, 9, 32,
+	61, 9, 32, 49, 50, 48, 57, 58,
+	49, 53, 48, 57, 9, 32, 45, 9,
+	32, 49, 50, 48, 57, 58, 49, 53,
+	48, 57, 58, 48, 57, 58, 48, 51,
+	58, 48, 57, 58, 48, 51, 69, 101,
+	69, 101, 75, 107, 68, 100, 65, 97,
+	89, 121, 9, 32, 61, 9, 32, 48,
+	57, 48, 57, 48, 57, 0, 10, 0,
+	9, 10, 32, 44, 48, 57, 48, 57,
+	9, 32, 48, 57, 9, 32, 48, 57,
+	9, 32, 48, 57, 9, 32, 48, 57,
+	9, 32, 48, 57, 48, 57, 44, 48,
+	57, 48, 57, 48, 57, 9, 32, 45,
+	44, 48, 57, 48, 57, 0
 };
 
 static const signed char _ncrontab_single_lengths[] = {
 	0, 19, 0, 2, 2, 2, 2, 2,
 	2, 3, 4, 2, 2, 3, 2, 0,
-	2, 2, 2, 3, 2, 0, 2, 2,
-	2, 2, 2, 2, 2, 3, 2, 5,
-	2, 2, 2, 2, 2, 2, 6, 2,
-	2, 2, 2, 2, 3, 2, 2, 2,
-	2, 2, 3, 2, 0, 2, 2, 2,
-	3, 2, 0, 2, 2, 2, 2, 3,
 	2, 2, 2, 2, 2, 2, 2, 3,
-	2, 0, 0, 0, 2, 4, 1, 0,
-	1, 0, 2, 2, 2, 2, 2, 0,
-	0, 1, 0, 1, 0, 0, 1, 0,
-	0
+	2, 5, 2, 2, 2, 2, 2, 2,
+	4, 2, 2, 2, 2, 2, 3, 2,
+	2, 2, 2, 3, 2, 0, 2, 2,
+	2, 2, 3, 2, 2, 2, 2, 3,
+	4, 1, 0, 0, 3, 4, 1, 0,
+	0, 1, 1, 1, 1, 2, 2, 2,
+	2, 2, 2, 3, 2, 0, 0, 0,
+	2, 4, 1, 0, 2, 2, 2, 2,
+	2, 0, 0, 1, 0, 0, 3, 0,
+	1, 0, 0
 };
 
 static const signed char _ncrontab_range_lengths[] = {
 	0, 0, 1, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 1, 1,
-	0, 0, 0, 0, 1, 1, 0, 0,
-	0, 0, 0, 0, 0, 0, 1, 1,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 1, 0, 0,
-	0, 0, 0, 1, 1, 0, 0, 0,
-	0, 1, 1, 0, 0, 0, 0, 0,
-	1, 0, 0, 0, 0, 0, 0, 0,
-	1, 1, 1, 0, 0, 0, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 0,
-	1, 1, 1, 1, 1, 1, 1, 1,
-	0
+	1, 1, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 1,
+	0, 0, 0, 0, 1, 1, 0, 0,
+	0, 0, 0, 1, 0, 0, 0, 0,
+	1, 0, 1, 1, 0, 1, 0, 1,
+	1, 1, 1, 1, 1, 0, 0, 0,
+	0, 0, 0, 0, 1, 1, 1, 0,
+	0, 0, 1, 1, 1, 1, 1, 1,
+	1, 0, 1, 1, 1, 1, 0, 0,
+	1, 1, 0
 };
 
 static const short _ncrontab_index_offsets[] = {
 	0, 0, 20, 22, 25, 28, 31, 34,
 	37, 40, 44, 49, 52, 55, 59, 63,
-	65, 68, 71, 74, 78, 82, 84, 87,
-	90, 93, 96, 99, 102, 105, 109, 113,
-	120, 123, 126, 129, 132, 135, 138, 145,
-	148, 151, 154, 157, 160, 164, 168, 171,
-	174, 177, 180, 184, 188, 190, 193, 196,
-	199, 203, 207, 209, 212, 215, 218, 221,
-	225, 229, 232, 235, 238, 241, 244, 247,
-	251, 255, 257, 259, 260, 263, 268, 271,
-	273, 276, 278, 282, 286, 290, 294, 298,
-	299, 301, 304, 306, 309, 311, 313, 316,
-	0
+	65, 68, 71, 74, 77, 80, 83, 86,
+	90, 94, 101, 104, 107, 110, 113, 116,
+	119, 124, 127, 130, 133, 136, 139, 143,
+	147, 150, 153, 156, 160, 164, 166, 169,
+	172, 175, 178, 182, 186, 189, 192, 195,
+	199, 205, 207, 209, 211, 215, 221, 223,
+	225, 227, 230, 233, 236, 239, 242, 245,
+	248, 251, 254, 257, 261, 265, 267, 269,
+	270, 273, 278, 281, 283, 287, 291, 295,
+	299, 303, 304, 306, 309, 311, 313, 317,
+	318, 321, 0
 };
 
 static const signed char _ncrontab_cond_targs[] = {
-	2, 75, 75, 3, 11, 16, 22, 32,
-	38, 59, 65, 3, 11, 16, 22, 32,
-	38, 59, 65, 0, 74, 0, 4, 4,
+	2, 79, 79, 3, 11, 16, 26, 32,
+	46, 52, 69, 3, 11, 16, 26, 32,
+	46, 52, 69, 0, 78, 0, 4, 4,
 	0, 5, 5, 0, 6, 6, 0, 7,
 	7, 0, 8, 8, 0, 9, 9, 0,
-	9, 9, 10, 0, 0, 77, 0, 77,
-	76, 12, 12, 0, 13, 13, 0, 13,
-	13, 14, 0, 14, 14, 78, 0, 79,
+	9, 9, 10, 0, 0, 81, 0, 81,
+	80, 12, 12, 0, 13, 13, 0, 13,
+	13, 14, 0, 14, 14, 82, 0, 83,
 	0, 17, 17, 0, 18, 18, 0, 19,
-	19, 0, 19, 19, 20, 0, 20, 20,
-	80, 0, 81, 0, 23, 23, 0, 24,
-	24, 0, 25, 25, 0, 26, 26, 0,
-	27, 27, 0, 28, 28, 0, 29, 29,
-	0, 29, 29, 30, 0, 30, 30, 31,
-	0, 82, 83, 84, 85, 86, 31, 0,
-	33, 33, 0, 34, 34, 0, 35, 35,
-	0, 36, 36, 0, 37, 37, 0, 87,
-	87, 0, 39, 46, 53, 39, 46, 53,
-	0, 40, 40, 0, 41, 41, 0, 42,
-	42, 0, 43, 43, 0, 44, 44, 0,
-	44, 44, 45, 0, 45, 45, 88, 0,
-	47, 47, 0, 48, 48, 0, 49, 49,
-	0, 50, 50, 0, 50, 50, 51, 0,
-	51, 51, 89, 0, 90, 0, 54, 54,
-	0, 55, 55, 0, 56, 56, 0, 56,
-	56, 57, 0, 57, 57, 91, 0, 92,
-	0, 60, 60, 0, 61, 61, 0, 62,
-	62, 0, 63, 63, 0, 63, 63, 64,
-	0, 64, 64, 93, 0, 66, 66, 0,
-	67, 67, 0, 68, 68, 0, 69, 69,
-	0, 70, 70, 0, 71, 71, 0, 71,
-	71, 72, 0, 72, 72, 94, 0, 95,
-	0, 74, 0, 75, 0, 0, 76, 0,
-	77, 0, 77, 76, 15, 78, 0, 79,
-	0, 21, 80, 0, 81, 0, 30, 30,
-	31, 0, 30, 30, 31, 0, 30, 30,
-	31, 0, 30, 30, 31, 0, 30, 30,
-	31, 0, 0, 88, 0, 52, 89, 0,
-	90, 0, 58, 91, 0, 92, 0, 93,
-	0, 73, 94, 0, 95, 0, 0, 1,
-	2, 3, 4, 5, 6, 7, 8, 9,
-	10, 11, 12, 13, 14, 15, 16, 17,
-	18, 19, 20, 21, 22, 23, 24, 25,
-	26, 27, 28, 29, 30, 31, 32, 33,
-	34, 35, 36, 37, 38, 39, 40, 41,
-	42, 43, 44, 45, 46, 47, 48, 49,
-	50, 51, 52, 53, 54, 55, 56, 57,
-	58, 59, 60, 61, 62, 63, 64, 65,
-	66, 67, 68, 69, 70, 71, 72, 73,
-	74, 75, 76, 77, 78, 79, 80, 81,
-	82, 83, 84, 85, 86, 87, 88, 89,
-	90, 91, 92, 93, 94, 95, 0
+	19, 0, 20, 20, 0, 21, 21, 0,
+	22, 22, 0, 23, 23, 0, 23, 23,
+	24, 0, 24, 24, 25, 0, 84, 85,
+	86, 87, 88, 25, 0, 27, 27, 0,
+	28, 28, 0, 29, 29, 0, 30, 30,
+	0, 31, 31, 0, 89, 89, 0, 33,
+	40, 33, 40, 0, 34, 34, 0, 35,
+	35, 0, 36, 36, 0, 37, 37, 0,
+	38, 38, 0, 38, 38, 39, 0, 39,
+	39, 90, 0, 41, 41, 0, 42, 42,
+	0, 43, 43, 0, 43, 43, 44, 0,
+	44, 44, 91, 0, 92, 0, 47, 47,
+	0, 48, 48, 0, 49, 49, 0, 50,
+	50, 0, 50, 50, 51, 0, 51, 51,
+	93, 0, 53, 53, 0, 54, 54, 0,
+	55, 55, 0, 55, 55, 56, 0, 56,
+	56, 67, 68, 57, 0, 58, 0, 59,
+	0, 94, 0, 60, 60, 61, 0, 61,
+	61, 65, 66, 62, 0, 63, 0, 64,
+	0, 95, 0, 63, 62, 0, 63, 62,
+	0, 58, 57, 0, 58, 57, 0, 70,
+	70, 0, 71, 71, 0, 72, 72, 0,
+	73, 73, 0, 74, 74, 0, 75, 75,
+	0, 75, 75, 76, 0, 76, 76, 96,
+	0, 97, 0, 78, 0, 79, 0, 0,
+	80, 0, 81, 0, 81, 80, 15, 82,
+	0, 83, 0, 24, 24, 25, 0, 24,
+	24, 25, 0, 24, 24, 25, 0, 24,
+	24, 25, 0, 24, 24, 25, 0, 0,
+	90, 0, 45, 91, 0, 92, 0, 93,
+	0, 60, 60, 61, 0, 0, 77, 96,
+	0, 97, 0, 0, 1, 2, 3, 4,
+	5, 6, 7, 8, 9, 10, 11, 12,
+	13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28,
+	29, 30, 31, 32, 33, 34, 35, 36,
+	37, 38, 39, 40, 41, 42, 43, 44,
+	45, 46, 47, 48, 49, 50, 51, 52,
+	53, 54, 55, 56, 57, 58, 59, 60,
+	61, 62, 63, 64, 65, 66, 67, 68,
+	69, 70, 71, 72, 73, 74, 75, 76,
+	77, 78, 79, 80, 81, 82, 83, 84,
+	85, 86, 87, 88, 89, 90, 91, 92,
+	93, 94, 95, 96, 97, 0
 };
 
 static const signed char _ncrontab_cond_actions[] = {
@@ -962,36 +1036,36 @@ static const signed char _ncrontab_cond_actions[] = {
 	0, 0, 0, 0, 0, 13, 0, 17,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	13, 0, 17, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 1,
+	0, 0, 0, 0, 1, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 13, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 13, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 13, 0, 17, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 13, 0, 17,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	13, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 86, 86, 86, 0, 15, 0, 17,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 13, 13, 13, 0, 15, 0, 17,
+	0, 0, 0, 15, 0, 0, 15, 0,
+	0, 15, 0, 0, 15, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 13, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 13, 0, 17,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	19, 0, 19, 19, 15, 0, 0, 0,
-	0, 15, 0, 0, 0, 0, 9, 9,
-	47, 0, 7, 7, 41, 0, 5, 5,
-	35, 0, 3, 3, 29, 0, 11, 11,
-	53, 0, 0, 0, 0, 15, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 13,
+	0, 17, 0, 0, 0, 0, 0, 0,
+	0, 0, 19, 0, 19, 19, 15, 0,
+	0, 0, 0, 9, 9, 47, 0, 7,
+	7, 41, 0, 5, 5, 35, 0, 3,
+	3, 29, 0, 11, 11, 53, 0, 0,
 	0, 0, 15, 0, 0, 0, 0, 0,
-	0, 15, 0, 0, 0, 0, 0, 0,
+	0, 74, 74, 74, 0, 0, 15, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1001,35 +1075,36 @@ static const signed char _ncrontab_cond_actions[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	25, 0, 95, 95, 68, 83, 74, 89,
-	50, 44, 38, 32, 56, 21, 62, 77,
-	92, 65, 80, 59, 71, 86, 0
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 25, 0, 89, 89, 68, 80, 50,
+	44, 38, 32, 56, 21, 62, 65, 77,
+	59, 92, 92, 71, 83, 0
 };
 
 static const short _ncrontab_eof_trans[] = {
-	319, 320, 321, 322, 323, 324, 325, 326,
-	327, 328, 329, 330, 331, 332, 333, 334,
-	335, 336, 337, 338, 339, 340, 341, 342,
-	343, 344, 345, 346, 347, 348, 349, 350,
-	351, 352, 353, 354, 355, 356, 357, 358,
-	359, 360, 361, 362, 363, 364, 365, 366,
-	367, 368, 369, 370, 371, 372, 373, 374,
-	375, 376, 377, 378, 379, 380, 381, 382,
-	383, 384, 385, 386, 387, 388, 389, 390,
-	391, 392, 393, 394, 395, 396, 397, 398,
-	399, 400, 401, 402, 403, 404, 405, 406,
-	407, 408, 409, 410, 411, 412, 413, 414,
-	0
+	324, 325, 326, 327, 328, 329, 330, 331,
+	332, 333, 334, 335, 336, 337, 338, 339,
+	340, 341, 342, 343, 344, 345, 346, 347,
+	348, 349, 350, 351, 352, 353, 354, 355,
+	356, 357, 358, 359, 360, 361, 362, 363,
+	364, 365, 366, 367, 368, 369, 370, 371,
+	372, 373, 374, 375, 376, 377, 378, 379,
+	380, 381, 382, 383, 384, 385, 386, 387,
+	388, 389, 390, 391, 392, 393, 394, 395,
+	396, 397, 398, 399, 400, 401, 402, 403,
+	404, 405, 406, 407, 408, 409, 410, 411,
+	412, 413, 414, 415, 416, 417, 418, 419,
+	420, 421, 0
 };
 
 static const int ncrontab_start = 1;
-static const int ncrontab_first_final = 74;
+static const int ncrontab_first_final = 78;
 static const int ncrontab_error = 0;
 
 static const int ncrontab_en_main = 1;
 
 
-#line 536 "crontab.rl"
+#line 621 "crontab.rl"
 
 
 static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
@@ -1038,15 +1113,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 	const char *eof = pe;
 	
 
-#line 1008 "crontab.cpp"
+#line 1083 "crontab.cpp"
 	{
 		ncs.cs = (int)ncrontab_start;
 	}
 	
-#line 543 "crontab.rl"
+#line 628 "crontab.rl"
 
 
-#line 1013 "crontab.cpp"
+#line 1088 "crontab.cpp"
 	{
 		int _klen;
 		unsigned int _trans = 0;
@@ -1126,16 +1201,16 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 				{
 					case 0:  {
 							{
-#line 395 "crontab.rl"
+#line 468 "crontab.rl"
 							ncs.time_st = p; ncs.v_time = 0; }
 						
-#line 1095 "crontab.cpp"
+#line 1170 "crontab.cpp"
 
 						break; 
 					}
 					case 1:  {
 							{
-#line 396 "crontab.rl"
+#line 469 "crontab.rl"
 							
 							unsigned t;
 							if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
@@ -1145,13 +1220,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.v_time += t;
 						}
 						
-#line 1110 "crontab.cpp"
+#line 1185 "crontab.cpp"
 
 						break; 
 					}
 					case 2:  {
 							{
-#line 404 "crontab.rl"
+#line 477 "crontab.rl"
 							
 							unsigned t;
 							if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
@@ -1161,13 +1236,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.v_time += 60 * t;
 						}
 						
-#line 1125 "crontab.cpp"
+#line 1200 "crontab.cpp"
 
 						break; 
 					}
 					case 3:  {
 							{
-#line 412 "crontab.rl"
+#line 485 "crontab.rl"
 							
 							unsigned t;
 							if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
@@ -1177,13 +1252,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.v_time += 3600 * t;
 						}
 						
-#line 1140 "crontab.cpp"
+#line 1215 "crontab.cpp"
 
 						break; 
 					}
 					case 4:  {
 							{
-#line 420 "crontab.rl"
+#line 493 "crontab.rl"
 							
 							unsigned t;
 							if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
@@ -1193,13 +1268,13 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.v_time += 86400 * t;
 						}
 						
-#line 1155 "crontab.cpp"
+#line 1230 "crontab.cpp"
 
 						break; 
 					}
 					case 5:  {
 							{
-#line 428 "crontab.rl"
+#line 501 "crontab.rl"
 							
 							unsigned t;
 							if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
@@ -1209,49 +1284,49 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.v_time += 604800 * t;
 						}
 						
-#line 1170 "crontab.cpp"
+#line 1245 "crontab.cpp"
 
 						break; 
 					}
 					case 6:  {
 							{
-#line 437 "crontab.rl"
+#line 510 "crontab.rl"
 							
 							ncs.intv_st = p;
-							ncs.v_int = ncs.v_int2 = 0;
+							ncs.v_int1 = ncs.v_int2 = 0;
 							ncs.intv2_exist = false;
 						}
 						
-#line 1182 "crontab.cpp"
+#line 1257 "crontab.cpp"
 
 						break; 
 					}
 					case 7:  {
 							{
-#line 442 "crontab.rl"
+#line 515 "crontab.rl"
 							
-							if (!nk::from_string<int>(MARKED_INTV1(), &ncs.v_int)) {
+							if (!nk::from_string<int>(MARKED_INTV1(), &ncs.v_int1)) {
 								ncs.parse_error = true;
 								{p += 1; goto _out; }
 							}
 						}
 						
-#line 1195 "crontab.cpp"
+#line 1270 "crontab.cpp"
 
 						break; 
 					}
 					case 8:  {
 							{
-#line 448 "crontab.rl"
+#line 521 "crontab.rl"
 							ncs.intv2_st = p; }
 						
-#line 1203 "crontab.cpp"
+#line 1278 "crontab.cpp"
 
 						break; 
 					}
 					case 9:  {
 							{
-#line 449 "crontab.rl"
+#line 522 "crontab.rl"
 							
 							if (!nk::from_string<int>(MARKED_INTV2(), &ncs.v_int2)) {
 								ncs.parse_error = true;
@@ -1260,22 +1335,47 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.intv2_exist = true;
 						}
 						
-#line 1217 "crontab.cpp"
+#line 1292 "crontab.cpp"
 
 						break; 
 					}
 					case 10:  {
 							{
-#line 457 "crontab.rl"
-							ncs.strv_st = p; ncs.v_strlen = 0; }
+#line 529 "crontab.rl"
+							
+							using std::swap;
+							swap(ncs.v_int1, ncs.v_int3);
+							swap(ncs.v_int2, ncs.v_int4);
+						}
 						
-#line 1225 "crontab.cpp"
+#line 1304 "crontab.cpp"
 
 						break; 
 					}
 					case 11:  {
 							{
-#line 458 "crontab.rl"
+#line 534 "crontab.rl"
+							
+							ncs.v_int3 = -1;
+							ncs.v_int4 = -1;
+						}
+						
+#line 1315 "crontab.cpp"
+
+						break; 
+					}
+					case 12:  {
+							{
+#line 539 "crontab.rl"
+							ncs.strv_st = p; ncs.v_strlen = 0; }
+						
+#line 1323 "crontab.cpp"
+
+						break; 
+					}
+					case 13:  {
+							{
+#line 540 "crontab.rl"
 							
 							ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
 							if (ncs.v_strlen >= sizeof ncs.v_str) {
@@ -1286,120 +1386,111 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							ncs.v_str[ncs.v_strlen] = 0;
 						}
 						
-#line 1241 "crontab.cpp"
-
-						break; 
-					}
-					case 12:  {
-							{
-#line 481 "crontab.rl"
-							ncs.ce.journal = true; }
-						
-#line 1249 "crontab.cpp"
-
-						break; 
-					}
-					case 13:  {
-							{
-#line 484 "crontab.rl"
-							
-							ncs.runat = true;
-							ncs.ce.exectime = ncs.v_int;
-							ncs.ce.maxruns = 1;
-							ncs.ce.journal = true;
-						}
-						
-#line 1262 "crontab.cpp"
+#line 1339 "crontab.cpp"
 
 						break; 
 					}
 					case 14:  {
 							{
-#line 490 "crontab.rl"
-							
-							if (!ncs.runat)
-							ncs.ce.maxruns = ncs.v_int > 0 ? static_cast<unsigned>(ncs.v_int) : 0;
-						}
+#line 563 "crontab.rl"
+							ncs.ce.journal = true; }
 						
-#line 1273 "crontab.cpp"
+#line 1347 "crontab.cpp"
 
 						break; 
 					}
 					case 15:  {
 							{
-#line 498 "crontab.rl"
-							ncs.ce.interval = ncs.v_time; }
+#line 566 "crontab.rl"
+							
+							ncs.runat = true;
+							ncs.ce.exectime = ncs.v_int1;
+							ncs.ce.maxruns = 1;
+							ncs.ce.journal = true;
+						}
 						
-#line 1281 "crontab.cpp"
+#line 1360 "crontab.cpp"
 
 						break; 
 					}
 					case 16:  {
 							{
-#line 502 "crontab.rl"
-							addcstlist(ncs, ncs.ce.month, 0, 1, 12); }
+#line 572 "crontab.rl"
+							
+							if (!ncs.runat)
+							ncs.ce.maxruns = ncs.v_int1 > 0 ? static_cast<unsigned>(ncs.v_int1) : 0;
+						}
 						
-#line 1289 "crontab.cpp"
+#line 1371 "crontab.cpp"
 
 						break; 
 					}
 					case 17:  {
 							{
-#line 503 "crontab.rl"
-							addcstlist(ncs, ncs.ce.day, 0, 1, 31); }
+#line 580 "crontab.rl"
+							ncs.ce.interval = ncs.v_time; }
 						
-#line 1297 "crontab.cpp"
+#line 1379 "crontab.cpp"
 
 						break; 
 					}
 					case 18:  {
 							{
-#line 504 "crontab.rl"
-							addcstlist(ncs, ncs.ce.weekday, 0, 1, 7); }
+#line 589 "crontab.rl"
+							add_cst_mon(ncs); }
 						
-#line 1305 "crontab.cpp"
+#line 1387 "crontab.cpp"
 
 						break; 
 					}
 					case 19:  {
 							{
-#line 505 "crontab.rl"
-							addcstlist(ncs, ncs.ce.hour, 24, 0, 23); }
+#line 590 "crontab.rl"
+							add_cst_mday(ncs); }
 						
-#line 1313 "crontab.cpp"
+#line 1395 "crontab.cpp"
 
 						break; 
 					}
 					case 20:  {
 							{
-#line 506 "crontab.rl"
-							addcstlist(ncs, ncs.ce.minute, 60, 0, 59); }
+#line 591 "crontab.rl"
+							add_cst_wday(ncs); }
 						
-#line 1321 "crontab.cpp"
+#line 1403 "crontab.cpp"
 
 						break; 
 					}
 					case 21:  {
 							{
-#line 514 "crontab.rl"
-							parse_command_key(ncs); }
+#line 592 "crontab.rl"
+							add_cst_time(ncs); }
 						
-#line 1329 "crontab.cpp"
+#line 1411 "crontab.cpp"
 
 						break; 
 					}
 					case 22:  {
 							{
-#line 521 "crontab.rl"
-							ncs.jobid_st = p; }
+#line 599 "crontab.rl"
+							parse_command_key(ncs); }
 						
-#line 1337 "crontab.cpp"
+#line 1419 "crontab.cpp"
 
 						break; 
 					}
 					case 23:  {
 							{
-#line 522 "crontab.rl"
+#line 606 "crontab.rl"
+							ncs.jobid_st = p; }
+						
+#line 1427 "crontab.cpp"
+
+						break; 
+					}
+					case 24:  {
+							{
+#line 607 "crontab.rl"
 							
 							if (!nk::from_string<int>(MARKED_JOBID(), &ncs.ce.id)) {
 								ncs.parse_error = true;
@@ -1407,16 +1498,16 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							}
 						}
 						
-#line 1350 "crontab.cpp"
+#line 1440 "crontab.cpp"
 
 						break; 
 					}
-					case 24:  {
+					case 25:  {
 							{
-#line 528 "crontab.rl"
+#line 613 "crontab.rl"
 							ncs.finish_ce(); }
 						
-#line 1358 "crontab.cpp"
+#line 1448 "crontab.cpp"
 
 						break; 
 					}
@@ -1428,7 +1519,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		}
 		
 		if ( p == eof ) {
-			if ( ncs.cs >= 74 )
+			if ( ncs.cs >= 78 )
 				goto _out;
 		}
 		else {
@@ -1440,7 +1531,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 		_out: {}
 	}
 	
-#line 544 "crontab.rl"
+#line 629 "crontab.rl"
 
 	
 	if (ncs.parse_error) return -1;
@@ -1484,7 +1575,6 @@ std::vector<size_t> *deadstk)
 		}
 	}
 	ncs.finish_ce();
-	for (auto &i: g_jobs) i.merge_constraints();
 	std::sort(stk->begin(), stk->end(), LtCronEntry);
 	history_lut.clear();
 }

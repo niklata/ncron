@@ -66,8 +66,10 @@ struct ParseCfgState
 
     unsigned int v_time;
 
-    int v_int = 0;
+    int v_int1 = 0;
     int v_int2 = 0;
+    int v_int3 = -1;
+    int v_int4 = -1;
 
     int cs = 0;
     bool have_command = false;
@@ -76,6 +78,11 @@ struct ParseCfgState
     bool runat = false;
 
     bool parse_error = false;
+
+    bool seen_cst_hhmm = false;
+    bool seen_cst_wday = false;
+    bool seen_cst_mday = false;
+    bool seen_cst_mon = false;
 
     void get_history()
     {
@@ -94,6 +101,10 @@ struct ParseCfgState
         ce.clear();
         have_command = false;
         runat = false;
+        seen_cst_hhmm = false;
+        seen_cst_wday = false;
+        seen_cst_mday = false;
+        seen_cst_mon = false;
     }
 
     inline void debug_print_ce() const
@@ -107,16 +118,6 @@ struct ParseCfgState
         log_line("numruns: %u", ce.numruns);
         log_line("maxruns: %u", ce.maxruns);
         log_line("journal: %s", ce.journal ? "true" : "false");
-        for (const auto &i: ce.month)
-            log_line("month: [%u,%u]", i.first, i.second);
-        for (const auto &i: ce.day)
-            log_line("day: [%u,%u]", i.first, i.second);
-        for (const auto &i: ce.weekday)
-            log_line("weekday: [%u,%u]", i.first, i.second);
-        for (const auto &i: ce.hour)
-            log_line("hour: [%u,%u]", i.first, i.second);
-        for (const auto &i: ce.minute)
-            log_line("minute: [%u,%u]", i.first, i.second);
         log_line("runat: %s", runat ? "true" : "false");
         log_line("interval: %u", ce.interval);
         log_line("exectime: %lu", ce.exectime);
@@ -289,12 +290,84 @@ static void parse_history(char const *path)
     }
 }
 
-static inline bool addcstlist(ParseCfgState &ncs, Job::cst_list &list,
-                              int wildcard, int min, int max)
+static bool add_cst_mon(ParseCfgState &ncs)
 {
-    int low = ncs.v_int;
-    int high = ncs.intv2_exist ? ncs.v_int2 : wildcard;
-    return ncs.ce.add_constraint(list, low, high, wildcard, min, max);
+    int min = ncs.v_int1;
+    int max = ncs.intv2_exist ? ncs.v_int2 : -1;
+    if (max < 0) max = min;
+    assert(min > 0 && min <= 12);
+    assert(max > 0 && max <= 12);
+    if (max < min) return false;
+    if (min <= 0 || min > 12) return false;
+    if (max <= 0 || max > 12) return false;
+    if (!ncs.seen_cst_mon) {
+        memset(&ncs.ce.cst_mon, 0, sizeof ncs.ce.cst_mon);
+        ncs.seen_cst_mon = true;
+    }
+    for (int i = min; i <= max; ++i)
+        ncs.ce.cst_mon[i - 1] = true;
+    return true;
+}
+
+static bool add_cst_mday(ParseCfgState &ncs)
+{
+    int min = ncs.v_int1;
+    int max = ncs.intv2_exist ? ncs.v_int2 : -1;
+    if (max < 0) max = min;
+    assert(min > 0 && min <= 31);
+    assert(max > 0 && max <= 31);
+    if (max < min) return false;
+    if (min <= 0 || min > 31) return false;
+    if (max <= 0 || max > 31) return false;
+    if (!ncs.seen_cst_mday) {
+        memset(&ncs.ce.cst_mday, 0, sizeof ncs.ce.cst_mday);
+        ncs.seen_cst_mday = true;
+    }
+    for (int i = min; i <= max; ++i)
+        ncs.ce.cst_mday[i - 1] = true;
+    return true;
+}
+
+static bool add_cst_wday(ParseCfgState &ncs)
+{
+    int min = ncs.v_int1;
+    int max = ncs.intv2_exist ? ncs.v_int2 : -1;
+    if (max < 0) max = min;
+    assert(min > 0 && min <= 7);
+    assert(max > 0 && max <= 7);
+    if (max < min) return false;
+    if (min <= 0 || min > 7) return false;
+    if (max <= 0 || max > 7) return false;
+    if (!ncs.seen_cst_wday) {
+        memset(&ncs.ce.cst_wday, 0, sizeof ncs.ce.cst_wday);
+        ncs.seen_cst_wday = true;
+    }
+    for (int i = min; i <= max; ++i)
+        ncs.ce.cst_wday[i - 1] = true;
+    return true;
+}
+
+static bool add_cst_time(ParseCfgState &ncs)
+{
+    bool single_value = ncs.v_int3 == -1 && ncs.v_int4 == -1;
+    // Enforce that range is low-high.
+    if (!single_value) {
+        if (ncs.v_int3 < ncs.v_int1) return false;
+        if (ncs.v_int3 == ncs.v_int1) {
+            if (ncs.v_int4 < ncs.v_int2) return false;
+        }
+    }
+    if (!ncs.seen_cst_hhmm) {
+        memset(&ncs.ce.cst_hhmm, 0, sizeof ncs.ce.cst_hhmm);
+        ncs.seen_cst_hhmm = true;
+    }
+    int min = ncs.v_int1 * 60 + ncs.v_int2;
+    int max = ncs.v_int3 * 60 + ncs.v_int4;
+    assert(min >= 0 && min < 1440);
+    assert(max >= 0 && max < 1440);
+    for (int i = min; i <= max; ++i)
+        ncs.ce.cst_hhmm[i] = true;
+    return true;
 }
 
 struct Pckm {
@@ -436,11 +509,11 @@ static void parse_command_key(ParseCfgState &ncs)
 
     action IntValSt {
         ncs.intv_st = p;
-        ncs.v_int = ncs.v_int2 = 0;
+        ncs.v_int1 = ncs.v_int2 = 0;
         ncs.intv2_exist = false;
     }
     action IntValEn {
-        if (!nk::from_string<int>(MARKED_INTV1(), &ncs.v_int)) {
+        if (!nk::from_string<int>(MARKED_INTV1(), &ncs.v_int1)) {
             ncs.parse_error = true;
             fbreak;
         }
@@ -452,6 +525,15 @@ static void parse_command_key(ParseCfgState &ncs)
             fbreak;
         }
         ncs.intv2_exist = true;
+    }
+    action IntValSwap {
+        using std::swap;
+        swap(ncs.v_int1, ncs.v_int3);
+        swap(ncs.v_int2, ncs.v_int4);
+    }
+    action IntVal34Clear {
+        ncs.v_int3 = -1;
+        ncs.v_int4 = -1;
     }
 
     action StrValSt { ncs.strv_st = p; ncs.v_strlen = 0; }
@@ -483,13 +565,13 @@ static void parse_command_key(ParseCfgState &ncs)
 
     action RunAtEn {
         ncs.runat = true;
-        ncs.ce.exectime = ncs.v_int;
+        ncs.ce.exectime = ncs.v_int1;
         ncs.ce.maxruns = 1;
         ncs.ce.journal = true;
     }
     action MaxRunsEn {
         if (!ncs.runat)
-            ncs.ce.maxruns = ncs.v_int > 0 ? static_cast<unsigned>(ncs.v_int) : 0;
+            ncs.ce.maxruns = ncs.v_int1 > 0 ? static_cast<unsigned>(ncs.v_int1) : 0;
     }
 
     runat = 'runat'i eqsep intval % RunAtEn;
@@ -499,23 +581,26 @@ static void parse_command_key(ParseCfgState &ncs)
 
     interval = 'interval'i eqsep timeval % IntervalEn;
 
-    action MonthEn { addcstlist(ncs, ncs.ce.month, 0, 1, 12); }
-    action DayEn { addcstlist(ncs, ncs.ce.day, 0, 1, 31); }
-    action WeekdayEn { addcstlist(ncs, ncs.ce.weekday, 0, 1, 7); }
-    action HourEn { addcstlist(ncs, ncs.ce.hour, 24, 0, 23); }
-    action MinuteEn { addcstlist(ncs, ncs.ce.minute, 60, 0, 59); }
+    xhour = digit | ('1' digit) | '20' | '21' | '22' | '23';
+    xminute = ('1' | '2' | '3' | '4' | '5') digit;
+    hhmm = xhour > IntValSt % IntValEn ':' xminute > IntVal2St % IntVal2En;
+    hhmm_range = hhmm > IntVal34Clear (spc* '-' spc* hhmm)? > IntValSwap % IntValSwap;
+
+    action MonthEn { add_cst_mon(ncs); }
+    action DayEn { add_cst_mday(ncs); }
+    action WeekdayEn { add_cst_wday(ncs); }
+    action TimeEn { add_cst_time(ncs); }
 
     month = 'month'i eqsep intrangeval % MonthEn;
     day = 'day'i eqsep intrangeval % DayEn;
     weekday = 'weekday'i eqsep intrangeval % WeekdayEn;
-    hour = 'hour'i eqsep intrangeval % HourEn;
-    minute = 'minute'i eqsep intrangeval % MinuteEn;
+    time = 'time'i eqsep hhmm_range % TimeEn;
 
     action CommandEn { parse_command_key(ncs); }
 
     command = 'command'i eqsep stringval % CommandEn;
 
-    cmds = command | minute | hour | weekday | day |
+    cmds = command | time | weekday | day |
            month | interval | maxruns | runat | journal;
 
     action JobIdSt { ncs.jobid_st = p; }
@@ -584,7 +669,6 @@ void parse_config(char const *path, char const *execfile,
         }
     }
     ncs.finish_ce();
-    for (auto &i: g_jobs) i.merge_constraints();
     std::sort(stk->begin(), stk->end(), LtCronEntry);
     history_lut.clear();
 }
