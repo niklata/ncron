@@ -2,7 +2,7 @@
 .\"
 .\" Copyright (c) 2004-2024 Nicholas J. Kain
 .\"
-.TH crontab 5 "January 28, 2024"
+.TH crontab 5 "Feburary 9, 2024"
 .LO 1
 .SH NAME
 crontab \- ncron configuration file
@@ -12,23 +12,25 @@ specifies job commands, intervals, and constraints.
 
 .SH "FILE FORMAT"
 .nf
-JOBID := integer
-UNIT := "s", "m", "h", "d", "w"
-INTERVAL := integer(NOT integer OR NOT UNIT)[UNIT][INTERVAL]
-IPAIR := integer,integer OR integer
+UINT := integer >= 0
+JOBID := '!' integer
+TIME_UNIT := "s" or "m" or "h" or "d" or "w"
 HH := 0-23
 MM := 0-59
-JOB :=  !JOBID
+WEEKDAY := 1-7
+DAY := 1-31
+MONTH := 1-12
+JOB :=  JOBID
         command=string
-        time=HH:MM OR HH:MM-HH:MM
-        weekday=IPAIR
-        day=IPAIR
-        month=IPAIR
-        interval=INTERVAL
+        time=HH:MM or HH:MM-HH:MM
+        weekday=WEEKDAY or WEEKDAY,WEEKDAY
+        day=DAY or DAY,DAY
+        month=MONTH or MONTH,MONTH
+        interval=(UINT[TIME_UNIT])+
         journal
-        maxruns=integer
-        runat=integer
-COMMENT := '#' OR ';' ANY
+        maxruns=UINT
+        runat=UINT
+COMMENT := '#' or ';' ANY
 
 config file :=
 	JOB
@@ -76,12 +78,16 @@ month=RANGE
 As above.  Valid months are within the range [1,12].
 .TP
 interval=SECONDS
-The time that must elapse between invocations of the job.  In practice,
-constraints may force a wait longer than the time specified by the interval.
-Any number before a valid unit (s,m,h,d) == (seconds, minutes, hours, days)
-will be associated with the next valid unit specifier.  Multiple units are
-allowed to be in sequence and will be implicitly added.  No unit specifier (a
-bare number) implies a unit of seconds.
+The time that must elapse between invocations of the job.  In
+practice, constraints may force a wait longer than the time specified
+by the interval.  Any number before a valid unit (s,m,h,d,w) ==
+(seconds, minutes, hours, days, weeks) will be associated with the
+next valid unit specifier.  Multiple units are allowed to be in
+sequence and will be implicitly added.  No unit specifier (a bare
+number) implies a unit of seconds.  Examples would be "interval=300"
+or "interval=5m" which both mean "run the job at least five minutes
+apart".  Multiple time units may be used at once, such as
+"interval=1h5m3s".
 .TP
 journal
 ncron will save execution times and number of runs after each run of this job.
