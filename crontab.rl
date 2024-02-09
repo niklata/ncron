@@ -164,7 +164,7 @@ struct ParseCfgState
         if (!runat) {
             get_history();
             debug_print_ce_history();
-            set_initial_exectime(ce);
+            ce.set_initial_exectime();
 
             auto numruns = ce.numruns;
             auto maxruns = ce.maxruns;

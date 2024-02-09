@@ -84,7 +84,7 @@ struct day_sieve
 
     [[nodiscard]] bool day_ok(int i) const { return filter[i] == 7; }
 
-    [[nodiscard]] bool build(const Job &entry, int year)
+    [[nodiscard]] bool build(Job const *entry, int year)
     {
         memset(filter, 0, sizeof filter);
 
@@ -97,7 +97,7 @@ struct day_sieve
 
         size_t fi = 0;
         for (size_t month = 1; month <= 12; ++month) {
-            if (entry.in_month(month)) {
+            if (entry->in_month(month)) {
                 for (int j = 0, jend = days_in_month(month, year); j < jend; ++j, ++fi) {
                     filter[fi] |= 1;
                 }
@@ -106,7 +106,7 @@ struct day_sieve
         fi = 0;
         for (size_t month = 1; month <= 12; ++month) {
             for (int day = 1, dayend = days_in_month(month, year); day <= dayend; ++day, ++fi) {
-                if (entry.in_mday(day)) {
+                if (entry->in_mday(day)) {
                     filter[fi] |= 2;
                 }
             }
@@ -115,7 +115,7 @@ struct day_sieve
         auto weekday = sdow; // day of the week we're checking
         auto sday = 0; // starting day of year
         for (;;) {
-            if (entry.in_wday(weekday)) {
+            if (entry->in_wday(weekday)) {
                 for (size_t i = static_cast<size_t>(sday); i < sizeof filter; i += 7) filter[i] |= 4;
             }
             weekday = weekday % 7 + 1;
@@ -132,9 +132,9 @@ struct day_sieve
     }
 };
 
-/* entry is obvious, stime is the time we're constraining
+/* stime is the time we're constraining
  * returns a time value that has been appropriately constrained */
-static time_t constrain_time(const Job &entry, time_t stime)
+time_t Job::constrain_time(time_t stime) const
 {
     struct tm *rtime;
     time_t t;
@@ -144,7 +144,7 @@ static time_t constrain_time(const Job &entry, time_t stime)
     int cyear = rtime->tm_year;
     int syear = cyear;
     day_sieve ds;
-    if (!ds.build(entry, rtime->tm_year)) return 0;
+    if (!ds.build(this, rtime->tm_year)) return 0;
 
     for (;;) {
         if (cyear - syear >= MAX_YEARS)
@@ -152,7 +152,7 @@ static time_t constrain_time(const Job &entry, time_t stime)
         t = mktime(rtime);
         rtime = localtime(&t);
         if (rtime->tm_year != cyear) {
-            if (!ds.build(entry, rtime->tm_year)) return 0;
+            if (!ds.build(this, rtime->tm_year)) return 0;
             cyear = rtime->tm_year;
         }
 
@@ -176,7 +176,7 @@ static time_t constrain_time(const Job &entry, time_t stime)
         }
     day_ok:
         for (;;) {
-            if (entry.in_hhmm(rtime->tm_hour, rtime->tm_min))
+            if (in_hhmm(rtime->tm_hour, rtime->tm_min))
                 return mktime(rtime);
             ++rtime->tm_min;
             if (rtime->tm_min == 60) {
@@ -201,17 +201,17 @@ static time_t constrain_time(const Job &entry, time_t stime)
 }
 
 /* Used when jobs without exectimes are first loaded. */
-void set_initial_exectime(Job &entry)
+void Job::set_initial_exectime()
 {
     struct timespec ts;
     clock_or_die(&ts);
-    time_t ttm = constrain_time(entry, ts.tv_sec);
-    time_t ttd = ttm - entry.lasttime;
-    if (ttd < entry.interval) {
-        ttm += entry.interval - ttd;
-        ttm = constrain_time(entry, ttm);
+    time_t ttm = constrain_time(ts.tv_sec);
+    time_t ttd = ttm - lasttime;
+    if (ttd < interval) {
+        ttm += interval - ttd;
+        ttm = constrain_time(ttm);
     }
-    entry.exectime = ttm;
+    exectime = ttm;
 }
 
 /* stupidly advances to next time of execution; performs constraint.  */
@@ -219,7 +219,7 @@ void Job::set_next_time()
 {
     struct timespec ts;
     clock_or_die(&ts);
-    auto etime = constrain_time(*this, ts.tv_sec + interval);
+    auto etime = constrain_time(ts.tv_sec + interval);
     exectime = etime > ts.tv_sec ? etime : 0;
 }
 

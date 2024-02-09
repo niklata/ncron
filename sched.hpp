@@ -98,6 +98,7 @@ struct Job
 
     bool operator<(const Job &o) const { return exectime < o.exectime; }
     bool operator>(const Job &o) const { return exectime > o.exectime; }
+    void set_initial_exectime();
     void exec(const struct timespec &ts);
 
     bool in_month(int v) const;
@@ -106,6 +107,7 @@ struct Job
     bool in_hhmm(int h, int m) const;
 private:
     void set_next_time();
+    time_t constrain_time(time_t stime) const;
 };
 
 extern std::vector<Job> g_jobs;
@@ -114,7 +116,5 @@ static inline bool LtCronEntry(size_t a, size_t b)
 {
     return g_jobs[a] < g_jobs[b];
 }
-
-void set_initial_exectime(Job &entry);
 
 #endif
