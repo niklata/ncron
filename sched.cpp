@@ -25,37 +25,6 @@ extern char **environ;
 // it probably won't run in the uptime of the machine.
 #define MAX_YEARS 5
 
-/*
- * returns -1 if below range
- * returns 0 if within range
- * returns 1 if above range
- */
-static inline int compare_range(const std::pair<int,int> &r,
-                                int v, int wildcard)
-{
-    if (r.first == wildcard && r.second == wildcard)
-        return 0;
-    if (r.first == wildcard) {
-        if (v < r.second)
-            return -1;
-        if (v > r.second)
-            return 1;
-        return 0;
-    }
-    if (r.second == wildcard) {
-        if (v < r.first)
-            return -1;
-        if (v > r.first)
-            return 1;
-        return 0;
-    }
-    if (v < r.first)
-        return -1;
-    if (v > r.second)
-        return 1;
-    return 0;
-}
-
 bool Job::in_month(int v) const
 {
     assert(v > 0 && v < 13);
@@ -108,7 +77,6 @@ static int days_in_month(int month, int year)
 struct day_sieve
 {
     time_t start_ts; // inclusive
-    time_t end_ts; // exclusive; actual last ts value in year + 1
     // bit0 = month
     // bit1 = mday
     // bit2 = wday
@@ -155,10 +123,6 @@ struct day_sieve
             ++sday;
             assert(sday < 7);
         }
-
-        t.tm_year = year + 1;
-        end_ts = mktime(&t);
-        if (end_ts == -1) return false;
         return true;
     }
 };
