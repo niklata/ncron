@@ -88,10 +88,10 @@ struct ParseCfgState
 	void get_history()
 	{
 		for (const auto &i: history_lut) {
-			if (i.id == ce.id) {
-				ce.exectime = i.history.exectime;
-				ce.lasttime = i.history.lasttime;
-				ce.numruns = i.history.numruns;
+			if (i.id == ce.id_) {
+				ce.exectime_ = i.history.exectime;
+				ce.lasttime_ = i.history.lasttime;
+				ce.numruns_ = i.history.numruns;
 				return;
 			}
 		}
@@ -113,25 +113,25 @@ struct ParseCfgState
 		if (!gflags_debug)
 			return;
 		log_line("-=- finish_ce -=-");
-		log_line("id: %d", ce.id);
-		log_line("command: %s", ce.command ? ce.command : "");
-		log_line("args: %s", ce.args ? ce.args : "");
-		log_line("numruns: %u", ce.numruns);
-		log_line("maxruns: %u", ce.maxruns);
-		log_line("journal: %s", ce.journal ? "true" : "false");
+		log_line("id: %d", ce.id_);
+		log_line("command: %s", ce.command_ ? ce.command_ : "");
+		log_line("args: %s", ce.args_ ? ce.args_ : "");
+		log_line("numruns: %u", ce.numruns_);
+		log_line("maxruns: %u", ce.maxruns_);
+		log_line("journal: %s", ce.journal_ ? "true" : "false");
 		log_line("runat: %s", runat ? "true" : "false");
-		log_line("interval: %u", ce.interval);
-		log_line("exectime: %lu", ce.exectime);
-		log_line("lasttime: %lu", ce.lasttime);
+		log_line("interval: %u", ce.interval_);
+		log_line("exectime: %lu", ce.exectime_);
+		log_line("lasttime: %lu", ce.lasttime_);
 	}
 	
 	inline void debug_print_ce_history() const
 	{
 		if (!gflags_debug)
 			return;
-		log_line("[%d]->numruns = %u", ce.id, ce.numruns);
-		log_line("[%d]->exectime = %lu", ce.id, ce.exectime);
-		log_line("[%d]->lasttime = %lu", ce.id, ce.lasttime);
+		log_line("[%d]->numruns = %u", ce.id_, ce.numruns_);
+		log_line("[%d]->exectime = %lu", ce.id_, ce.exectime_);
+		log_line("[%d]->lasttime = %lu", ce.id_, ce.lasttime_);
 	}
 	
 	void finish_ce()
@@ -144,17 +144,17 @@ struct ParseCfgState
 		defer [this]{ create_ce(); };
 		debug_print_ce();
 		
-		if (ce.id < 0
-			|| (ce.interval <= 0 && ce.exectime <= 0)
-		|| !ce.command || !have_command) {
+		if (ce.id_ < 0
+			|| (ce.interval_ <= 0 && ce.exectime_ <= 0)
+		|| !ce.command_ || !have_command) {
 			if (gflags_debug)
 				log_line("===> IGNORE");
 			return;
 		}
 		// XXX: O(n^2) might be nice to avoid.
 		for (auto &i: g_jobs) {
-			if (i.id == ce.id) {
-				log_line("ERROR IN CRONTAB: ignoring duplicate entry for job %d", ce.id);
+			if (i.id_ == ce.id_) {
+				log_line("ERROR IN CRONTAB: ignoring duplicate entry for job %d", ce.id_);
 				return;
 			}
 		}
@@ -167,23 +167,23 @@ struct ParseCfgState
 			debug_print_ce_history();
 			ce.set_initial_exectime();
 			
-			auto numruns = ce.numruns;
-			auto maxruns = ce.maxruns;
-			auto exectime = ce.exectime;
+			auto numruns = ce.numruns_;
+			auto maxruns = ce.maxruns_;
+			auto exectime = ce.exectime_;
 			g_jobs.emplace_back(std::move(ce));
 			
 			/* insert iif numruns < maxruns and no constr error */
 			append_stack((maxruns == 0 || numruns < maxruns) && exectime != 0);
 		} else {
-			if (ce.interval > 0) {
-				log_line("ERROR IN CRONTAB: interval is unused when runat is set: job %d", ce.id);
+			if (ce.interval_ > 0) {
+				log_line("ERROR IN CRONTAB: interval is unused when runat is set: job %d", ce.id_);
 			}
-			auto forced_exectime = ce.exectime;
+			auto forced_exectime = ce.exectime_;
 			get_history();
-			ce.exectime = forced_exectime;
+			ce.exectime_ = forced_exectime;
 			debug_print_ce_history();
 			
-			auto numruns = ce.numruns;
+			auto numruns = ce.numruns_;
 			g_jobs.emplace_back(std::move(ce));
 			
 			/* insert iif we haven't exceeded maxruns */
@@ -501,11 +501,11 @@ static bool add_cst_mon(ParseCfgState &ncs)
 		if (min <= 0 || min > 12) return false;
 		if (max <= 0 || max > 12) return false;
 		if (!ncs.seen_cst_mon) {
-		memset(&ncs.ce.cst_mon, 0, sizeof ncs.ce.cst_mon);
+		memset(&ncs.ce.cst_mon_, 0, sizeof ncs.ce.cst_mon_);
 		ncs.seen_cst_mon = true;
 	}
 	for (int i = min; i <= max; ++i)
-	ncs.ce.cst_mon[i - 1] = true;
+	ncs.ce.cst_mon_[i - 1] = true;
 	return true;
 }
 
@@ -520,11 +520,11 @@ static bool add_cst_mday(ParseCfgState &ncs)
 		if (min <= 0 || min > 31) return false;
 		if (max <= 0 || max > 31) return false;
 		if (!ncs.seen_cst_mday) {
-		memset(&ncs.ce.cst_mday, 0, sizeof ncs.ce.cst_mday);
+		memset(&ncs.ce.cst_mday_, 0, sizeof ncs.ce.cst_mday_);
 		ncs.seen_cst_mday = true;
 	}
 	for (int i = min; i <= max; ++i)
-	ncs.ce.cst_mday[i - 1] = true;
+	ncs.ce.cst_mday_[i - 1] = true;
 	return true;
 }
 
@@ -539,11 +539,11 @@ static bool add_cst_wday(ParseCfgState &ncs)
 		if (min <= 0 || min > 7) return false;
 		if (max <= 0 || max > 7) return false;
 		if (!ncs.seen_cst_wday) {
-		memset(&ncs.ce.cst_wday, 0, sizeof ncs.ce.cst_wday);
+		memset(&ncs.ce.cst_wday_, 0, sizeof ncs.ce.cst_wday_);
 		ncs.seen_cst_wday = true;
 	}
 	for (int i = min; i <= max; ++i)
-	ncs.ce.cst_wday[i - 1] = true;
+	ncs.ce.cst_wday_[i - 1] = true;
 	return true;
 }
 
@@ -558,7 +558,7 @@ static bool add_cst_time(ParseCfgState &ncs)
 			}
 	}
 	if (!ncs.seen_cst_hhmm) {
-		memset(&ncs.ce.cst_hhmm, 0, sizeof ncs.ce.cst_hhmm);
+		memset(&ncs.ce.cst_hhmm_, 0, sizeof ncs.ce.cst_hhmm_);
 		ncs.seen_cst_hhmm = true;
 	}
 	int min = ncs.v_int1 * 60 + ncs.v_int2;
@@ -566,7 +566,7 @@ static bool add_cst_time(ParseCfgState &ncs)
 	assert(min >= 0 && min < 1440);
 	assert(max >= 0 && max < 1440);
 	for (int i = min; i <= max; ++i)
-	ncs.ce.cst_hhmm[i] = true;
+	ncs.ce.cst_hhmm_[i] = true;
 	return true;
 }
 
@@ -783,7 +783,7 @@ static void parse_command_key(ParseCfgState &ncs)
 								}
 								if (prior_bs) *d++ = '\\';
 								*d++ = 0;
-								ncs.ce.command = ts;
+								ncs.ce.command_ = ts;
 							}
 						}
 						
@@ -800,7 +800,7 @@ static void parse_command_key(ParseCfgState &ncs)
 								auto ts = static_cast<char *>(malloc(l + 1));
 								memcpy(ts, pckm.st, l);
 								ts[l] = 0;
-								ncs.ce.args = ts;
+								ncs.ce.args_ = ts;
 							}
 						}
 						
@@ -1393,7 +1393,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 					case 14:  {
 							{
 #line 563 "crontab.rl"
-							ncs.ce.journal = true; }
+							ncs.ce.journal_ = true; }
 						
 #line 1347 "crontab.cpp"
 
@@ -1404,9 +1404,9 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 #line 566 "crontab.rl"
 							
 							ncs.runat = true;
-							ncs.ce.exectime = ncs.v_int1;
-							ncs.ce.maxruns = 1;
-							ncs.ce.journal = true;
+							ncs.ce.exectime_ = ncs.v_int1;
+							ncs.ce.maxruns_ = 1;
+							ncs.ce.journal_ = true;
 						}
 						
 #line 1360 "crontab.cpp"
@@ -1418,7 +1418,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 #line 572 "crontab.rl"
 							
 							if (!ncs.runat)
-							ncs.ce.maxruns = ncs.v_int1 > 0 ? static_cast<unsigned>(ncs.v_int1) : 0;
+							ncs.ce.maxruns_ = ncs.v_int1 > 0 ? static_cast<unsigned>(ncs.v_int1) : 0;
 						}
 						
 #line 1371 "crontab.cpp"
@@ -1428,7 +1428,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 					case 17:  {
 							{
 #line 580 "crontab.rl"
-							ncs.ce.interval = ncs.v_time; }
+							ncs.ce.interval_ = ncs.v_time; }
 						
 #line 1379 "crontab.cpp"
 
@@ -1492,7 +1492,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 							{
 #line 607 "crontab.rl"
 							
-							if (!nk::from_string<int>(MARKED_JOBID(), &ncs.ce.id)) {
+							if (!nk::from_string<int>(MARKED_JOBID(), &ncs.ce.id_)) {
 								ncs.parse_error = true;
 								{p += 1; goto _out; }
 							}

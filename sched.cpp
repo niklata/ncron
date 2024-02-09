@@ -28,26 +28,26 @@ extern char **environ;
 bool Job::in_month(int v) const
 {
     assert(v > 0 && v < 13);
-    return cst_mon[v - 1];
+    return cst_mon_[v - 1];
 }
 
 bool Job::in_mday(int v) const
 {
     assert(v > 0 && v < 32);
-    return cst_mday[v - 1];
+    return cst_mday_[v - 1];
 }
 
 bool Job::in_wday(int v) const
 {
     assert(v > 0 && v < 8);
-    return cst_wday[v - 1];
+    return cst_wday_[v - 1];
 }
 
 bool Job::in_hhmm(int h, int m) const
 {
     assert(h >= 0 && h < 24);
     assert(m >= 0 && h < 60);
-    return cst_hhmm[h * 60 + m];
+    return cst_hhmm_[h * 60 + m];
 }
 
 static bool is_leap_year(int year)
@@ -206,12 +206,12 @@ void Job::set_initial_exectime()
     struct timespec ts;
     clock_or_die(&ts);
     time_t ttm = constrain_time(ts.tv_sec);
-    time_t ttd = ttm - lasttime;
-    if (ttd < interval) {
-        ttm += interval - ttd;
+    time_t ttd = ttm - lasttime_;
+    if (ttd < interval_) {
+        ttm += interval_ - ttd;
         ttm = constrain_time(ttm);
     }
-    exectime = ttm;
+    exectime_ = ttm;
 }
 
 /* stupidly advances to next time of execution; performs constraint.  */
@@ -219,19 +219,19 @@ void Job::set_next_time()
 {
     struct timespec ts;
     clock_or_die(&ts);
-    auto etime = constrain_time(ts.tv_sec + interval);
-    exectime = etime > ts.tv_sec ? etime : 0;
+    auto etime = constrain_time(ts.tv_sec + interval_);
+    exectime_ = etime > ts.tv_sec ? etime : 0;
 }
 
 void Job::exec(const struct timespec &ts)
 {
     pid_t pid;
-    if (int ret = nk_pspawn(&pid, command, nullptr, nullptr, args, environ)) {
-        log_line("posix_spawn failed for '%s': %s", command, strerror(ret));
+    if (int ret = nk_pspawn(&pid, command_, nullptr, nullptr, args_, environ)) {
+        log_line("posix_spawn failed for '%s': %s", command_, strerror(ret));
         return;
     }
-    ++numruns;
-    lasttime = ts.tv_sec;
+    ++numruns_;
+    lasttime_ = ts.tv_sec;
     set_next_time();
 }
 

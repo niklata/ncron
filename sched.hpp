@@ -12,10 +12,10 @@ struct Job
     Job()
     {
         // Allowed by default.
-        memset(&cst_hhmm, 1, sizeof cst_hhmm);
-        memset(&cst_mday, 1, sizeof cst_mday);
-        memset(&cst_wday, 1, sizeof cst_wday);
-        memset(&cst_mon, 1, sizeof cst_mon);
+        memset(&cst_hhmm_, 1, sizeof cst_hhmm_);
+        memset(&cst_mday_, 1, sizeof cst_mday_);
+        memset(&cst_wday_, 1, sizeof cst_wday_);
+        memset(&cst_mon_, 1, sizeof cst_mon_);
     }
     Job(Job &) = delete;
     Job(Job &&o) noexcept
@@ -32,72 +32,72 @@ struct Job
     }
     ~Job()
     {
-        if (command) free(command);
-        if (args) free(args);
+        if (command_) free(command_);
+        if (args_) free(args_);
     }
 
-    int id = -1;
-    time_t exectime = 0;        /* time at which we will execute in the future */
-    time_t lasttime = 0;        /* time that the job last ran */
-    unsigned int interval = 0;  /* min interval between executions in seconds */
-    unsigned int numruns = 0;   /* number of times a job has run */
-    unsigned int maxruns = 0;   /* max # of times a job will run, 0 = nolim */
-    bool journal = false;
-    char *command = nullptr;
-    char *args = nullptr;
+    char *command_ = nullptr;
+    char *args_ = nullptr;
+    time_t exectime_ = 0;        /* time at which we will execute in the future */
+    time_t lasttime_ = 0;        /* time that the job last ran */
+    int id_ = -1;
+    unsigned int interval_ = 0;  /* min interval between executions in seconds */
+    unsigned int numruns_ = 0;   /* number of times a job has run */
+    unsigned int maxruns_ = 0;   /* max # of times a job will run, 0 = nolim */
+    bool journal_ = false;
 
-    bool cst_hhmm[1440]; // If corresponding bit is set, time is allowed.
-    bool cst_mday[31];
-    bool cst_wday[7];
-    bool cst_mon[12];
+    bool cst_hhmm_[1440]; // If corresponding bit is set, time is allowed.
+    bool cst_mday_[31];
+    bool cst_wday_[7];
+    bool cst_mon_[12];
 
     void swap(Job &o) noexcept
     {
         using std::swap;
-        swap(id, o.id);
-        swap(exectime, o.exectime);
-        swap(lasttime, o.lasttime);
-        swap(interval, o.interval);
-        swap(numruns, o.numruns);
-        swap(maxruns, o.maxruns);
-        swap(journal, o.journal);
-        swap(command, o.command);
-        swap(args, o.args);
-        for (size_t i = 0; i < sizeof cst_hhmm; ++i)
-            swap(cst_hhmm[i], o.cst_hhmm[i]);
-        for (size_t i = 0; i < sizeof cst_mday; ++i)
-            swap(cst_mday[i], o.cst_mday[i]);
-        for (size_t i = 0; i < sizeof cst_wday; ++i)
-            swap(cst_wday[i], o.cst_wday[i]);
-        for (size_t i = 0; i < sizeof cst_mon; ++i)
-            swap(cst_mon[i], o.cst_mon[i]);
+        swap(id_, o.id_);
+        swap(exectime_, o.exectime_);
+        swap(lasttime_, o.lasttime_);
+        swap(interval_, o.interval_);
+        swap(numruns_, o.numruns_);
+        swap(maxruns_, o.maxruns_);
+        swap(journal_, o.journal_);
+        swap(command_, o.command_);
+        swap(args_, o.args_);
+        for (size_t i = 0; i < sizeof cst_hhmm_; ++i)
+            swap(cst_hhmm_[i], o.cst_hhmm_[i]);
+        for (size_t i = 0; i < sizeof cst_mday_; ++i)
+            swap(cst_mday_[i], o.cst_mday_[i]);
+        for (size_t i = 0; i < sizeof cst_wday_; ++i)
+            swap(cst_wday_[i], o.cst_wday_[i]);
+        for (size_t i = 0; i < sizeof cst_mon_; ++i)
+            swap(cst_mon_[i], o.cst_mon_[i]);
     }
     void clear()
     {
-        id = -1;
-        exectime = 0;
-        lasttime = 0;
-        interval = 0;
-        numruns = 0;
-        maxruns = 0;
-        journal = false;
-        if (command) {
-            free(command);
-            command = nullptr;
+        id_ = -1;
+        exectime_ = 0;
+        lasttime_ = 0;
+        interval_ = 0;
+        numruns_ = 0;
+        maxruns_ = 0;
+        journal_ = false;
+        if (command_) {
+            free(command_);
+            command_ = nullptr;
         }
-        if (args) {
-            free(args);
-            args = nullptr;
+        if (args_) {
+            free(args_);
+            args_ = nullptr;
         }
         // Allowed by default.
-        memset(&cst_hhmm, 1, sizeof cst_hhmm);
-        memset(&cst_mday, 1, sizeof cst_mday);
-        memset(&cst_wday, 1, sizeof cst_wday);
-        memset(&cst_mon, 1, sizeof cst_mon);
+        memset(&cst_hhmm_, 1, sizeof cst_hhmm_);
+        memset(&cst_mday_, 1, sizeof cst_mday_);
+        memset(&cst_wday_, 1, sizeof cst_wday_);
+        memset(&cst_mon_, 1, sizeof cst_mon_);
     }
 
-    bool operator<(const Job &o) const { return exectime < o.exectime; }
-    bool operator>(const Job &o) const { return exectime > o.exectime; }
+    bool operator<(const Job &o) const { return exectime_ < o.exectime_; }
+    bool operator>(const Job &o) const { return exectime_ > o.exectime_; }
     void set_initial_exectime();
     void exec(const struct timespec &ts);
 
