@@ -1,5 +1,6 @@
 // Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
+#include <stdint.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,7 +21,14 @@ extern "C" {
 
 extern char **environ;
 
-#define COUNT_THRESH 500 /* Arbitrary and untested */
+// If the job isn't able to be run in the next five years,
+// it probably won't run in the uptime of the machine.
+#define MAX_YEARS 5
+
+// XXX: The constraint lists should go away and simply be replaced
+//      by LUTs; we can then set the appropriate bits in the LUT
+//      at configuration time.  This will make everything faster
+//      and probably will cost a similar amount of memory.
 
 static bool constraint_lt(const std::pair<int, int> &a, const std::pair<int, int> &b)
 {
@@ -115,74 +123,105 @@ static inline int compare_range(const std::pair<int,int> &r,
     return 0;
 }
 
-/*
- * 1 if range is valid, 0 if not; assumes for constraint and range: (x,y) | x<y
- */
-static inline int is_range_valid(const std::pair<int,int> &constraint,
-                                 const std::pair<int,int> &range,
-                                 int wildcard)
+static bool is_leap_year(int year)
 {
-    if (range.first < constraint.first && range.first != wildcard)
-        return 0;
-    if (range.second > constraint.second && range.second != wildcard)
-        return 0;
-    return 1;
+    return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
 }
 
-/*
- * This fn does the actual constraint.  If our tested value falls within
- * constraint ranges, then nothing is done.  Otherwise, the 'nearest'
- * constraint range that is above the current value is chosen.  If no such
- * range exists, then the next higher unit is incremented by one and the
- * smallest extant valid value is chosen for the constrained unit.
- */
-static int compare_list_range_v(const Job::cst_list &list, int *unit,
-                                int *nextunit, const std::pair<int,int> &valid,
-                                int wildcard)
+static int days_in_month(int month, int year)
 {
-    int t, smallunit = INT_MAX, dist = INT_MAX, tinyunit = INT_MAX;
+    int ret = 31;
+    switch (month) {
+    case 2: /* we follow the gregorian calendar */
+        if (is_leap_year(year)) ret = 29;
+        else ret = 28;
+        break;
+    case 4: case 6: case 9: case 11: ret = 30; default: break;
+    }
+    return ret;
+}
 
-    if (list.empty() || !unit || !nextunit)
-        return 0;
+// So, the trick here is that we have inclusive ranges in the constraint
+// lists.  So, if something is to be allowed, it must be included in all
+// extant constraint lists.  Thus, we either have to invert the sense of
+// the constraint ranges to be exclusive, or we must construct the filter
+// by assigning a bit to each list, and a particular day is allowed iif
+// all corresponding bits to each list are set.
+struct day_sieve
+{
+    time_t start_ts; // inclusive
+    time_t end_ts; // exclusive; actual last ts value in year + 1
+    // bit0 = month
+    // bit1 = mday
+    // bit2 = wday
+    uint8_t filter[366];
 
-    /* find the range least distant from our target value */
-    for (const auto &i: list) {
-        if (i.first < tinyunit)
-            tinyunit = i.first;
-        if (is_range_valid(valid, i, wildcard)) {
-            switch (compare_range(i, *unit, wildcard)) {
-                case 1: /* range below our value, avoid if possible */
-                    t = *unit - i.second; /* t > 0 */
-                    if (t < abs(dist) && dist > 0)
-                        dist = t;
-                    smallunit = i.first;
-                    break;
-                default: /* bingo, our value is within a range */
-                    return 0;
-                case -1: /* range above our value, favor */
-                    t = *unit - i.first; /* implicitly, t < 0 */
-                    if (abs(t) < abs(dist) || dist > 0)
-                        dist = t;
-                    smallunit = i.first;
-                    break;
+    [[nodiscard]] bool day_ok(int i) const { return filter[i] == 7; }
+
+    [[nodiscard]] bool build(const Job &entry, int year)
+    {
+        memset(filter, 0, sizeof filter);
+
+        struct tm t = {};
+        t.tm_mday = 1;
+        t.tm_year = year;
+        t.tm_isdst = -1;
+        start_ts = mktime(&t);
+        if (start_ts == -1) return false;
+
+        if (entry.month.empty()) {
+            for (size_t i = 0; i < sizeof filter; ++i) filter[i] |= 1;
+        } else {
+            size_t fi = 0;
+            for (size_t month = 1; month <= 12; ++month) {
+                for (const auto &c: entry.month) {
+                    if (compare_range(c, month, 0) == 0) {
+                        for (int j = 0, jend = days_in_month(month, year); j < jend; ++j, ++fi) {
+                            filter[fi] |= 1;
+                        }
+                    }
+                }
             }
         }
-    }
+        if (entry.day.empty()) {
+            for (size_t i = 0; i < sizeof filter; ++i) filter[i] |= 2;
+        } else {
+            size_t fi = 0;
+            for (size_t month = 1; month <= 12; ++month) {
+                for (int day = 1, dayend = days_in_month(month, year); day <= dayend; ++day, ++fi) {
+                    for (const auto &c: entry.day) {
+                        if (compare_range(c, day, 0) == 0) {
+                            filter[fi] |= 2;
+                        }
+                    }
+                }
+            }
+        }
+        if (entry.weekday.empty()) {
+            for (size_t i = 0; i < sizeof filter; ++i) filter[i] |= 4;
+        } else {
+            auto sdow = t.tm_wday + 1; // starting wday of year
+            auto weekday = sdow; // day of the week we're checking
+            auto sday = 0; // starting day of year
+            for (;;) {
+                for (const auto &c: entry.weekday) {
+                    if (compare_range(c, weekday, 0) == 0) {
+                        for (size_t i = static_cast<size_t>(sday); i < sizeof filter; i += 7) filter[i] |= 4;
+                    }
+                }
+                weekday = weekday % 7 + 1;
+                if (weekday == sdow) break;
+                ++sday;
+                assert(sday < 7);
+            }
+        }
 
-    /* All of our constraints are invalid, so act as if all are wildcard. */
-    if (tinyunit == INT_MAX)
-        return 0;
-
-    if (dist > 0) {
-        (*nextunit)++;
-        *unit = tinyunit;
+        t.tm_year = year + 1;
+        end_ts = mktime(&t);
+        if (end_ts == -1) return false;
+        return true;
     }
-    if (dist < 0)
-        *unit = smallunit;
-    if (dist == 0)
-        return 0;
-    return 1;
-}
+};
 
 /* same as above, but no check on range validity */
 static int compare_list_range(const Job::cst_list &list, int *unit,
@@ -225,84 +264,54 @@ static int compare_list_range(const Job::cst_list &list, int *unit,
     return 1;
 }
 
-static int compare_wday_range(const Job::cst_list &list, int *unit,
-                              int *nextunit)
-{
-    int dist = INT_MAX, t;
-    if (list.empty() || !unit || !nextunit)
-        return 0;
-
-    /* find the range least distant from our target value */ 
-    for (const auto &i: list) {
-        switch (compare_range(i, *unit, 0)) {
-            case 1:
-                t = *unit - i.second;
-                if (dist > 0 && t < dist)
-                    dist = t;
-                break;
-            case 0:
-                return 0;
-            case -1:
-                t = *unit - i.first;
-                if (dist > 0 || t > dist)
-                    dist = t;
-                break;
-        }
-    }
-
-    if (dist < 0) {
-        nextunit -= dist;
-        return 1;
-    }
-
-    (*nextunit)++;
-    return 1;
-}
-
-static std::pair<int,int> valid_day_of_month(int month, int year)
-{
-    auto ret = std::make_pair<int,int>(1, 31);
-    switch (month) {
-    case 2: /* we follow the gregorian calendar */
-        if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
-            ret.second = 29;
-        else
-            ret.second = 28;
-        break;
-    case 4: case 6: case 9: case 11: ret.second = 30; default: break;
-    }
-    return ret;
-}
-
 /* entry is obvious, stime is the time we're constraining
  * returns a time value that has been appropriately constrained */
 static time_t constrain_time(const Job &entry, time_t stime)
 {
     struct tm *rtime;
     time_t t;
-    int count = 0;
 
     rtime = localtime(&stime);
 
-    for (; count < COUNT_THRESH; count++) {
+    int cyear = rtime->tm_year;
+    int syear = cyear;
+    day_sieve ds;
+    if (!ds.build(entry, rtime->tm_year)) return 0;
+
+    for (;;) {
+        if (cyear - syear >= MAX_YEARS)
+            return 0;
         t = mktime(rtime);
         rtime = localtime(&t);
+        if (rtime->tm_year != cyear) {
+            if (!ds.build(entry, rtime->tm_year)) return 0;
+            cyear = rtime->tm_year;
+        }
 
+        if (!ds.day_ok(rtime->tm_yday)) {
+            // Day isn't allowed.  Advance to the start of
+            // the next allowed day.
+            rtime->tm_min = 0;
+            rtime->tm_hour = 0;
+            rtime->tm_mday++;
+            auto ndays = is_leap_year(rtime->tm_year) ? 365 : 364;
+            for (int i = rtime->tm_yday + 1; i < ndays; ++i) {
+                if (ds.day_ok(i))
+                    goto day_ok;
+                rtime->tm_mday++;
+            }
+            // If we get here, then we've exhausted the year.
+            rtime->tm_mday = 1;
+            rtime->tm_mon = 0;
+            rtime->tm_year++;
+            continue;
+        }
+    day_ok:
         if (compare_list_range(entry.minute, &(rtime->tm_min),
                     &(rtime->tm_hour), 60))
             continue;
         if (compare_list_range(entry.hour, &(rtime->tm_hour),
                     &(rtime->tm_mday), 24))
-            continue;
-        if (compare_list_range_v(entry.day, &(rtime->tm_mday),
-                    &(rtime->tm_mon), valid_day_of_month(rtime->tm_mon,
-                        rtime->tm_year), 0))
-            continue;
-        if (compare_wday_range(entry.weekday, &(rtime->tm_wday),
-                    &(rtime->tm_mday)))
-            continue;
-        if (compare_list_range(entry.month, &(rtime->tm_mon),
-                    &(rtime->tm_year), 0))
             continue;
         return mktime(rtime);
     }
