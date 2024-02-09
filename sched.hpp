@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <vector>
+#include <memory>
 
 struct Job
 {
@@ -18,18 +19,9 @@ struct Job
         memset(&cst_mon_, 1, sizeof cst_mon_);
     }
     Job(Job &) = delete;
-    Job(Job &&o) noexcept
-    {
-        swap(o);
-        o.clear();
-    }
+    Job(Job &&o) = delete;
     Job &operator=(Job &) = delete;
-    Job &operator=(Job &&o) noexcept
-    {
-        swap(o);
-        o.clear();
-        return *this;
-    }
+    Job &operator=(Job &&o) noexcept = delete;
     ~Job()
     {
         if (command_) free(command_);
@@ -51,53 +43,7 @@ struct Job
     bool cst_wday_[7];
     bool cst_mon_[12];
 
-    void swap(Job &o) noexcept
-    {
-        using std::swap;
-        swap(id_, o.id_);
-        swap(exectime_, o.exectime_);
-        swap(lasttime_, o.lasttime_);
-        swap(interval_, o.interval_);
-        swap(numruns_, o.numruns_);
-        swap(maxruns_, o.maxruns_);
-        swap(journal_, o.journal_);
-        swap(command_, o.command_);
-        swap(args_, o.args_);
-        for (size_t i = 0; i < sizeof cst_hhmm_; ++i)
-            swap(cst_hhmm_[i], o.cst_hhmm_[i]);
-        for (size_t i = 0; i < sizeof cst_mday_; ++i)
-            swap(cst_mday_[i], o.cst_mday_[i]);
-        for (size_t i = 0; i < sizeof cst_wday_; ++i)
-            swap(cst_wday_[i], o.cst_wday_[i]);
-        for (size_t i = 0; i < sizeof cst_mon_; ++i)
-            swap(cst_mon_[i], o.cst_mon_[i]);
-    }
-    void clear()
-    {
-        id_ = -1;
-        exectime_ = 0;
-        lasttime_ = 0;
-        interval_ = 0;
-        numruns_ = 0;
-        maxruns_ = 0;
-        journal_ = false;
-        if (command_) {
-            free(command_);
-            command_ = nullptr;
-        }
-        if (args_) {
-            free(args_);
-            args_ = nullptr;
-        }
-        // Allowed by default.
-        memset(&cst_hhmm_, 1, sizeof cst_hhmm_);
-        memset(&cst_mday_, 1, sizeof cst_mday_);
-        memset(&cst_wday_, 1, sizeof cst_wday_);
-        memset(&cst_mon_, 1, sizeof cst_mon_);
-    }
-
     bool operator<(const Job &o) const { return exectime_ < o.exectime_; }
-    bool operator>(const Job &o) const { return exectime_ > o.exectime_; }
     void set_initial_exectime();
     void exec(const struct timespec &ts);
 
@@ -110,11 +56,11 @@ private:
     time_t constrain_time(time_t stime) const;
 };
 
-extern std::vector<Job> g_jobs;
+extern std::vector<std::unique_ptr<Job>> g_jobs;
 
 static inline bool LtCronEntry(size_t a, size_t b)
 {
-    return g_jobs[a] < g_jobs[b];
+    return *g_jobs[a] < *g_jobs[b];
 }
 
 #endif
