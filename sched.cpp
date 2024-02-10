@@ -15,7 +15,6 @@ extern "C" {
 #include "nk/pspawn.h"
 #include "nk/io.h"
 }
-#include <algorithm>
 #include "ncron.hpp"
 #include "sched.hpp"
 
