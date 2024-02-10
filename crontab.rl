@@ -581,8 +581,8 @@ static void parse_command_key(ParseCfgState &ncs)
 
     interval = 'interval'i eqsep timeval % IntervalEn;
 
-    xhour = digit | ('1' digit) | '20' | '21' | '22' | '23';
-    xminute = ('1' | '2' | '3' | '4' | '5') digit;
+    xhour = digit | ('0' digit) | ('1' digit) | '20' | '21' | '22' | '23';
+    xminute = ('0' | '1' | '2' | '3' | '4' | '5') digit;
     hhmm = xhour > IntValSt % IntValEn ':' xminute > IntVal2St % IntVal2En;
     hhmm_range = hhmm > IntVal34Clear (spc* '-' spc* hhmm)? > IntValSwap % IntValSwap;
 

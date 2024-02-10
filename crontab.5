@@ -33,9 +33,9 @@ JOB :=  JOBID
 COMMENT := '#' or ';' ANY
 
 config file :=
-	JOB
-	...
-	JOB
+        JOB
+        ...
+        JOB
 .fi
 .PP
 Multiple constraints are allowed, but serve only to permit additional
@@ -114,10 +114,10 @@ Multiple ranges of the same type may be used and will be OR'ed together by the
 daemon. In other words, "weekday=1" and "weekday=4" in the same job would read
 as "run this task on either Sunday or Wednesday".
 .PP
-Ranges that are not continuous ([x,y] where x>y rather than x<y) are treated as
-continuous ranges modulo the base of the unit of time. EG, [45,15] in minutes
-would correspond to "run this task in the last quarter of an hour or in the
-first quarter of an hour".
+Ranges require that the first value is <= the second value.  Ranges where
+this is not true will be discarded as invalid.  This simply means that, for
+a constraint of running a job between 10pm and 4am, use two constraints:
+"time=22:00-23:59" and "time=0:00-2:59".  The ordering does not matter.
 .SH SIGNALS
 SIGHUP, SIGINT, SIGTERM all cause ncron to save state to disk and shut down.
 .SH EXAMPLE
