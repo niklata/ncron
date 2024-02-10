@@ -146,8 +146,11 @@ static void fix_signals(void)
 
 static void fail_on_fdne(char const *file, int mode)
 {
-    if (access(file, mode))
+    if (access(file, mode)) {
+        log_line("%s: file '%s' does not exist or is not %s", __func__,
+                 file, (mode & W_OK) ? "writable" : "readable");
         exit(EXIT_FAILURE);
+    }
 }
 
 static void sleep_or_die(struct timespec *ts)
