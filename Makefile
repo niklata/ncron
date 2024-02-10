@@ -5,7 +5,9 @@ NCRON_DEP = $(NCRON_C_SRCS:.c=.d) $(NCRON_CXX_SRCS:.cpp=.d)
 INCL = -I.
 
 CFLAGS = -MMD -Os -flto -s -std=gnu99 -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wmissing-prototypes -Wcast-qual -Wsign-conversion -Wstrict-overflow=5
-CXXFLAGS = -MMD -Os  -flto -s -std=gnu++20 -fno-rtti -fno-exceptions -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wsign-conversion -Wstrict-overflow=5 -Wold-style-cast
+CXXFLAGS = -MMD -Os -flto -s -std=gnu++20 -fno-rtti -fno-exceptions -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wsign-conversion -Wstrict-overflow=5 -Wold-style-cast
+#CFLAGS = -MMD -Og -g -fsanitize=address -fsanitize=undefined -flto -std=gnu99 -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wmissing-prototypes -Wcast-qual -Wsign-conversion -Wstrict-overflow=5
+#CXXFLAGS = -MMD -Og -g -fsanitize=address -fsanitize=undefined -flto -std=gnu++20 -fno-rtti -fno-exceptions -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wsign-conversion -Wstrict-overflow=5 -Wold-style-cast
 CPPFLAGS += $(INCL)
 
 all: ragel ncron
