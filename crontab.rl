@@ -43,7 +43,7 @@ static std::vector<history_entry> history_lut;
 
 struct ParseCfgState
 {
-    ParseCfgState(std::vector<size_t> *stk, std::vector<size_t> *dstk)
+    ParseCfgState(std::vector<Job *> *stk, std::vector<Job *> *dstk)
     : stack(stk), deadstack(dstk)
     {
         memset(v_str, 0, sizeof v_str);
@@ -51,8 +51,8 @@ struct ParseCfgState
     }
     char v_str[MAX_LINE];
 
-    std::vector<size_t> *stack;
-    std::vector<size_t> *deadstack;
+    std::vector<Job *> *stack;
+    std::vector<Job *> *deadstack;
 
     std::unique_ptr<Job> ce;
 
@@ -138,7 +138,7 @@ struct ParseCfgState
     {
         const auto append_stack = [this](bool is_alive) {
             assert(g_jobs.size() > 0);
-            (is_alive ? stack : deadstack)->emplace_back(g_jobs.size() - 1);
+            (is_alive ? stack : deadstack)->emplace_back(g_jobs.back().get());
         };
 
         defer [this]{ create_ce(); };
@@ -638,8 +638,8 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 }
 
 void parse_config(char const *path, char const *execfile,
-                  std::vector<size_t> *stk,
-                  std::vector<size_t> *deadstk)
+                  std::vector<Job *> *stk,
+                  std::vector<Job *> *deadstk)
 {
     g_jobs.clear();
     ParseCfgState ncs(stk, deadstk);

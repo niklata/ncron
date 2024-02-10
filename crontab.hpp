@@ -4,6 +4,6 @@
 #define NCRON_CONFIG_H_
 #include <vector>
 void parse_config(char const *path, char const *execfile,
-                  std::vector<size_t> *stack,
-                  std::vector<size_t> *deadstack);
+                  std::vector<Job *> *stack,
+                  std::vector<Job *> *deadstack);
 #endif

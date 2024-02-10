@@ -58,9 +58,6 @@ private:
 
 extern std::vector<std::unique_ptr<Job>> g_jobs;
 
-static inline bool LtCronEntry(size_t a, size_t b)
-{
-    return *g_jobs[a] < *g_jobs[b];
-}
+static inline bool LtCronEntry(Job const *a, Job const *b) { return *a < *b; }
 
 #endif

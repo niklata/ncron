@@ -56,8 +56,8 @@ enum class Execmode
 };
 static Execmode g_ncron_execmode = Execmode::normal;
 
-static std::vector<size_t> stack;
-static std::vector<size_t> deadstack;
+static std::vector<Job *> stack;
+static std::vector<Job *> deadstack;
 
 [[nodiscard]] static bool save_stack()
 {
@@ -66,9 +66,8 @@ static std::vector<size_t> deadstack;
         log_line("%s: failed to open history file %s for write", __func__, g_ncron_execfile_tmp);
         return false;
     }
-    auto do_save = [&f](const std::vector<size_t> &s) -> bool {
-        for (auto i: s) {
-            const auto &j = g_jobs[i];
+    auto do_save = [&f](const std::vector<Job *> &s) -> bool {
+        for (auto j: s) {
             if (fprintf(f, "%d=%li:%u|%lu\n", j->id_, j->exectime_, j->numruns_, j->lasttime_) < 0) {
                 log_line("%s: failed writing to history file %s", __func__, g_ncron_execfile_tmp);
                 return false;
@@ -177,9 +176,9 @@ void clock_or_die(struct timespec *ts)
 static inline void debug_stack_print(const struct timespec &ts) {
     if (!gflags_debug)
         return;
-    log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, g_jobs[stack.front()]->exectime_);
-    for (auto i: stack)
-        log_line("do_work: job %d exectime = %lu", g_jobs[i]->id_, g_jobs[i]->exectime_);
+    log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, stack.front()->exectime_);
+    for (auto j: stack)
+        log_line("do_work: job %d exectime = %lu", j->id_, j->exectime_);
 }
 
 static void do_work(unsigned initial_sleep)
@@ -201,16 +200,16 @@ static void do_work(unsigned initial_sleep)
         }
         sleep_or_die(&ts);
 
-        while (g_jobs[stack.front()]->exectime_ <= ts.tv_sec) {
-            auto &i = g_jobs[stack.front()];
+        while (stack.front()->exectime_ <= ts.tv_sec) {
+            auto j = stack.front();
             if (gflags_debug)
-                log_line("do_work: DISPATCH %d (%lu <= %lu)", i->id_, i->exectime_, ts.tv_sec);
+                log_line("do_work: DISPATCH %d (%lu <= %lu)", j->id_, j->exectime_, ts.tv_sec);
 
-            i->exec(ts);
-            if (i->journal_ || g_ncron_execmode == Execmode::journal)
+            j->exec(ts);
+            if (j->journal_ || g_ncron_execmode == Execmode::journal)
                 pending_save = true;
 
-            if ((i->numruns_ < i->maxruns_ || i->maxruns_ == 0) && i->exectime_ != 0) {
+            if ((j->numruns_ < j->maxruns_ || j->maxruns_ == 0) && j->exectime_ != 0) {
                 if (stack.size() > 1) {
                     auto t = stack.front();
                     stack.erase(stack.begin());
@@ -226,10 +225,10 @@ static void do_work(unsigned initial_sleep)
 
         debug_stack_print(ts);
         {
-            const auto &i = g_jobs[stack.front()];
-            if (ts.tv_sec <= i->exectime_) {
-                auto tdelta = i->exectime_ - ts.tv_sec;
-                ts.tv_sec = i->exectime_;
+            const auto j = stack.front();
+            if (ts.tv_sec <= j->exectime_) {
+                auto tdelta = j->exectime_ - ts.tv_sec;
+                ts.tv_sec = j->exectime_;
                 ts.tv_nsec = 0;
                 if (gflags_debug)
                     log_line("do_work: SLEEP %zu seconds", tdelta);
