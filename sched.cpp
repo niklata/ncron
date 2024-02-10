@@ -97,10 +97,9 @@ struct day_sieve
 
         size_t fi = 0;
         for (size_t month = 1; month <= 12; ++month) {
-            if (entry->in_month(month)) {
-                for (int j = 0, jend = days_in_month(month, year); j < jend; ++j, ++fi) {
-                    filter[fi] |= 1;
-                }
+            bool include_month = entry->in_month(month);
+            for (int j = 0, jend = days_in_month(month, year); j < jend; ++j, ++fi) {
+                if (include_month) filter[fi] |= 1;
             }
         }
         fi = 0;
