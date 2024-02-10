@@ -557,7 +557,7 @@ static void parse_command_key(ParseCfgState &ncs)
     intval = (digit+ > IntValSt % IntValEn);
     timeval = t_any (spc* t_any)*;
     intrangeval = (digit+ > IntValSt % IntValEn)
-                  (',' (digit+ > IntVal2St % IntVal2En))?;
+                  ('-' (digit+ > IntVal2St % IntVal2En))?;
     stringval = ([^\0\n]+ > StrValSt % StrValEn);
 
     action JournalEn { ncs.ce->journal_ = true; }
