@@ -15,17 +15,17 @@ specifies job commands, intervals, and constraints.
 UINT := integer >= 0
 JOBID := '!' integer
 TIME_UNIT := "s" or "m" or "h" or "d" or "w"
-HH := 0-23
-MM := 0-59
-WEEKDAY := 1-7
-DAY := 1-31
-MONTH := 1-12
+HH := 0..23
+MM := 0..59
+WEEKDAY := 1..7
+DAY := 1..31
+MONTH := 1..12
 JOB :=  JOBID
         command=string
         time=HH:MM or HH:MM-HH:MM
-        weekday=WEEKDAY or WEEKDAY,WEEKDAY
-        day=DAY or DAY,DAY
-        month=MONTH or MONTH,MONTH
+        weekday=WEEKDAY or WEEKDAY-WEEKDAY
+        day=DAY or DAY-DAY
+        month=MONTH or MONTH-MONTH
         interval=(UINT[TIME_UNIT])+
         journal
         maxruns=UINT
@@ -59,6 +59,10 @@ contain spaces or tabs; backslash functions as an escape character so that the
 following character is treated as a literal character that is part of the
 program file name.  A terminal single backslash in a program file name passes
 through as a single literal backslash that is part of the program file name.
+
+Note that this means that argument quoting and splitting does not work
+as it does in shell commands.  If the shell semantics are desired, a wrapper
+script ("#!/bin/sh\necho 'like this'\n") should be used.
 .TP
 time=HH:MM or HH:MM-HH:MM
 Specifies a time or time range in which the job may run.  The time is in
@@ -67,9 +71,9 @@ the first time in the range must preceed the second time in the range.
 Multiple ranges will be unioned together.
 .TP
 weekday=RANGE
-Either a single weekday value or a comma-separated range of allowed
+Either a single weekday value or a '-'-separated range of allowed
 weekdays.  Valid weekdays are within the range [1,7], where 1
-corresponds to Saturday and 7 maps to Sunday.
+corresponds to Sunday and 7 maps to Saturday.
 .TP
 day=RANGE
 As above.  Valid days are within the range [1,31].

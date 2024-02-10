@@ -1,8 +1,8 @@
 .\" Man page for ncron
 .\"
-.\" Copyright (c) 2004-2022 Nicholas J. Kain
+.\" Copyright (c) 2004-2024 Nicholas J. Kain
 .\"
-.TH ncron 1 "September 03, 2022"
+.TH ncron 1 "Feburary 9, 2024"
 .LO 1
 .SH NAME
 ncron \- secure and reliable cron/at daemon
@@ -62,13 +62,14 @@ time intervals is no doubt familiar. A trivial example of a simple interval
 would be "wait one day before synchronizing my clock again". ncron intervals
 are specified in seconds and have second precision.
 .PP
-Constraints limit the times in which a particular job may be run.  In ncron,
-intervals may be constrained by ranges of minutes, hours, weekdays, days of the
-month, and months of the year.  Multiple constraint ranges may be applied, even
-of the same type.  Constraints of the same type will be mathematically unioned
-(logical OR'ed) together. ncron internally uses a greedy algorithm to solve the
-optimization problem to find the smallest suitable time that satisfies the
-specified interval within the specified constraint.
+Constraints limit the times in which a particular job may be run.  In
+ncron, intervals may be constrained by ranges of minutes, hours,
+weekdays, days of the month, and months of the year.  Multiple
+constraint ranges may be applied, even of the same type.  Constraints
+of the same type will be mathematically unioned (logical OR'ed)
+together. ncron internally uses a sieve-based algorithm to find the
+smallest suitable time that satisfies the specified interval within
+the specified constraint.
 .PP
 Examples are probably the clearest way of explaining this system.  Suppose we
 would like a locatedb to run weekly between 1 and 5am.  Since we want the
@@ -84,15 +85,18 @@ bother with unnecessary complexity to handle that case? Traditional cronds
 certainly don't bother. The answer lies in ncron's attempts to be reliable and
 fast.
 .PP
-ncron internally works by precalculating the exact time at which a job should
-be run. ncron then spends most of its time sleeping until its next job, waking
-up only to handle signals. If ncron is gracefully terminated, it will by
-default save these times it has calculated. Thus, ncron keeps a memory of when
-jobs were invoked in the past. This feature is obviously quite useful to laptop
-users and people who reboot their computers to use other OSes.  For those who
-have very critical jobs or very unstable computers, ncron can optionally save
-these times to disk whenever they change in memory. This mode of operation is
-called "journalling".
+ncron internally works by precalculating the exact time at which a job
+should be run. ncron then spends most of its time sleeping until its
+next job, waking up only to handle signals. If ncron is gracefully
+terminated, it will by default save these times it has
+calculated. Thus, ncron keeps a memory of when jobs were invoked in
+the past. This feature is obviously quite useful for systems that are
+sometimes either suspended or shut down.  For those who have very
+critical jobs or very unstable computers, ncron can optionally save
+these times to disk whenever they change in memory. This mode of
+operation is called "journalling".  Journal mode may be set either for
+all jobs with a command-line flag, or for particular jobs in the
+crontab file.
 .PP
 If it is necessary for regular users to run periodic background tasks, the
 recommended method is to have the users run a per-user ncron.  This is easily

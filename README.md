@@ -71,7 +71,7 @@ drwxr-xr-x  3 root root 4096 May 13  2017 ../
 A simple crontab file (remove the leading spaces if you copy/paste):
 ```
 !1
-command=/bin/echo 'Hello world!'
+command=/bin/echo Hello world!
 interval=5m
 ```
 
