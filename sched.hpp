@@ -57,7 +57,8 @@ private:
 };
 
 extern std::vector<std::unique_ptr<Job>> g_jobs;
-
 static inline bool LtCronEntry(Job const *a, Job const *b) { return *a < *b; }
-
+void parse_config(char const *path, char const *execfile,
+                  std::vector<Job *> *stack,
+                  std::vector<Job *> *deadstack);
 #endif
