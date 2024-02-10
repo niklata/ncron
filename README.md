@@ -81,6 +81,21 @@ previously run jobs (denoted by the `!NUMBER` markers in the crontab).
 Read the man pages for more info!  But what I've written here should be
 enough to get you started.
 
+## Upgrading
+
+The most recent (Feb2024) ncron makes some changes to the crontab format:
+
+- The dummy '!0' job is no longer required to terminate the crontab.
+- Single line comments starting with '#' or ';' are now allowed.
+- The syntax for specifying constraints uses '-' as a pair delimiter
+  rather than ','.
+- The semantics and syntax for specifying time constraints has changed.
+  'hour=' and 'minute=' are replaced with 'time=', which allows for
+  continuous blocks of hh:mm time to be specified as a constraint.
+- Constraint ranges must be low-high.  If the old high-low behavior
+  is needed, write two constraints in the form of low-high instead.
+  This restriction may be relaxed in the future.
+
 ## Downloads
 
 * [GitLab](https://gitlab.com/niklata/ncron)
