@@ -135,7 +135,9 @@ struct ParseCfgState
     {
         const auto append_stack = [this](bool is_alive) {
             assert(g_jobs.size() > 0);
-            (is_alive ? stack : deadstack)->emplace_back(g_jobs.back().get());
+            auto t = g_jobs.back().get();
+            if (is_alive) stack->insert(std::upper_bound(stack->begin(), stack->end(), t, LtCronEntry), t);
+            else deadstack->emplace_back(t);
         };
 
         defer [this]{ create_ce(); };
@@ -625,7 +627,5 @@ void parse_config(char const *path, char const *execfile,
         }
     }
     ncs.finish_ce();
-    std::sort(stk->begin(), stk->end(), LtCronEntry);
     history_lut.clear();
 }
-
