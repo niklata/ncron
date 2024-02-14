@@ -24,6 +24,7 @@
 extern "C" {
 #include "nk/log.h"
 #include "nk/io.h"
+#include "xmalloc.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -322,7 +323,7 @@ static void process_options(int ac, char *av[])
             case 'H': {
                 auto l = strlen(optarg);
                 g_ncron_execfile = strdup(optarg);
-                auto tmpf = static_cast<char *>(malloc(l + 2));
+                auto tmpf = static_cast<char *>(xmalloc(l + 2));
                 memcpy(tmpf, optarg, l);
                 tmpf[l] = '~';
                 tmpf[l+1] = 0;

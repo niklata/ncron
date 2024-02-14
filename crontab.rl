@@ -10,6 +10,7 @@
 #include <nk/defer.hpp>
 extern "C" {
 #include "nk/log.h"
+#include "xmalloc.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -42,7 +43,7 @@ struct ParseCfgState
     : stackl(stk), deadstackl(dstk)
     {
         memset(v_str, 0, sizeof v_str);
-        auto buf = malloc(sizeof(Job));
+        auto buf = xmalloc(sizeof(Job));
         ce = new(buf) Job;
     }
     ~ParseCfgState()
@@ -101,7 +102,7 @@ struct ParseCfgState
     void create_ce()
     {
         if (!ce) {
-            auto buf = malloc(sizeof(Job));
+            auto buf = xmalloc(sizeof(Job));
             ce = new(buf) Job;
         } else {
             ce->~Job();
@@ -305,7 +306,7 @@ static void parse_history(char const *path)
                      r == -2 ? "Incomplete" : "Malformed", linenum);
             continue;
         }
-        auto t = static_cast<history_entry *>(malloc(sizeof(history_entry)));
+        auto t = static_cast<history_entry *>(xmalloc(sizeof(history_entry)));
         t->next = history_lut;
         t->id = hst.id;
         t->history = hst.h;
@@ -407,7 +408,7 @@ struct Pckm {
     action CmdEn {
         size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
         if (l) {
-            auto ts = static_cast<char *>(malloc(l + 1));
+            auto ts = static_cast<char *>(xmalloc(l + 1));
             bool prior_bs = false;
             auto d = ts;
             for (auto c = pckm.st; c < p; ++c) {
@@ -431,7 +432,7 @@ struct Pckm {
     action ArgEn {
         size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
         if (l) {
-            auto ts = static_cast<char *>(malloc(l + 1));
+            auto ts = static_cast<char *>(xmalloc(l + 1));
             memcpy(ts, pckm.st, l);
             ts[l] = 0;
             ncs.ce->args_ = ts;
