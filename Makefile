@@ -24,7 +24,7 @@ cleanragel:
 	rm -f crontab.cpp
 
 crontab.cpp: crontab.rl
-	ragel -T0 -o crontab.cpp crontab.rl
+	ragel -F0 -o crontab.cpp crontab.rl
 
 ragel: crontab.cpp
 
