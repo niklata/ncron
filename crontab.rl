@@ -77,8 +77,6 @@ struct ParseCfgState
     bool intv2_exist = false;
     bool runat = false;
 
-    bool parse_error = false;
-
     bool seen_cst_hhmm = false;
     bool seen_cst_wday = false;
     bool seen_cst_mday = false;
@@ -261,16 +259,14 @@ static void parse_history(char const *path)
     char buf[MAX_LINE];
     auto f = fopen(path, "r");
     if (!f) {
-        log_line("%s: failed to open history file \"%s\" for read: %s",
-                 __func__, path, strerror(errno));
+        log_line("Failed to open history file '%s' for read: %s", path, strerror(errno));
         return;
     }
     defer [&f]{ fclose(f); };
     size_t linenum = 0;
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
-            if (!feof(f))
-                log_line("%s: io error fetching line of '%s'", __func__, path);
+            if (!feof(f)) log_line("IO error reading history file '%s'", path);
             break;
         }
         auto llen = strlen(buf);
@@ -282,8 +278,8 @@ static void parse_history(char const *path)
         hstm hst;
         const auto r = do_parse_history(hst, buf, llen);
         if (r < 0) {
-            log_line("%s: %s configuration at line %zu; ignoring",
-                     __func__, r == -2 ? "Incomplete" : "Malformed", linenum);
+            log_line("%s history entry at line %zu; ignoring",
+                     r == -2 ? "Incomplete" : "Malformed", linenum);
             continue;
         }
         history_lut.emplace_back(hst.id, hst.h);
@@ -376,8 +372,6 @@ struct Pckm {
     int cs = 0;
 };
 
-#define MARKED_PCKM() pckm.st, (p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0)
-
 %%{
     machine parse_cmd_key_m;
     access pckm.;
@@ -453,10 +447,24 @@ static void parse_command_key(ParseCfgState &ncs)
     }
 }
 
-#define MARKED_TIME() ncs.time_st, (p > (ncs.time_st + 1) ? static_cast<size_t>(p - ncs.time_st - 1) : 0)
-#define MARKED_INTV1() ncs.intv_st, (p > ncs.intv_st ? static_cast<size_t>(p - ncs.intv_st) : 0)
-#define MARKED_INTV2() ncs.intv2_st, (p > ncs.intv2_st ? static_cast<size_t>(p - ncs.intv2_st) : 0)
-#define MARKED_JOBID() ncs.jobid_st, (p > ncs.jobid_st ? static_cast<size_t>(p - ncs.jobid_st) : 0)
+static void parse_time_unit(const ParseCfgState &ncs, const char *p, unsigned unit, unsigned *dest)
+{
+    unsigned t;
+    auto offs = p > (ncs.time_st + 1) ? static_cast<size_t>(p - ncs.time_st - 1) : 0;
+    if (!nk::from_string<unsigned>(ncs.time_st, offs, &t)) {
+        log_line("Invalid time unit at line %zu", ncs.linenum);
+        exit(EXIT_FAILURE);
+    }
+    *dest += unit * t;
+}
+
+static void parse_int_value(const char *p, const char *start, size_t linenum, int *dest)
+{
+    if (!nk::from_string<int>(start, p > start ? static_cast<size_t>(p - start) : 0, dest)) {
+        log_line("Invalid integer value at line %zu", linenum);
+        exit(EXIT_FAILURE);
+    }
+}
 
 %%{
     machine ncrontab;
@@ -466,66 +474,20 @@ static void parse_command_key(ParseCfgState &ncs)
     eqsep = spc* '=' spc*;
 
     action TUnitSt { ncs.time_st = p; ncs.v_time = 0; }
-    action TSecEn  {
-        unsigned t;
-        if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
-            ncs.parse_error = true;
-            fbreak;
-        }
-        ncs.v_time += t;
-    }
-    action TMinEn  {
-        unsigned t;
-        if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
-            ncs.parse_error = true;
-            fbreak;
-        }
-        ncs.v_time += 60 * t;
-    }
-    action THrEn   {
-        unsigned t;
-        if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
-            ncs.parse_error = true;
-            fbreak;
-        }
-        ncs.v_time += 3600 * t;
-    }
-    action TDayEn  {
-        unsigned t;
-        if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
-            ncs.parse_error = true;
-            fbreak;
-        }
-        ncs.v_time += 86400 * t;
-    }
-    action TWeekEn {
-        unsigned t;
-        if (!nk::from_string<unsigned>(MARKED_TIME(), &t)) {
-            ncs.parse_error = true;
-            fbreak;
-        }
-        ncs.v_time += 604800 * t;
-    }
+    action TSecEn  { parse_time_unit(ncs, p, 1, &ncs.v_time); }
+    action TMinEn  { parse_time_unit(ncs, p, 60, &ncs.v_time); }
+    action THrEn   { parse_time_unit(ncs, p, 3600, &ncs.v_time); }
+    action TDayEn  { parse_time_unit(ncs, p, 86400, &ncs.v_time); }
+    action TWeekEn { parse_time_unit(ncs, p, 604800, &ncs.v_time); }
 
     action IntValSt {
         ncs.intv_st = p;
         ncs.v_int1 = ncs.v_int2 = 0;
         ncs.intv2_exist = false;
     }
-    action IntValEn {
-        if (!nk::from_string<int>(MARKED_INTV1(), &ncs.v_int1)) {
-            ncs.parse_error = true;
-            fbreak;
-        }
-    }
+    action IntValEn { parse_int_value(p, ncs.intv_st, ncs.linenum, &ncs.v_int1); }
     action IntVal2St { ncs.intv2_st = p; }
-    action IntVal2En {
-        if (!nk::from_string<int>(MARKED_INTV2(), &ncs.v_int2)) {
-            ncs.parse_error = true;
-            fbreak;
-        }
-        ncs.intv2_exist = true;
-    }
+    action IntVal2En { parse_int_value(p, ncs.intv2_st, ncs.linenum, &ncs.v_int2); ncs.intv2_exist = true; }
     action IntValSwap {
         using std::swap;
         swap(ncs.v_int1, ncs.v_int3);
@@ -604,12 +566,7 @@ static void parse_command_key(ParseCfgState &ncs)
            month | interval | maxruns | runat | journal;
 
     action JobIdSt { ncs.jobid_st = p; }
-    action JobIdEn {
-        if (!nk::from_string<int>(MARKED_JOBID(), &ncs.ce->id_)) {
-            ncs.parse_error = true;
-            fbreak;
-        }
-    }
+    action JobIdEn { parse_int_value(p, ncs.jobid_st, ncs.linenum, &ncs.ce->id_); }
     action CreateCe { ncs.finish_ce(); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;
@@ -628,7 +585,6 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
     %% write init;
     %% write exec;
 
-    if (ncs.parse_error) return -1;
     if (ncs.cs == ncrontab_error)
         return -1;
     if (ncs.cs >= ncrontab_first_final)
@@ -647,14 +603,14 @@ void parse_config(char const *path, char const *execfile,
     char buf[MAX_LINE];
     auto f = fopen(path, "r");
     if (!f) {
-        log_line("%s: failed to open file: '%s': %s", __func__, path, strerror(errno));
+        log_line("Failed to open config file '%s': %s", path, strerror(errno));
         exit(EXIT_FAILURE);
     }
     defer [&f]{ fclose(f); };
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))
-                log_line("%s: io error fetching line of '%s'", __func__, path);
+                log_line("IO error reading config file '%s'", path);
             break;
         }
         auto llen = strlen(buf);
@@ -664,7 +620,7 @@ void parse_config(char const *path, char const *execfile,
             buf[--llen] = 0;
         ++ncs.linenum;
         if (do_parse_config(ncs, buf, llen) < 0) {
-            log_line("%s: do_parse_config(%s) failed at line %zu", __func__, path, ncs.linenum);
+            log_line("Config file '%s' is malformed at line %zu", path, ncs.linenum);
             exit(EXIT_FAILURE);
         }
     }
