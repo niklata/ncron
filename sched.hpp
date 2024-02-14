@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <assert.h>
 #include <sys/time.h>
-#include <vector>
 
 struct Job
 {
@@ -16,6 +15,7 @@ struct Job
     Job &operator=(Job &&o) noexcept = delete;
     ~Job();
 
+    Job *next_ = nullptr;
     char *command_ = nullptr;
     char *args_ = nullptr;
     time_t exectime_ = 0;        /* time at which we will execute in the future */
@@ -31,7 +31,6 @@ struct Job
     bool cst_wday_[7];
     bool cst_mon_[12];
 
-    bool operator<(const Job &o) const { return exectime_ < o.exectime_; }
     void set_initial_exectime();
     void exec(const struct timespec &ts);
 
@@ -44,8 +43,8 @@ private:
     time_t constrain_time(time_t stime) const;
 };
 
-static inline bool LtCronEntry(Job const *a, Job const *b) { return *a < *b; }
+void job_insert(Job **head, Job *elt);
+
 void parse_config(char const *path, char const *execfile,
-                  std::vector<Job *> *stack,
-                  std::vector<Job *> *deadstack);
+                  Job **stack, Job **deadstack);
 #endif

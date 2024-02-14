@@ -1,6 +1,5 @@
 // Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
-#include <algorithm>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -31,17 +30,16 @@ struct item_history {
 
 struct history_entry
 {
-    history_entry(int id_, item_history h_) : id(id_), history(h_) {}
-
+    history_entry *next;
     int id;
     item_history history;
 };
-static std::vector<history_entry> history_lut;
+static history_entry *history_lut;
 
 struct ParseCfgState
 {
-    ParseCfgState(std::vector<Job *> *stk, std::vector<Job *> *dstk)
-    : stack(stk), deadstack(dstk)
+    ParseCfgState(Job **stk, Job **dstk)
+    : stackl(stk), deadstackl(dstk)
     {
         memset(v_str, 0, sizeof v_str);
         auto buf = malloc(sizeof(Job));
@@ -56,8 +54,8 @@ struct ParseCfgState
     }
     char v_str[MAX_LINE];
 
-    std::vector<Job *> *stack;
-    std::vector<Job *> *deadstack;
+    Job **stackl = nullptr;
+    Job **deadstackl = nullptr;
 
     Job *ce = nullptr;
 
@@ -90,11 +88,11 @@ struct ParseCfgState
 
     void get_history()
     {
-        for (const auto &i: history_lut) {
-            if (i.id == ce->id_) {
-                ce->exectime_ = i.history.exectime;
-                ce->lasttime_ = i.history.lasttime;
-                ce->numruns_ = i.history.numruns;
+        for (auto i = history_lut; i; i = i->next) {
+            if (i->id == ce->id_) {
+                ce->exectime_ = i->history.exectime;
+                ce->lasttime_ = i->history.lasttime;
+                ce->numruns_ = i->history.numruns;
                 return;
             }
         }
@@ -146,8 +144,7 @@ struct ParseCfgState
     void finish_ce()
     {
         const auto append_stack = [this](bool is_alive) {
-            if (is_alive) stack->insert(std::upper_bound(stack->begin(), stack->end(), ce, LtCronEntry), ce);
-            else deadstack->emplace_back(ce);
+            job_insert(is_alive ? stackl : deadstackl, ce);
             ce = nullptr;
         };
 
@@ -164,14 +161,14 @@ struct ParseCfgState
 
         // XXX: O(n^2) might be nice to avoid.
         bool is_duplicate = false;
-        for (auto i: *stack) {
+        for (auto i = *stackl; i; i = i->next_) {
             if (i->id_ == ce->id_) {
                 is_duplicate = true;
                 break;
             }
         }
         if (!is_duplicate) {
-            for (auto i: *deadstack) {
+            for (auto i = *deadstackl; i; i = i->next_) {
                 if (i->id_ == ce->id_) {
                     is_duplicate = true;
                     break;
@@ -308,7 +305,11 @@ static void parse_history(char const *path)
                      r == -2 ? "Incomplete" : "Malformed", linenum);
             continue;
         }
-        history_lut.emplace_back(hst.id, hst.h);
+        auto t = static_cast<history_entry *>(malloc(sizeof(history_entry)));
+        t->next = history_lut;
+        t->id = hst.id;
+        t->history = hst.h;
+        history_lut = t;
     }
 }
 
@@ -619,8 +620,7 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
 }
 
 void parse_config(char const *path, char const *execfile,
-                  std::vector<Job *> *stk,
-                  std::vector<Job *> *deadstk)
+                  Job **stk, Job **deadstk)
 {
     ParseCfgState ncs(stk, deadstk);
     parse_history(execfile);
@@ -650,5 +650,9 @@ void parse_config(char const *path, char const *execfile,
         }
     }
     ncs.finish_ce();
-    history_lut.clear();
+    for (auto t = history_lut; t;) {
+        auto n = t->next;
+        free(t);
+        t = n;
+    }
 }

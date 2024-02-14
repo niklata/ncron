@@ -1,7 +1,5 @@
 // Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
-#include <algorithm>
-
 #include <unistd.h>
 #include <stdio.h>
 
@@ -55,8 +53,8 @@ enum class Execmode
 };
 static Execmode g_ncron_execmode = Execmode::normal;
 
-static std::vector<Job *> stack;
-static std::vector<Job *> deadstack;
+static Job * stackl;
+static Job * deadstackl;
 
 [[nodiscard]] static bool save_stack()
 {
@@ -65,8 +63,8 @@ static std::vector<Job *> deadstack;
         log_line("%s: failed to open history file %s for write", __func__, g_ncron_execfile_tmp);
         return false;
     }
-    auto do_save = [&f](const std::vector<Job *> &s) -> bool {
-        for (auto j: s) {
+    auto do_save = [&f](Job *j) -> bool {
+        for (; j; j = j->next_) {
             if (fprintf(f, "%d=%li:%u|%lu\n", j->id_, j->exectime_, j->numruns_, j->lasttime_) < 0) {
                 log_line("%s: failed writing to history file %s", __func__, g_ncron_execfile_tmp);
                 return false;
@@ -77,8 +75,8 @@ static std::vector<Job *> deadstack;
     nk::scope_guard remove_ftmp = []{ unlink(g_ncron_execfile_tmp); };
     {
         defer [&f]{ fclose(f); };
-        if (!do_save(stack)) return false;
-        if (!do_save(deadstack)) return false;
+        if (!do_save(stackl)) return false;
+        if (!do_save(deadstackl)) return false;
     }
 
     if (rename(g_ncron_execfile_tmp, g_ncron_execfile)) {
@@ -101,13 +99,17 @@ static void save_and_exit(void)
         }
     }
     // Get rid of leak sanitizer noise.
-    for (auto p: stack) {
+    for (auto p = stackl; p;) {
         p->~Job();
+        auto n = p->next_;
         free(p);
+        p = n;
     }
-    for (auto p: deadstack) {
+    for (auto p = deadstackl; p;) {
         p->~Job();
+        auto n = p->next_;
         free(p);
+        p = n;
     }
     log_line("Exited.");
     exit(EXIT_SUCCESS);
@@ -187,8 +189,9 @@ void clock_or_die(struct timespec *ts)
 static inline void debug_stack_print(const struct timespec &ts) {
     if (!gflags_debug)
         return;
-    log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, stack.front()->exectime_);
-    for (auto j: stack)
+    if (stackl)
+        log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, stackl->exectime_);
+    for (auto j = stackl; j; j = j->next_)
         log_line("do_work: job %d exectime = %lu", j->id_, j->exectime_);
 }
 
@@ -211,8 +214,8 @@ static void do_work(unsigned initial_sleep)
         }
         sleep_or_die(&ts);
 
-        while (stack.front()->exectime_ <= ts.tv_sec) {
-            auto j = stack.front();
+        while (stackl->exectime_ <= ts.tv_sec) {
+            auto j = stackl;
             if (gflags_debug)
                 log_line("do_work: DISPATCH %d (%lu <= %lu)", j->id_, j->exectime_, ts.tv_sec);
 
@@ -221,22 +224,23 @@ static void do_work(unsigned initial_sleep)
                 pending_save = true;
 
             if ((j->numruns_ < j->maxruns_ || j->maxruns_ == 0) && j->exectime_ != 0) {
-                if (stack.size() > 1) {
-                    auto t = stack.front();
-                    stack.erase(stack.begin());
-                    stack.insert(std::upper_bound(stack.begin(), stack.end(), t, LtCronEntry), t);
+                if (stackl->next_) {
+                    auto t = stackl;
+                    stackl = stackl->next_;
+                    job_insert(&stackl, t);
                 }
             } else {
-                deadstack.emplace_back(stack.front());
-                stack.erase(stack.begin());
+                auto t = stackl;
+                stackl = stackl->next_;
+                job_insert(&deadstackl, t);
             }
-            if (stack.empty())
+            if (!stackl)
                 save_and_exit();
         }
 
         debug_stack_print(ts);
         {
-            const auto j = stack.front();
+            const auto j = stackl;
             if (ts.tv_sec <= j->exectime_) {
                 auto tdelta = j->exectime_ - ts.tv_sec;
                 ts.tv_sec = j->exectime_;
@@ -337,9 +341,9 @@ int main(int argc, char* argv[])
     process_options(argc, argv);
     fail_on_fdne(g_ncron_conf, R_OK);
     fail_on_fdne(g_ncron_execfile, R_OK | W_OK);
-    parse_config(g_ncron_conf, g_ncron_execfile, &stack, &deadstack);
+    parse_config(g_ncron_conf, g_ncron_execfile, &stackl, &deadstackl);
 
-    if (stack.empty()) {
+    if (!stackl) {
         log_line("%s: no jobs, exiting", __func__);
         exit(EXIT_FAILURE);
     }

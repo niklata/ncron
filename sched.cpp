@@ -248,3 +248,19 @@ void Job::exec(const struct timespec &ts)
     set_next_time();
 }
 
+void job_insert(Job **head, Job *elt)
+{
+    elt->next_ = nullptr;
+    for (;;) {
+        if (!*head) {
+            *head = elt;
+            return;
+        }
+        if (elt->exectime_ < (*head)->exectime_) {
+            elt->next_ = *head;
+            *head = elt;
+            return;
+        }
+        head = &(*head)->next_;
+    }
+}
