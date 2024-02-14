@@ -23,8 +23,6 @@ extern "C" {
 
 extern int gflags_debug;
 
-std::vector<std::unique_ptr<Job>> g_jobs;
-
 struct item_history {
     time_t exectime = 0;
     time_t lasttime = 0;
@@ -46,14 +44,22 @@ struct ParseCfgState
     : stack(stk), deadstack(dstk)
     {
         memset(v_str, 0, sizeof v_str);
-        ce = std::make_unique<Job>();
+        auto buf = malloc(sizeof(Job));
+        ce = new(buf) Job;
+    }
+    ~ParseCfgState()
+    {
+        if (ce) {
+            ce->~Job();
+            free(ce);
+        }
     }
     char v_str[MAX_LINE];
 
     std::vector<Job *> *stack;
     std::vector<Job *> *deadstack;
 
-    std::unique_ptr<Job> ce;
+    Job *ce = nullptr;
 
     const char *jobid_st = nullptr;
     const char *time_st = nullptr;
@@ -96,7 +102,13 @@ struct ParseCfgState
 
     void create_ce()
     {
-        ce = std::make_unique<Job>();
+        if (!ce) {
+            auto buf = malloc(sizeof(Job));
+            ce = new(buf) Job;
+        } else {
+            ce->~Job();
+            ce = new(ce) Job;
+        }
         have_command = false;
         runat = false;
         seen_cst_hhmm = false;
@@ -134,10 +146,9 @@ struct ParseCfgState
     void finish_ce()
     {
         const auto append_stack = [this](bool is_alive) {
-            assert(g_jobs.size() > 0);
-            auto t = g_jobs.back().get();
-            if (is_alive) stack->insert(std::upper_bound(stack->begin(), stack->end(), t, LtCronEntry), t);
-            else deadstack->emplace_back(t);
+            if (is_alive) stack->insert(std::upper_bound(stack->begin(), stack->end(), ce, LtCronEntry), ce);
+            else deadstack->emplace_back(ce);
+            ce = nullptr;
         };
 
         defer [this]{ create_ce(); };
@@ -150,13 +161,28 @@ struct ParseCfgState
                 log_line("===> IGNORE");
             return;
         }
+
         // XXX: O(n^2) might be nice to avoid.
-        for (auto &i: g_jobs) {
+        bool is_duplicate = false;
+        for (auto i: *stack) {
             if (i->id_ == ce->id_) {
-                log_line("ERROR IN CRONTAB: ignoring duplicate entry for job %d", ce->id_);
-                return;
+                is_duplicate = true;
+                break;
             }
         }
+        if (!is_duplicate) {
+            for (auto i: *deadstack) {
+                if (i->id_ == ce->id_) {
+                    is_duplicate = true;
+                    break;
+                }
+            }
+        }
+        if (is_duplicate) {
+            log_line("ERROR IN CRONTAB: ignoring duplicate entry for job %d", ce->id_);
+            return;
+        }
+
         if (gflags_debug)
             log_line("===> ADD");
 
@@ -169,7 +195,6 @@ struct ParseCfgState
             auto numruns = ce->numruns_;
             auto maxruns = ce->maxruns_;
             auto exectime = ce->exectime_;
-            g_jobs.emplace_back(std::move(ce));
 
             /* insert iif numruns < maxruns and no constr error */
             append_stack((maxruns == 0 || numruns < maxruns) && exectime != 0);
@@ -183,7 +208,6 @@ struct ParseCfgState
             debug_print_ce_history();
 
             auto numruns = ce->numruns_;
-            g_jobs.emplace_back(std::move(ce));
 
             /* insert iif we haven't exceeded maxruns */
             append_stack(numruns == 0);
@@ -598,7 +622,6 @@ void parse_config(char const *path, char const *execfile,
                   std::vector<Job *> *stk,
                   std::vector<Job *> *deadstk)
 {
-    g_jobs.clear();
     ParseCfgState ncs(stk, deadstk);
     parse_history(execfile);
 

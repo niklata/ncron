@@ -24,6 +24,21 @@ extern char **environ;
 // it probably won't run in the uptime of the machine.
 #define MAX_YEARS 5
 
+Job::Job()
+{
+    // Allowed by default.
+    memset(&cst_hhmm_, 1, sizeof cst_hhmm_);
+    memset(&cst_mday_, 1, sizeof cst_mday_);
+    memset(&cst_wday_, 1, sizeof cst_wday_);
+    memset(&cst_mon_, 1, sizeof cst_mon_);
+}
+
+Job::~Job()
+{
+    if (command_) free(command_);
+    if (args_) free(args_);
+}
+
 bool Job::in_month(int v) const
 {
     assert(v > 0 && v < 13);

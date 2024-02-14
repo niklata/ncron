@@ -100,6 +100,15 @@ static void save_and_exit(void)
                      g_ncron_execfile);
         }
     }
+    // Get rid of leak sanitizer noise.
+    for (auto p: stack) {
+        p->~Job();
+        free(p);
+    }
+    for (auto p: deadstack) {
+        p->~Job();
+        free(p);
+    }
     log_line("Exited.");
     exit(EXIT_SUCCESS);
 }

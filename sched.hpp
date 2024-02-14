@@ -6,27 +6,15 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <vector>
-#include <memory>
 
 struct Job
 {
-    Job()
-    {
-        // Allowed by default.
-        memset(&cst_hhmm_, 1, sizeof cst_hhmm_);
-        memset(&cst_mday_, 1, sizeof cst_mday_);
-        memset(&cst_wday_, 1, sizeof cst_wday_);
-        memset(&cst_mon_, 1, sizeof cst_mon_);
-    }
+    Job();
     Job(Job &) = delete;
     Job(Job &&o) = delete;
     Job &operator=(Job &) = delete;
     Job &operator=(Job &&o) noexcept = delete;
-    ~Job()
-    {
-        if (command_) free(command_);
-        if (args_) free(args_);
-    }
+    ~Job();
 
     char *command_ = nullptr;
     char *args_ = nullptr;
@@ -56,7 +44,6 @@ private:
     time_t constrain_time(time_t stime) const;
 };
 
-extern std::vector<std::unique_ptr<Job>> g_jobs;
 static inline bool LtCronEntry(Job const *a, Job const *b) { return *a < *b; }
 void parse_config(char const *path, char const *execfile,
                   std::vector<Job *> *stack,
