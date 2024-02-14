@@ -269,6 +269,13 @@ static void usage()
     );
 }
 
+static char *xstrdup(const char *s)
+{
+    auto r = strdup(s);
+    if (!r) exit(EXIT_FAILURE);
+    return r;
+}
+
 static void print_version()
 {
     log_line("ncron " NCRON_VERSION ", cron/at daemon.\n"
@@ -319,10 +326,10 @@ static void process_options(int ac, char *av[])
                       break;
             case '0': g_ncron_execmode = Execmode::nosave; break;
             case 'j': g_ncron_execmode = Execmode::journal; break;
-            case 't': g_ncron_conf = strdup(optarg); break;
+            case 't': g_ncron_conf = xstrdup(optarg); break;
             case 'H': {
                 auto l = strlen(optarg);
-                g_ncron_execfile = strdup(optarg);
+                g_ncron_execfile = xstrdup(optarg);
                 auto tmpf = static_cast<char *>(xmalloc(l + 2));
                 memcpy(tmpf, optarg, l);
                 tmpf[l] = '~';
