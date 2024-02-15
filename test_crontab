@@ -1,0 +1,13 @@
+!1
+command=/bin/echo hihi
+interval=20s
+!2
+command=/bin/echo sup
+interval=5m
+time=4:00-13:00
+!3
+command=/bin/echo a b c d
+interval=45s
+month=2
+day=9-15
+weekday=2-5
