@@ -31,14 +31,6 @@ struct item_history {
     unsigned int numruns = 0;
 };
 
-struct history_entry
-{
-    history_entry *next;
-    int id;
-    item_history history;
-};
-static history_entry *history_lut;
-
 struct ParseCfgState
 {
     ParseCfgState(Job **stk, Job **dstk)
@@ -81,18 +73,6 @@ struct ParseCfgState
 
     bool seen_job = false;
 
-    void get_history()
-    {
-        for (auto i = history_lut; i; i = i->next) {
-            if (i->id == ce->id_) {
-                ce->exectime_ = i->history.exectime;
-                ce->lasttime_ = i->history.lasttime;
-                ce->numruns_ = i->history.numruns;
-                return;
-            }
-        }
-    }
-
     void create_ce()
     {
         if (ce == g_jobs + g_njobs) {
@@ -111,77 +91,37 @@ struct ParseCfgState
     inline void debug_print_ce() const
     {
         if (!gflags_debug) return;
-        log_line("=== NEW JOB ===\nid: %d", ce->id_);
-        log_line("command: %s", ce->command_ ? ce->command_ : "");
-        log_line("args: %s", ce->args_ ? ce->args_ : "");
-        log_line("numruns: %u\nmaxruns: %u", ce->numruns_, ce->maxruns_);
-        log_line("journal: %s", ce->journal_ ? "true" : "false");
-        log_line("runat: %s", ce->runat_ ? "true" : "false");
-        log_line("interval: %u\nexectime: %lu\nlasttime: %lu", ce->interval_, ce->exectime_, ce->lasttime_);
-    }
-
-    inline void debug_print_ce_history() const
-    {
-        if (!gflags_debug) return;
-        log_line("numruns = %u\nexectime = %lu\nlasttime = %lu", ce->numruns_, ce->exectime_, ce->lasttime_);
+        log_line("id=%d:\tcommand: %s", ce->id_, ce->command_ ? ce->command_ : "");
+        log_line("\targs: %s", ce->args_ ? ce->args_ : "");
+        log_line("\tnumruns: %u\n\tmaxruns: %u", ce->numruns_, ce->maxruns_);
+        log_line("\tjournal: %s", ce->journal_ ? "true" : "false");
+        log_line("\trunat: %s", ce->runat_ ? "true" : "false");
+        log_line("\tinterval: %u\n\texectime: %lu\n\tlasttime: %lu", ce->interval_, ce->exectime_, ce->lasttime_);
     }
 
     void finish_ce()
     {
         if (!seen_job) return;
 
-        const auto append_stack = [this](bool is_alive) {
-            job_insert(is_alive ? stackl : deadstackl, ce);
-            ++ce;
-        };
-
         debug_print_ce();
 
         if (ce->id_ < 0
             || (ce->interval_ <= 0 && ce->exectime_ <= 0)
             || !ce->command_ || !have_command) {
-            if (gflags_debug)
-                log_line("===> IGNORE");
-            return;
+            log_line("ERROR IN CRONTAB: invalid id, command, or interval for job %d", ce->id_);
+            exit(EXIT_FAILURE);
         }
 
         // XXX: O(n^2) might be nice to avoid.
         for (auto i = g_jobs, iend = ce; i != iend; ++i) {
             if (i->id_ == ce->id_) {
-                log_line("ERROR IN CRONTAB: ignoring duplicate entry for job %d", ce->id_);
-                return;
+                log_line("ERROR IN CRONTAB: duplicate entry for job %d", ce->id_);
+                exit(EXIT_FAILURE);
             }
         }
 
-        if (gflags_debug)
-            log_line("===> ADD");
-
-        /* we have a job to insert */
-        if (!ce->runat_) {
-            get_history();
-            debug_print_ce_history();
-            ce->set_initial_exectime();
-
-            auto numruns = ce->numruns_;
-            auto maxruns = ce->maxruns_;
-            auto exectime = ce->exectime_;
-
-            /* insert iif numruns < maxruns and no constr error */
-            append_stack((maxruns == 0 || numruns < maxruns) && exectime != 0);
-        } else {
-            if (ce->interval_ > 0) {
-                log_line("ERROR IN CRONTAB: interval is unused when runat is set: job %d", ce->id_);
-            }
-            auto forced_exectime = ce->exectime_;
-            get_history();
-            ce->exectime_ = forced_exectime;
-            debug_print_ce_history();
-
-            auto numruns = ce->numruns_;
-
-            /* insert iif we haven't exceeded maxruns */
-            append_stack(numruns == 0);
-        }
+        // Preserve this job and work on the next one.
+        ++ce;
     }
 };
 
@@ -191,6 +131,13 @@ struct hstm {
     int id = -1;
     item_history h;
     bool parse_error = false;
+
+    void print() const
+    {
+        if (!gflags_debug) return;
+        log_line("id=%d:\tnumruns = %u\n\texectime = %lu\n\tlasttime = %lu",
+                 id, h.numruns, h.exectime, h.lasttime);
+    }
 };
 
 #define MARKED_HST() hst.st, (p > hst.st ? static_cast<size_t>(p - hst.st) : 0)
@@ -278,11 +225,23 @@ static void parse_history(char const *path)
                      r == -2 ? "Incomplete" : "Malformed", linenum);
             continue;
         }
-        auto t = static_cast<history_entry *>(xmalloc(sizeof(history_entry)));
-        t->next = history_lut;
-        t->id = hst.id;
-        t->history = hst.h;
-        history_lut = t;
+
+        for (auto j = g_jobs, jend = g_jobs + g_njobs; j != jend; ++j) {
+            if (j->id_ == hst.id) {
+                hst.print();
+                j->numruns_ = hst.h.numruns;
+                j->lasttime_ = hst.h.lasttime;
+                if (!j->runat_) {
+                    j->exectime_ = hst.h.exectime;
+                    j->set_initial_exectime();
+                } else {
+                    if (j->interval_ > 0) {
+                        log_line("ERROR IN CRONTAB: interval is unused when runat is set: job %d", j->id_);
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -616,7 +575,6 @@ void parse_config(char const *path, char const *execfile,
                   Job **stk, Job **deadstk)
 {
     ParseCfgState ncs(stk, deadstk);
-    parse_history(execfile);
 
     char buf[MAX_LINE];
     auto f = fopen(path, "r");
@@ -650,9 +608,12 @@ void parse_config(char const *path, char const *execfile,
         }
     }
     ncs.finish_ce();
-    for (auto t = history_lut; t;) {
-        auto n = t->next;
-        free(t);
-        t = n;
+    parse_history(execfile);
+
+    for (auto j = g_jobs, jend = g_jobs + g_njobs; j != jend; ++j) {
+        bool alive = !j->runat_?
+                     ((j->maxruns_ == 0 || j->numruns_ < j->maxruns_) && j->exectime_ != 0)
+                   : (j->numruns_ == 0);
+        job_insert(alive ? stk : deadstk, j);
     }
 }
