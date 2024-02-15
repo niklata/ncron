@@ -25,6 +25,7 @@ struct Job
     unsigned int numruns_ = 0;   /* number of times a job has run */
     unsigned int maxruns_ = 0;   /* max # of times a job will run, 0 = nolim */
     bool journal_ = false;
+    bool runat_ = false;
 
     bool cst_hhmm_[1440]; // If corresponding bit is set, time is allowed.
     bool cst_mday_[31];

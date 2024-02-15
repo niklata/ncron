@@ -73,7 +73,6 @@ struct ParseCfgState
     bool have_command = false;
 
     bool intv2_exist = false;
-    bool runat = false;
 
     bool seen_cst_hhmm = false;
     bool seen_cst_wday = false;
@@ -103,7 +102,6 @@ struct ParseCfgState
         new(ce) Job;
         seen_job = true;
         have_command = false;
-        runat = false;
         seen_cst_hhmm = false;
         seen_cst_wday = false;
         seen_cst_mday = false;
@@ -121,7 +119,7 @@ struct ParseCfgState
         log_line("numruns: %u", ce->numruns_);
         log_line("maxruns: %u", ce->maxruns_);
         log_line("journal: %s", ce->journal_ ? "true" : "false");
-        log_line("runat: %s", runat ? "true" : "false");
+        log_line("runat: %s", ce->runat_ ? "true" : "false");
         log_line("interval: %u", ce->interval_);
         log_line("exectime: %lu", ce->exectime_);
         log_line("lasttime: %lu", ce->lasttime_);
@@ -167,7 +165,7 @@ struct ParseCfgState
             log_line("===> ADD");
 
         /* we have a job to insert */
-        if (!runat) {
+        if (!ce->runat_) {
             get_history();
             debug_print_ce_history();
             ce->set_initial_exectime();
@@ -536,13 +534,13 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
     journal = 'journal'i % JournalEn;
 
     action RunAtEn {
-        ncs.runat = true;
+        ncs.ce->runat_ = true;
         ncs.ce->exectime_ = ncs.v_int1;
         ncs.ce->maxruns_ = 1;
         ncs.ce->journal_ = true;
     }
     action MaxRunsEn {
-        if (!ncs.runat)
+        if (!ncs.ce->runat_)
             ncs.ce->maxruns_ = ncs.v_int1 > 0 ? static_cast<unsigned>(ncs.v_int1) : 0;
     }
 
