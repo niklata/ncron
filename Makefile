@@ -14,6 +14,8 @@ all: ragel ncron
 
 ncron: $(NCRON_OBJS)
 	$(CXX) $(CXXFLAGS) -nodefaultlibs -lgcc -lc -o $@ $^
+#ncron: $(NCRON_OBJS)
+#	$(CXX) $(CXXFLAGS) -nodefaultlibs -lasan -lubsan -lgcc -lc -o $@ $^
 
 -include $(NCRON_DEP)
 
