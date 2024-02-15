@@ -110,28 +110,20 @@ struct ParseCfgState
 
     inline void debug_print_ce() const
     {
-        if (!gflags_debug)
-            return;
-        log_line("=== NEW JOB ===");
-        log_line("id: %d", ce->id_);
+        if (!gflags_debug) return;
+        log_line("=== NEW JOB ===\nid: %d", ce->id_);
         log_line("command: %s", ce->command_ ? ce->command_ : "");
         log_line("args: %s", ce->args_ ? ce->args_ : "");
-        log_line("numruns: %u", ce->numruns_);
-        log_line("maxruns: %u", ce->maxruns_);
+        log_line("numruns: %u\nmaxruns: %u", ce->numruns_, ce->maxruns_);
         log_line("journal: %s", ce->journal_ ? "true" : "false");
         log_line("runat: %s", ce->runat_ ? "true" : "false");
-        log_line("interval: %u", ce->interval_);
-        log_line("exectime: %lu", ce->exectime_);
-        log_line("lasttime: %lu", ce->lasttime_);
+        log_line("interval: %u\nexectime: %lu\nlasttime: %lu", ce->interval_, ce->exectime_, ce->lasttime_);
     }
 
     inline void debug_print_ce_history() const
     {
-        if (!gflags_debug)
-            return;
-        log_line("[%d]->numruns = %u", ce->id_, ce->numruns_);
-        log_line("[%d]->exectime = %lu", ce->id_, ce->exectime_);
-        log_line("[%d]->lasttime = %lu", ce->id_, ce->lasttime_);
+        if (!gflags_debug) return;
+        log_line("numruns = %u\nexectime = %lu\nlasttime = %lu", ce->numruns_, ce->exectime_, ce->lasttime_);
     }
 
     void finish_ce()

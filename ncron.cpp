@@ -63,13 +63,13 @@ static Job * deadstackl;
 {
     auto f = fopen(g_ncron_execfile_tmp, "w");
     if (!f) {
-        log_line("%s: failed to open history file %s for write", __func__, g_ncron_execfile_tmp);
+        log_line("Failed to open history file %s for write", g_ncron_execfile_tmp);
         return false;
     }
     auto do_save = [&f](Job *j) -> bool {
         for (; j; j = j->next_) {
             if (fprintf(f, "%d=%li:%u|%lu\n", j->id_, j->exectime_, j->numruns_, j->lasttime_) < 0) {
-                log_line("%s: failed writing to history file %s", __func__, g_ncron_execfile_tmp);
+                log_line("Failed to write to history file %s", g_ncron_execfile_tmp);
                 return false;
             }
         }
@@ -83,7 +83,7 @@ static Job * deadstackl;
     }
 
     if (rename(g_ncron_execfile_tmp, g_ncron_execfile)) {
-        log_line("%s: failed to update to new history file (%s => %s): %s", __func__,
+        log_line("Failed to update history file (%s => %s): %s",
                  g_ncron_execfile_tmp, g_ncron_execfile, strerror(errno));
         return false;
     }
@@ -150,7 +150,7 @@ static void fix_signals(void)
 static void fail_on_fdne(char const *file, int mode)
 {
     if (access(file, mode)) {
-        log_line("%s: file '%s' does not exist or is not %s", __func__,
+        log_line("File '%s' does not exist or is not %s",
                  file, (mode & W_OK) ? "writable" : "readable");
         exit(EXIT_FAILURE);
     }
@@ -165,7 +165,7 @@ retry:
             if (pending_save_and_exit) save_and_exit();
             goto retry;
         }
-        log_line("%s: clock_nanosleep failed: %s", __func__, strerror(r));
+        log_line("clock_nanosleep failed: %s", strerror(r));
         exit(EXIT_FAILURE);
     }
 }
@@ -173,7 +173,7 @@ retry:
 void clock_or_die(struct timespec *ts)
 {
     if (clock_gettime(CLOCK_REALTIME, ts)) {
-        log_line("%s: clock_gettime failed: %s", __func__, strerror(errno));
+        log_line("clock_gettime failed: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -182,9 +182,9 @@ static inline void debug_stack_print(const struct timespec &ts) {
     if (!gflags_debug)
         return;
     if (stackl)
-        log_line("do_work: ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, stackl->exectime_);
+        log_line("ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, stackl->exectime_);
     for (auto j = stackl; j; j = j->next_)
-        log_line("do_work: job %d exectime = %lu", j->id_, j->exectime_);
+        log_line("job %d exectime = %lu", j->id_, j->exectime_);
 }
 
 static void do_work(unsigned initial_sleep)
@@ -209,7 +209,7 @@ static void do_work(unsigned initial_sleep)
         while (stackl->exectime_ <= ts.tv_sec) {
             auto j = stackl;
             if (gflags_debug)
-                log_line("do_work: DISPATCH %d (%lu <= %lu)", j->id_, j->exectime_, ts.tv_sec);
+                log_line("DISPATCH %d (%lu <= %lu)", j->id_, j->exectime_, ts.tv_sec);
 
             j->exec(ts);
             if (j->journal_ || g_ncron_execmode == Execmode::journal)
@@ -238,7 +238,7 @@ static void do_work(unsigned initial_sleep)
                 ts.tv_sec = j->exectime_;
                 ts.tv_nsec = 0;
                 if (gflags_debug)
-                    log_line("do_work: SLEEP %zu seconds", tdelta);
+                    log_line("SLEEP %zu seconds", tdelta);
             }
         }
     }
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
     parse_config(g_ncron_conf, g_ncron_execfile, &stackl, &deadstackl);
 
     if (!stackl) {
-        log_line("%s: no jobs, exiting", __func__);
+        log_line("No jobs, exiting.");
         exit(EXIT_FAILURE);
     }
 
