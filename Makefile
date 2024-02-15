@@ -13,7 +13,7 @@ CPPFLAGS += $(INCL)
 all: ragel ncron
 
 ncron: $(NCRON_OBJS)
-	$(CXX) $(CXXFLAGS) -nodefaultlibs -lc -o $@ $^
+	$(CXX) $(CXXFLAGS) -nodefaultlibs -lgcc -lc -o $@ $^
 
 -include $(NCRON_DEP)
 
