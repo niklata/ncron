@@ -54,6 +54,8 @@ enum class Execmode
 };
 static Execmode g_ncron_execmode = Execmode::normal;
 
+size_t g_njobs;
+Job *g_jobs;
 static Job * stackl;
 static Job * deadstackl;
 
@@ -100,18 +102,7 @@ static void save_and_exit(void)
         }
     }
     // Get rid of leak sanitizer noise.
-    for (auto p = stackl; p;) {
-        p->~Job();
-        auto n = p->next_;
-        free(p);
-        p = n;
-    }
-    for (auto p = deadstackl; p;) {
-        p->~Job();
-        auto n = p->next_;
-        free(p);
-        p = n;
-    }
+    for (size_t i = 0; i < g_njobs; ++i) g_jobs[i].~Job();
     log_line("Exited.");
     exit(EXIT_SUCCESS);
 }

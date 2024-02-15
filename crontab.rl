@@ -22,6 +22,8 @@ extern "C" {
 #endif
 
 extern int gflags_debug;
+extern size_t g_njobs;
+extern Job *g_jobs;
 
 struct item_history {
     time_t exectime = 0;
@@ -43,15 +45,6 @@ struct ParseCfgState
     : stackl(stk), deadstackl(dstk)
     {
         memset(v_str, 0, sizeof v_str);
-        auto buf = xmalloc(sizeof(Job));
-        ce = new(buf) Job;
-    }
-    ~ParseCfgState()
-    {
-        if (ce) {
-            ce->~Job();
-            free(ce);
-        }
     }
     char v_str[MAX_LINE];
 
@@ -87,6 +80,8 @@ struct ParseCfgState
     bool seen_cst_mday = false;
     bool seen_cst_mon = false;
 
+    bool seen_job = false;
+
     void get_history()
     {
         for (auto i = history_lut; i; i = i->next) {
@@ -101,13 +96,12 @@ struct ParseCfgState
 
     void create_ce()
     {
-        if (!ce) {
-            auto buf = xmalloc(sizeof(Job));
-            ce = new(buf) Job;
-        } else {
-            ce->~Job();
-            ce = new(ce) Job;
+        if (ce == g_jobs + g_njobs) {
+            log_line("job count mismatch");
+            exit(EXIT_FAILURE);
         }
+        new(ce) Job;
+        seen_job = true;
         have_command = false;
         runat = false;
         seen_cst_hhmm = false;
@@ -120,7 +114,7 @@ struct ParseCfgState
     {
         if (!gflags_debug)
             return;
-        log_line("-=- finish_ce -=-");
+        log_line("=== NEW JOB ===");
         log_line("id: %d", ce->id_);
         log_line("command: %s", ce->command_ ? ce->command_ : "");
         log_line("args: %s", ce->args_ ? ce->args_ : "");
@@ -144,12 +138,13 @@ struct ParseCfgState
 
     void finish_ce()
     {
+        if (!seen_job) return;
+
         const auto append_stack = [this](bool is_alive) {
             job_insert(is_alive ? stackl : deadstackl, ce);
-            ce = nullptr;
+            ++ce;
         };
 
-        defer [this]{ create_ce(); };
         debug_print_ce();
 
         if (ce->id_ < 0
@@ -161,24 +156,11 @@ struct ParseCfgState
         }
 
         // XXX: O(n^2) might be nice to avoid.
-        bool is_duplicate = false;
-        for (auto i = *stackl; i; i = i->next_) {
+        for (auto i = g_jobs, iend = ce; i != iend; ++i) {
             if (i->id_ == ce->id_) {
-                is_duplicate = true;
-                break;
+                log_line("ERROR IN CRONTAB: ignoring duplicate entry for job %d", ce->id_);
+                return;
             }
-        }
-        if (!is_duplicate) {
-            for (auto i = *deadstackl; i; i = i->next_) {
-                if (i->id_ == ce->id_) {
-                    is_duplicate = true;
-                    break;
-                }
-            }
-        }
-        if (is_duplicate) {
-            log_line("ERROR IN CRONTAB: ignoring duplicate entry for job %d", ce->id_);
-            return;
         }
 
         if (gflags_debug)
@@ -595,7 +577,7 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
 
     action JobIdSt { ncs.jobid_st = p; }
     action JobIdEn { parse_int_value(p, ncs.jobid_st, ncs.linenum, &ncs.ce->id_); }
-    action CreateCe { ncs.finish_ce(); }
+    action CreateCe { ncs.finish_ce(); ncs.create_ce(); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;
     comment = (';'|'#') any*;
@@ -620,6 +602,26 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
     return 0;
 }
 
+// Seeks back to start of file when done.
+size_t count_config_jobs(FILE *f)
+{
+    size_t r = 0;
+    int lc = '\n', llc = 0;
+    while (!feof(f)) {
+        int c = fgetc(f);
+        if (!c) {
+            if (!feof(f))
+                log_line("IO error reading config file");
+            break;
+        }
+        if ((c >= '0' && c <= '9') && lc == '!' && llc == '\n') ++r;
+        llc = lc;
+        lc = c;
+    }
+    rewind(f);
+    return r;
+}
+
 void parse_config(char const *path, char const *execfile,
                   Job **stk, Job **deadstk)
 {
@@ -633,6 +635,13 @@ void parse_config(char const *path, char const *execfile,
         exit(EXIT_FAILURE);
     }
     defer [&f]{ fclose(f); };
+    g_njobs = count_config_jobs(f);
+    if (!g_njobs) {
+        log_line("No jobs found in config file.  Exiting.");
+        exit(EXIT_SUCCESS);
+    }
+    g_jobs = static_cast<Job *>(xmalloc(g_njobs * sizeof(Job)));
+    ncs.ce = g_jobs;
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))
