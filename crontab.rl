@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <assert.h>
 #include <nk/from_string.hpp>
-#include <nk/defer.hpp>
 extern "C" {
 #include "nk/log.h"
 #include "xmalloc.h"
@@ -205,7 +204,6 @@ static void parse_history(char const *path)
         log_line("Failed to open history file '%s' for read: %s", path, strerror(errno));
         return;
     }
-    defer [&f]{ fclose(f); };
     size_t linenum = 0;
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
@@ -243,6 +241,7 @@ static void parse_history(char const *path)
             }
         }
     }
+    fclose(f);
 }
 
 static bool add_cst_mon(ParseCfgState &ncs)
@@ -582,7 +581,6 @@ void parse_config(char const *path, char const *execfile,
         log_line("Failed to open config file '%s': %s", path, strerror(errno));
         exit(EXIT_FAILURE);
     }
-    defer [&f]{ fclose(f); };
     g_njobs = count_config_jobs(f);
     if (!g_njobs) {
         log_line("No jobs found in config file.  Exiting.");
@@ -616,4 +614,5 @@ void parse_config(char const *path, char const *execfile,
                    : (j->numruns_ == 0);
         job_insert(alive ? stk : deadstk, j);
     }
+    fclose(f);
 }

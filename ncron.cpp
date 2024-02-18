@@ -20,7 +20,6 @@
 #endif
 
 #include <nk/from_string.hpp>
-#include <nk/defer.hpp>
 extern "C" {
 #include "nk/log.h"
 #include "nk/io.h"
@@ -75,20 +74,21 @@ static Job * deadstackl;
         }
         return true;
     };
-    nk::scope_guard remove_ftmp = []{ unlink(g_ncron_execfile_tmp); };
-    {
-        defer [&f]{ fclose(f); };
-        if (!do_save(stackl)) return false;
-        if (!do_save(deadstackl)) return false;
-    }
+    if (!do_save(stackl)) goto err1;
+    if (!do_save(deadstackl)) goto err1;
+    fclose(f);
 
     if (rename(g_ncron_execfile_tmp, g_ncron_execfile)) {
         log_line("Failed to update history file (%s => %s): %s",
                  g_ncron_execfile_tmp, g_ncron_execfile, strerror(errno));
-        return false;
+        goto err0;
     }
-    remove_ftmp.dismiss();
     return true;
+err1:
+    fclose(f);
+err0:
+    unlink(g_ncron_execfile_tmp);
+    return false;
 }
 
 static void save_and_exit(void)
