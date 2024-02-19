@@ -1,9 +1,9 @@
 // Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
-#ifndef NCRON_SCHED_HPP_
-#define NCRON_SCHED_HPP_
+#ifndef NCRON_SCHED_H_
+#define NCRON_SCHED_H_
 #include <stdint.h>
-#include <assert.h>
+#include <stdbool.h>
 #include <sys/time.h>
 
 struct Job

@@ -6,29 +6,22 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <memory>
-extern "C" {
 #include "nk/log.h"
 #include "xmalloc.h"
 #include "strconv.h"
-}
-#include "ncron.hpp"
-#include "sched.hpp"
+#include "ncron.h"
+#include "sched.h"
 
 #define MAX_LINE 2048
-
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
 
 extern int gflags_debug;
 extern size_t g_njobs;
 extern struct Job *g_jobs;
 
 struct item_history {
-    time_t exectime = 0;
-    time_t lasttime = 0;
-    unsigned int numruns = 0;
+    time_t exectime;
+    time_t lasttime;
+    unsigned int numruns;
 };
 
 struct ParseCfgState
@@ -70,11 +63,11 @@ static void ParseCfgState_init(struct ParseCfgState *self, struct Job **stk, str
 {
     self->stackl = stk;
     self->deadstackl = dstk;
-    self->ce = nullptr;
-    self->jobid_st = nullptr;
-    self->time_st = nullptr;
-    self->intv_st = nullptr;
-    self->strv_st = nullptr;
+    self->ce = NULL;
+    self->jobid_st = NULL;
+    self->time_st = NULL;
+    self->intv_st = NULL;
+    self->strv_st = NULL;
     self->v_strlen = 0;
     self->linenum = 0;
     self->v_time = 0;
@@ -146,11 +139,11 @@ static void ParseCfgState_finish_ce(struct ParseCfgState *self)
 }
 
 struct hstm {
-    const char *st = nullptr;
-    int cs = 0;
-    int id = -1;
+    const char *st;
+    int cs;
+    int id;
     struct item_history h;
-    bool parse_error = false;
+    bool parse_error;
 };
 
 static void hstm_print(const struct hstm *self)
@@ -235,7 +228,7 @@ static void parse_history(char const *path)
         if (buf[llen-1] == '\n')
             buf[--llen] = 0;
         ++linenum;
-        struct hstm hst;
+        struct hstm hst = { .st = NULL, .cs = 0, .id = -1, .parse_error = false };
         int r = do_parse_history(&hst, buf, llen);
         if (r < 0) {
             log_line("%s history entry at line %zu; ignoring",
@@ -354,9 +347,9 @@ struct Pckm {
 
     action St { pckm.st = p; }
     action CmdEn {
-        size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
+        size_t l = p > pckm.st ? (size_t)(p - pckm.st) : 0;
         if (l) {
-            char *ts = static_cast<char *>(xmalloc(l + 1));
+            char *ts = xmalloc(l + 1);
             bool prior_bs = false;
             char *d = ts;
             for (char *c = pckm.st; c < p; ++c) {
@@ -378,9 +371,9 @@ struct Pckm {
         }
     }
     action ArgEn {
-        size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
+        size_t l = p > pckm.st ? (size_t)(p - pckm.st) : 0;
         if (l) {
-            char *ts = static_cast<char *>(xmalloc(l + 1));
+            char *ts = xmalloc(l + 1);
             memcpy(ts, pckm.st, l);
             ts[l] = 0;
             self->ce->args_ = ts;
@@ -402,7 +395,7 @@ static void ParseCfgState_parse_command_key(struct ParseCfgState *self)
     const char *pe = self->v_str + self->v_strlen;
     const char *eof = pe;
 
-    Pckm pckm = {};
+    struct Pckm pckm = {0};
 
     if (self->have_command) {
         log_line("Duplicate 'command' value at line %zu", self->linenum);
@@ -441,6 +434,8 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
     }
 }
 
+static void swap_int_pair(int *a, int *b) { int t = *a; *a = *b; *b = t; }
+
 %%{
     machine ncrontab;
     access ncs->;
@@ -464,9 +459,8 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
     action IntVal2St { ncs->intv2_st = p; }
     action IntVal2En { parse_int_value(p, ncs->intv2_st, ncs->linenum, &ncs->v_int2); ncs->intv2_exist = true; }
     action IntValSwap {
-        using std::swap;
-        swap(ncs->v_int1, ncs->v_int3);
-        swap(ncs->v_int2, ncs->v_int4);
+        swap_int_pair(&ncs->v_int1, &ncs->v_int3);
+        swap_int_pair(&ncs->v_int2, &ncs->v_int4);
     }
     action IntVal34Clear {
         ncs->v_int3 = -1;
@@ -475,7 +469,7 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
 
     action StrValSt { ncs->strv_st = p; ncs->v_strlen = 0; }
     action StrValEn {
-        ncs->v_strlen = p > ncs->strv_st ? static_cast<size_t>(p - ncs->strv_st) : 0;
+        ncs->v_strlen = p > ncs->strv_st ? (size_t)(p - ncs->strv_st) : 0;
         if (ncs->v_strlen >= sizeof ncs->v_str) {
             log_line("error parsing line %zu in crontab: too long", ncs->linenum);
             exit(EXIT_FAILURE);
@@ -508,7 +502,7 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
     }
     action MaxRunsEn {
         if (!ncs->ce->runat_)
-            ncs->ce->maxruns_ = ncs->v_int1 > 0 ? static_cast<unsigned>(ncs->v_int1) : 0;
+            ncs->ce->maxruns_ = ncs->v_int1 > 0 ? (unsigned)ncs->v_int1 : 0;
     }
 
     runat = 'runat'i eqsep intval % RunAtEn;
@@ -604,7 +598,7 @@ void parse_config(char const *path, char const *execfile,
         log_line("No jobs found in config file.  Exiting.");
         exit(EXIT_SUCCESS);
     }
-    g_jobs = static_cast<struct Job *>(xmalloc(g_njobs * sizeof(struct Job)));
+    g_jobs = xmalloc(g_njobs * sizeof(struct Job));
     ncs.ce = g_jobs;
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {

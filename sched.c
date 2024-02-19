@@ -10,13 +10,11 @@
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
-extern "C" {
 #include "nk/log.h"
 #include "nk/pspawn.h"
 #include "nk/io.h"
-}
-#include "ncron.hpp"
-#include "sched.hpp"
+#include "ncron.h"
+#include "sched.h"
 
 extern char **environ;
 
@@ -110,11 +108,11 @@ struct day_sieve
 
 static bool day_sieve_day_ok(struct day_sieve *self, int i) { return self->filter[i] == 7; }
 
-static bool day_sieve_build(struct day_sieve *self, Job const *entry, int year)
+static bool day_sieve_build(struct day_sieve *self, struct Job const *entry, int year)
 {
     memset(self->filter, 0, sizeof self->filter);
 
-    struct tm t = {};
+    struct tm t = {0};
     t.tm_mday = 1;
     t.tm_year = year;
     t.tm_isdst = -1;
@@ -141,7 +139,7 @@ static bool day_sieve_build(struct day_sieve *self, Job const *entry, int year)
     int sday = 0; // starting day of year
     for (;;) {
         if (job_in_wday(entry, weekday)) {
-            for (size_t i = static_cast<size_t>(sday); i < sizeof self->filter; i += 7) self->filter[i] |= 4;
+            for (size_t i = (size_t)sday; i < sizeof self->filter; i += 7) self->filter[i] |= 4;
         }
         weekday = weekday % 7 + 1;
         if (weekday == sdow) break;
@@ -250,7 +248,8 @@ static void job_set_next_time(struct Job *self)
 void job_exec(struct Job *self, const struct timespec *ts)
 {
     pid_t pid;
-    if (int ret = nk_pspawn(&pid, self->command_, nullptr, nullptr, self->args_, environ)) {
+    int ret = nk_pspawn(&pid, self->command_, NULL, NULL, self->args_, environ);
+    if (ret) {
         log_line("posix_spawn failed for '%s': %s", self->command_, strerror(ret));
         return;
     }
@@ -261,7 +260,7 @@ void job_exec(struct Job *self, const struct timespec *ts)
 
 void job_insert(struct Job **head, struct Job *elt)
 {
-    elt->next_ = nullptr;
+    elt->next_ = NULL;
     for (;;) {
         if (!*head) {
             *head = elt;

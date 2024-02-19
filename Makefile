@@ -1,21 +1,18 @@
-NCRON_C_SRCS = $(sort xmalloc.c strconv.c nk/io.c nk/pspawn.c)
-NCRON_CXX_SRCS = $(sort ncron.cpp sched.cpp crontab.cpp)
-NCRON_OBJS = $(NCRON_C_SRCS:.c=.o) $(NCRON_CXX_SRCS:.cpp=.o)
-NCRON_DEP = $(NCRON_C_SRCS:.c=.d) $(NCRON_CXX_SRCS:.cpp=.d)
-INCL = -I.
+NCRON_C_SRCS = xmalloc.c strconv.c nk/io.c nk/pspawn.c ncron.c sched.c crontab.c
+NCRON_OBJS = $(NCRON_C_SRCS:.c=.o)
+NCRON_DEP = $(NCRON_C_SRCS:.c=.d)
+INCL = -iquote .
 
-CFLAGS = -MMD -Os -flto -s -std=gnu99 -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wmissing-prototypes -Wcast-qual -Wsign-conversion -Wstrict-overflow=5
-CXXFLAGS = -MMD -Os -flto -s -std=gnu++20 -fno-rtti -fno-exceptions -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wsign-conversion -Wstrict-overflow=5 -Wold-style-cast
+CFLAGS = -MMD -Os -flto -s -std=gnu99 -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wmissing-prototypes -Wunused-const-variable=0 -Wcast-qual -Wsign-conversion -Wstrict-overflow=5
 #CFLAGS = -MMD -Og -g -fsanitize=address -fsanitize=undefined -flto -std=gnu99 -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wmissing-prototypes -Wcast-qual -Wsign-conversion -Wstrict-overflow=5
-#CXXFLAGS = -MMD -Og -g -fsanitize=address -fsanitize=undefined -flto -std=gnu++20 -fno-rtti -fno-exceptions -pedantic -Wall -Wextra -Wimplicit-fallthrough=0 -Wformat=2 -Wformat-nonliteral -Wformat-security -Wshadow -Wpointer-arith -Wsign-conversion -Wstrict-overflow=5 -Wold-style-cast
 CPPFLAGS += $(INCL)
 
 all: ragel ncron
 
 ncron: $(NCRON_OBJS)
-	$(CXX) $(CXXFLAGS) -nodefaultlibs -lgcc -lc -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^
 #ncron: $(NCRON_OBJS)
-#	$(CXX) $(CXXFLAGS) -nodefaultlibs -lasan -lubsan -lgcc -lc -o $@ $^
+#	$(CC) $(CFLAGS) -o $@ $^
 
 -include $(NCRON_DEP)
 
@@ -23,12 +20,11 @@ clean:
 	rm -f $(NCRON_OBJS) $(NCRON_DEP) ncron
 
 cleanragel:
-	rm -f crontab.cpp
+	rm -f crontab.c
 
-crontab.cpp: crontab.rl
-	ragel -F0 -o crontab.cpp crontab.rl
+crontab.c: crontab.rl
+	ragel -F0 -o crontab.c crontab.rl
 
-ragel: crontab.cpp
+ragel: crontab.c
 
 .PHONY: all clean cleanragel
-

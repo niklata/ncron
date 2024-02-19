@@ -20,14 +20,12 @@
 #include <sys/prctl.h>
 #endif
 
-extern "C" {
 #include "nk/log.h"
 #include "nk/io.h"
 #include "xmalloc.h"
 #include "strconv.h"
-}
-#include "ncron.hpp"
-#include "sched.hpp"
+#include "ncron.h"
+#include "sched.h"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
@@ -52,14 +50,14 @@ enum Execmode
     Execmode_journal,
     Execmode_nosave,
 };
-static Execmode g_ncron_execmode = Execmode_normal;
+static enum Execmode g_ncron_execmode = Execmode_normal;
 
 size_t g_njobs;
-Job *g_jobs;
-static Job * stackl;
-static Job * deadstackl;
+struct Job *g_jobs;
+static struct Job * stackl;
+static struct Job * deadstackl;
 
-static bool do_save_stack(FILE *f, Job *j)
+static bool do_save_stack(FILE *f, struct Job *j)
 {
     for (; j; j = j->next_) {
         if (fprintf(f, "%d=%li:%u|%lu\n", j->id_, j->exectime_, j->numruns_, j->lasttime_) < 0) {
@@ -70,7 +68,7 @@ static bool do_save_stack(FILE *f, Job *j)
     return true;
 }
 
-[[nodiscard]] static bool save_stack()
+static bool save_stack(void)
 {
     FILE *f = fopen(g_ncron_execfile_tmp, "w");
     if (!f) {
@@ -132,7 +130,7 @@ static void fix_signals(void)
             suicide("sigdelset failed");
     if (sigaddset(&mask, SIGPIPE))
         suicide("sigaddset failed");
-    if (sigprocmask(SIG_SETMASK, &mask, nullptr) < 0)
+    if (sigprocmask(SIG_SETMASK, &mask, NULL) < 0)
         suicide("sigprocmask failed");
 
     struct sigaction sa;
@@ -161,15 +159,17 @@ static void fail_on_fdne(char const *file, int mode)
 
 static void sleep_or_die(struct timespec *ts)
 {
-retry:
-    int r = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, ts, NULL);
-    if (r) {
-        if (r == EINTR) {
-            if (pending_save_and_exit) save_and_exit();
-            goto retry;
+    for (;;) {
+        int r = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, ts, NULL);
+        if (r) {
+            if (r == EINTR) {
+                if (pending_save_and_exit) save_and_exit();
+                continue;
+            }
+            log_line("clock_nanosleep failed: %s", strerror(r));
+            exit(EXIT_FAILURE);
         }
-        log_line("clock_nanosleep failed: %s", strerror(r));
-        exit(EXIT_FAILURE);
+        break;
     }
 }
 
@@ -181,12 +181,12 @@ void clock_or_die(struct timespec *ts)
     }
 }
 
-static inline void debug_stack_print(const struct timespec &ts) {
+static inline void debug_stack_print(const struct timespec *ts) {
     if (!gflags_debug)
         return;
     if (stackl)
-        log_line("ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, stackl->exectime_);
-    for (Job *j = stackl; j; j = j->next_)
+        log_line("ts.tv_sec = %lu  stack.front().exectime = %lu", ts->tv_sec, stackl->exectime_);
+    for (struct Job *j = stackl; j; j = j->next_)
         log_line("job %d exectime = %lu", j->id_, j->exectime_);
 }
 
@@ -210,7 +210,7 @@ static void do_work(unsigned initial_sleep)
         sleep_or_die(&ts);
 
         while (stackl->exectime_ <= ts.tv_sec) {
-            Job *j = stackl;
+            struct Job *j = stackl;
             if (gflags_debug)
                 log_line("DISPATCH %d (%lu <= %lu)", j->id_, j->exectime_, ts.tv_sec);
 
@@ -220,12 +220,12 @@ static void do_work(unsigned initial_sleep)
 
             if ((j->numruns_ < j->maxruns_ || j->maxruns_ == 0) && j->exectime_ != 0) {
                 if (stackl->next_) {
-                    Job *t = stackl;
+                    struct Job *t = stackl;
                     stackl = stackl->next_;
                     job_insert(&stackl, t);
                 }
             } else {
-                Job *t = stackl;
+                struct Job *t = stackl;
                 stackl = stackl->next_;
                 job_insert(&deadstackl, t);
             }
@@ -233,9 +233,9 @@ static void do_work(unsigned initial_sleep)
                 save_and_exit();
         }
 
-        debug_stack_print(ts);
+        debug_stack_print(&ts);
         {
-            Job *j = stackl;
+            struct Job *j = stackl;
             if (ts.tv_sec <= j->exectime_) {
                 time_t tdelta = j->exectime_ - ts.tv_sec;
                 ts.tv_sec = j->exectime_;
@@ -247,7 +247,7 @@ static void do_work(unsigned initial_sleep)
     }
 }
 
-static void usage()
+static void usage(void)
 {
     printf("ncron " NCRON_VERSION ", cron/at daemon.\n"
            "Copyright 2003-2024 Nicholas J. Kain\n"
@@ -270,7 +270,7 @@ static char *xstrdup(const char *s)
     return r;
 }
 
-static void print_version()
+static void print_version(void)
 {
     log_line("ncron " NCRON_VERSION ", cron/at daemon.\n"
              "Copyright 2003-2024 Nicholas J. Kain\n\n"
@@ -296,19 +296,19 @@ static void print_version()
 static void process_options(int ac, char *av[])
 {
     static struct option long_options[] = {
-        {"help", 0, nullptr, 'h'},
-        {"version", 0, nullptr, 'v'},
-        {"sleep", 1, nullptr, 's'},
-        {"noexecsave", 0, nullptr, '0'},
-        {"journal", 0, nullptr, 'j'},
-        {"crontab", 1, nullptr, 't'},
-        {"history", 1, nullptr, 'H'},
-        {"s6-notify", 1, nullptr, 'd'},
-        {"verbose", 0, nullptr, 'V'},
-        {nullptr, 0, nullptr, 0 }
+        {"help", 0, NULL, 'h'},
+        {"version", 0, NULL, 'v'},
+        {"sleep", 1, NULL, 's'},
+        {"noexecsave", 0, NULL, '0'},
+        {"journal", 0, NULL, 'j'},
+        {"crontab", 1, NULL, 't'},
+        {"history", 1, NULL, 'H'},
+        {"s6-notify", 1, NULL, 'd'},
+        {"verbose", 0, NULL, 'V'},
+        {NULL, 0, NULL, 0 }
     };
     for (;;) {
-        int c = getopt_long(ac, av, "hvbs:0jt:H:d:V", long_options, nullptr);
+        int c = getopt_long(ac, av, "hvbs:0jt:H:d:V", long_options, NULL);
         if (c == -1) break;
         switch (c) {
             case 'h': usage(); exit(EXIT_SUCCESS); break;
@@ -324,7 +324,7 @@ static void process_options(int ac, char *av[])
             case 'H': {
                 size_t l = strlen(optarg);
                 g_ncron_execfile = xstrdup(optarg);
-                char *tmpf = static_cast<char *>(xmalloc(l + 2));
+                char *tmpf = xmalloc(l + 2);
                 memcpy(tmpf, optarg, l);
                 tmpf[l] = '~';
                 tmpf[l+1] = 0;
