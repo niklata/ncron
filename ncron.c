@@ -61,7 +61,7 @@ static bool do_save_stack(FILE *f, struct Job *j)
 {
     for (; j; j = j->next_) {
         if (fprintf(f, "%d=%li:%u|%lu\n", j->id_, j->exectime_, j->numruns_, j->lasttime_) < 0) {
-            log_line("Failed to write to history file %s", g_ncron_execfile_tmp);
+            log_line("Failed to write to history file %s\n", g_ncron_execfile_tmp);
             return false;
         }
     }
@@ -72,7 +72,7 @@ static bool save_stack(void)
 {
     FILE *f = fopen(g_ncron_execfile_tmp, "w");
     if (!f) {
-        log_line("Failed to open history file %s for write", g_ncron_execfile_tmp);
+        log_line("Failed to open history file %s for write\n", g_ncron_execfile_tmp);
         return false;
     }
     if (!do_save_stack(f, stackl)) goto err1;
@@ -80,7 +80,7 @@ static bool save_stack(void)
     fclose(f);
 
     if (rename(g_ncron_execfile_tmp, g_ncron_execfile)) {
-        log_line("Failed to update history file (%s => %s): %s",
+        log_line("Failed to update history file (%s => %s): %s\n",
                  g_ncron_execfile_tmp, g_ncron_execfile, strerror(errno));
         goto err0;
     }
@@ -96,15 +96,15 @@ static void save_and_exit(void)
 {
     if (g_ncron_execmode != Execmode_nosave) {
         if (save_stack()) {
-            log_line("Saved stack to %s.", g_ncron_execfile);
+            log_line("Saved stack to %s.\n", g_ncron_execfile);
         } else {
-            log_line("Failed to save stack to %s; some jobs may run again.",
+            log_line("Failed to save stack to %s; some jobs may run again.\n",
                      g_ncron_execfile);
         }
     }
     // Get rid of leak sanitizer noise.
     for (size_t i = 0; i < g_njobs; ++i) job_destroy(&g_jobs[i]);
-    log_line("Exited.");
+    log_line("Exited.\n");
     exit(EXIT_SUCCESS);
 }
 
@@ -124,34 +124,32 @@ static void fix_signals(void)
     };
     sigset_t mask;
     if (sigprocmask(0, 0, &mask) < 0)
-        suicide("sigprocmask failed");
+        suicide("sigprocmask failed\n");
     for (int i = 0; ss[i] != SIGKILL; ++i)
         if (sigdelset(&mask, ss[i]))
-            suicide("sigdelset failed");
+            suicide("sigdelset failed\n");
     if (sigaddset(&mask, SIGPIPE))
-        suicide("sigaddset failed");
+        suicide("sigaddset failed\n");
     if (sigprocmask(SIG_SETMASK, &mask, NULL) < 0)
-        suicide("sigprocmask failed");
+        suicide("sigprocmask failed\n");
 
     struct sigaction sa = { .sa_handler = signal_handler, .sa_flags = SA_RESTART };
     if (sigemptyset(&sa.sa_mask))
-        suicide("sigemptyset failed");
+        suicide("sigemptyset failed\n");
     for (int i = 0; ss[i] != SIGKILL; ++i)
         if (sigaction(ss[i], &sa, NULL))
-            suicide("sigaction failed");
+            suicide("sigaction failed\n");
     sa.sa_handler = SIG_IGN;
     sa.sa_flags = SA_NOCLDWAIT;
     if (sigaction(SIGCHLD, &sa, NULL))
-        suicide("sigaction failed");
+        suicide("sigaction failed\n");
 }
 
 static void fail_on_fdne(char const *file, int mode)
 {
-    if (access(file, mode)) {
-        log_line("File '%s' does not exist or is not %s",
-                 file, (mode & W_OK) ? "writable" : "readable");
-        exit(EXIT_FAILURE);
-    }
+    if (access(file, mode))
+        suicide("File '%s' does not exist or is not %s\n",
+                file, (mode & W_OK) ? "writable" : "readable");
 }
 
 static void sleep_or_die(struct timespec *ts)
@@ -163,8 +161,7 @@ static void sleep_or_die(struct timespec *ts)
                 if (pending_save_and_exit) save_and_exit();
                 continue;
             }
-            log_line("clock_nanosleep failed: %s", strerror(r));
-            exit(EXIT_FAILURE);
+            suicide("clock_nanosleep failed: %s\n", strerror(r));
         }
         break;
     }
@@ -172,19 +169,17 @@ static void sleep_or_die(struct timespec *ts)
 
 void clock_or_die(struct timespec *ts)
 {
-    if (clock_gettime(CLOCK_REALTIME, ts)) {
-        log_line("clock_gettime failed: %s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    if (clock_gettime(CLOCK_REALTIME, ts))
+        suicide("clock_gettime failed: %s\n", strerror(errno));
 }
 
 static inline void debug_stack_print(const struct timespec *ts) {
     if (!gflags_debug)
         return;
     if (stackl)
-        log_line("ts.tv_sec = %lu  stack.front().exectime = %lu", ts->tv_sec, stackl->exectime_);
+        log_line("ts.tv_sec = %lu  stack.front().exectime = %lu\n", ts->tv_sec, stackl->exectime_);
     for (struct Job *j = stackl; j; j = j->next_)
-        log_line("job %d exectime = %lu", j->id_, j->exectime_);
+        log_line("job %d exectime = %lu\n", j->id_, j->exectime_);
 }
 
 static void do_work(unsigned initial_sleep)
@@ -198,7 +193,7 @@ static void do_work(unsigned initial_sleep)
     for (;;) {
         if (pending_save) {
             if (!save_stack()) {
-                log_line("Failed to save stack to %s for a journalled job.",
+                log_line("Failed to save stack to %s for a journalled job.\n",
                          g_ncron_execfile);
             } else {
                 pending_save = false;
@@ -209,7 +204,7 @@ static void do_work(unsigned initial_sleep)
         while (stackl->exectime_ <= ts.tv_sec) {
             struct Job *j = stackl;
             if (gflags_debug)
-                log_line("DISPATCH %d (%lu <= %lu)", j->id_, j->exectime_, ts.tv_sec);
+                log_line("DISPATCH %d (%lu <= %lu)\n", j->id_, j->exectime_, ts.tv_sec);
 
             job_exec(j, &ts);
             if (j->journal_ || g_ncron_execmode == Execmode_journal)
@@ -238,7 +233,7 @@ static void do_work(unsigned initial_sleep)
                 ts.tv_sec = j->exectime_;
                 ts.tv_nsec = 0;
                 if (gflags_debug)
-                    log_line("SLEEP %zu seconds", tdelta);
+                    log_line("SLEEP %zu seconds\n", tdelta);
             }
         }
     }
@@ -310,10 +305,8 @@ static void process_options(int ac, char *av[])
         switch (c) {
             case 'h': usage(); exit(EXIT_SUCCESS); break;
             case 'v': print_version(); exit(EXIT_SUCCESS); break;
-            case 's': if (!strconv_to_u32(optarg, optarg + strlen(optarg), &g_initial_sleep)) {
-                          log_line("invalid sleep '%s' specified", optarg);
-                          exit(EXIT_FAILURE);
-                      }
+            case 's': if (!strconv_to_u32(optarg, optarg + strlen(optarg), &g_initial_sleep))
+                          suicide("invalid sleep '%s' specified\n", optarg);
                       break;
             case '0': g_ncron_execmode = Execmode_nosave; break;
             case 'j': g_ncron_execmode = Execmode_journal; break;
@@ -342,10 +335,8 @@ int main(int argc, char* argv[])
     fail_on_fdne(g_ncron_execfile, R_OK | W_OK);
     parse_config(g_ncron_conf, g_ncron_execfile, &stackl, &deadstackl);
 
-    if (!stackl) {
-        log_line("No jobs, exiting.");
-        exit(EXIT_FAILURE);
-    }
+    if (!stackl)
+        suicide("No jobs, exiting.\n");
 
     umask(077);
     fix_signals();

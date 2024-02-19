@@ -239,7 +239,7 @@ void job_exec(struct Job *self, const struct timespec *ts)
     pid_t pid;
     int ret = nk_pspawn(&pid, self->command_, NULL, NULL, self->args_, environ);
     if (ret) {
-        log_line("posix_spawn failed for '%s': %s", self->command_, strerror(ret));
+        log_line("posix_spawn failed for '%s': %s\n", self->command_, strerror(ret));
         return;
     }
     ++self->numruns_;

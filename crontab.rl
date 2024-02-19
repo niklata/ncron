@@ -72,8 +72,7 @@ static void ParseCfgState_init(struct ParseCfgState *self, struct Job **stk, str
 static void ParseCfgState_create_ce(struct ParseCfgState *self)
 {
     if (self->ce == g_jobs + g_njobs) {
-        log_line("job count mismatch");
-        exit(EXIT_FAILURE);
+        suicide("job count mismatch\n");
     }
     job_init(self->ce);
     self->seen_job = true;
@@ -88,12 +87,12 @@ static void ParseCfgState_debug_print_ce(const struct ParseCfgState *self)
 {
     if (!gflags_debug) return;
     const struct Job *j = self->ce;
-    log_line("id=%d:\tcommand: %s", j->id_, j->command_ ? j->command_ : "");
-    log_line("\targs: %s", j->args_ ? j->args_ : "");
-    log_line("\tnumruns: %u\n\tmaxruns: %u", j->numruns_, j->maxruns_);
-    log_line("\tjournal: %s", j->journal_ ? "true" : "false");
-    log_line("\trunat: %s", j->runat_ ? "true" : "false");
-    log_line("\tinterval: %u\n\texectime: %lu\n\tlasttime: %lu", j->interval_, j->exectime_, j->lasttime_);
+    log_line("id=%d:\tcommand: %s\n", j->id_, j->command_ ? j->command_ : "");
+    log_line("\targs: %s\n", j->args_ ? j->args_ : "");
+    log_line("\tnumruns: %u\n\tmaxruns: %u\n", j->numruns_, j->maxruns_);
+    log_line("\tjournal: %s\n", j->journal_ ? "true" : "false");
+    log_line("\trunat: %s\n", j->runat_ ? "true" : "false");
+    log_line("\tinterval: %u\n\texectime: %lu\n\tlasttime: %lu\n", j->interval_, j->exectime_, j->lasttime_);
 }
 
 static void ParseCfgState_finish_ce(struct ParseCfgState *self)
@@ -105,15 +104,13 @@ static void ParseCfgState_finish_ce(struct ParseCfgState *self)
     if (self->ce->id_ < 0
         || (self->ce->interval_ <= 0 && self->ce->exectime_ <= 0)
         || !self->ce->command_ || !self->have_command) {
-        log_line("ERROR IN CRONTAB: invalid id, command, or interval for job %d", self->ce->id_);
-        exit(EXIT_FAILURE);
+        suicide("ERROR IN CRONTAB: invalid id, command, or interval for job %d\n", self->ce->id_);
     }
 
     // XXX: O(n^2) might be nice to avoid.
     for (struct Job *i = g_jobs, *iend = self->ce; i != iend; ++i) {
         if (i->id_ == self->ce->id_) {
-            log_line("ERROR IN CRONTAB: duplicate entry for job %d", self->ce->id_);
-            exit(EXIT_FAILURE);
+            suicide("ERROR IN CRONTAB: duplicate entry for job %d\n", self->ce->id_);
         }
     }
 
@@ -132,7 +129,7 @@ struct hstm {
 static void hstm_print(const struct hstm *self)
 {
     if (!gflags_debug) return;
-    log_line("id=%d:\tnumruns = %u\n\texectime = %lu\n\tlasttime = %lu",
+    log_line("id=%d:\tnumruns = %u\n\texectime = %lu\n\tlasttime = %lu\n",
              self->id, self->h.numruns, self->h.exectime, self->h.lasttime);
 }
 
@@ -196,13 +193,13 @@ static void parse_history(char const *path)
     char buf[MAX_LINE];
     FILE *f = fopen(path, "r");
     if (!f) {
-        log_line("Failed to open history file '%s' for read: %s", path, strerror(errno));
+        log_line("Failed to open history file '%s' for read: %s\n", path, strerror(errno));
         return;
     }
     size_t linenum = 0;
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
-            if (!feof(f)) log_line("IO error reading history file '%s'", path);
+            if (!feof(f)) log_line("IO error reading history file '%s'\n", path);
             break;
         }
         size_t llen = strlen(buf);
@@ -214,7 +211,7 @@ static void parse_history(char const *path)
         struct hstm hst = { .st = NULL, .cs = 0, .id = -1, .parse_error = false };
         int r = do_parse_history(&hst, buf, llen);
         if (r < 0) {
-            log_line("%s history entry at line %zu; ignoring",
+            log_line("%s history entry at line %zu; ignoring\n",
                      r == -2 ? "Incomplete" : "Malformed", linenum);
             continue;
         }
@@ -229,8 +226,7 @@ static void parse_history(char const *path)
                     job_set_initial_exectime(j);
                 } else {
                     if (j->interval_ > 0) {
-                        log_line("ERROR IN CRONTAB: interval is unused when runat is set: job %d", j->id_);
-                        exit(EXIT_FAILURE);
+                        suicide("ERROR IN CRONTAB: interval is unused when runat is set: job %d\n", j->id_);
                     }
                 }
             }
@@ -380,41 +376,33 @@ static void ParseCfgState_parse_command_key(struct ParseCfgState *self)
 
     struct Pckm pckm = {0};
 
-    if (self->have_command) {
-        log_line("Duplicate 'command' value at line %zu", self->linenum);
-        exit(EXIT_FAILURE);
-    }
+    if (self->have_command)
+        suicide("Duplicate 'command' value at line %zu\n", self->linenum);
 
     %% write init;
     %% write exec;
 
     if (pckm.cs == parse_cmd_key_m_error) {
-        log_line("Malformed 'command' value at line %zu", self->linenum);
-        exit(EXIT_FAILURE);
+        suicide("Malformed 'command' value at line %zu\n", self->linenum);
     } else if (pckm.cs >= parse_cmd_key_m_first_final) {
         self->have_command = true;
     } else {
-        log_line("Incomplete 'command' value at line %zu", self->linenum);
-        exit(EXIT_FAILURE);
+        suicide("Incomplete 'command' value at line %zu\n", self->linenum);
     }
 }
 
 static void ParseCfgState_parse_time_unit(const struct ParseCfgState *self, const char *p, unsigned unit, unsigned *dest)
 {
     unsigned t;
-    if (!strconv_to_u32(self->time_st, p - 1, &t)) {
-        log_line("Invalid time unit at line %zu", self->linenum);
-        exit(EXIT_FAILURE);
-    }
+    if (!strconv_to_u32(self->time_st, p - 1, &t))
+        suicide("Invalid time unit at line %zu\n", self->linenum);
     *dest += unit * t;
 }
 
 static void parse_int_value(const char *p, const char *start, size_t linenum, int *dest)
 {
-    if (!strconv_to_i32(start, p, dest)) {
-        log_line("Invalid integer value at line %zu", linenum);
-        exit(EXIT_FAILURE);
-    }
+    if (!strconv_to_i32(start, p, dest))
+        suicide("Invalid integer value at line %zu\n", linenum);
 }
 
 static void swap_int_pair(int *a, int *b) { int t = *a; *a = *b; *b = t; }
@@ -453,10 +441,8 @@ static void swap_int_pair(int *a, int *b) { int t = *a; *a = *b; *b = t; }
     action StrValSt { ncs->strv_st = p; ncs->v_strlen = 0; }
     action StrValEn {
         ncs->v_strlen = p > ncs->strv_st ? (size_t)(p - ncs->strv_st) : 0;
-        if (ncs->v_strlen >= sizeof ncs->v_str) {
-            log_line("error parsing line %zu in crontab: too long", ncs->linenum);
-            exit(EXIT_FAILURE);
-        }
+        if (ncs->v_strlen >= sizeof ncs->v_str)
+            suicide("error parsing line %zu in crontab: too long\n", ncs->linenum);
         memcpy(ncs->v_str, ncs->strv_st, ncs->v_strlen);
         ncs->v_str[ncs->v_strlen] = 0;
     }
@@ -553,7 +539,7 @@ static size_t count_config_jobs(FILE *f)
         int c = fgetc(f);
         if (!c) {
             if (!feof(f))
-                log_line("IO error reading config file");
+                log_line("IO error reading config file\n");
             break;
         }
         if ((c >= '0' && c <= '9') && lc == '!' && llc == '\n') ++r;
@@ -572,13 +558,11 @@ void parse_config(char const *path, char const *execfile,
 
     char buf[MAX_LINE];
     FILE *f = fopen(path, "r");
-    if (!f) {
-        log_line("Failed to open config file '%s': %s", path, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    if (!f)
+        suicide("Failed to open config file '%s': %s\n", path, strerror(errno));
     g_njobs = count_config_jobs(f);
     if (!g_njobs) {
-        log_line("No jobs found in config file.  Exiting.");
+        log_line("No jobs found in config file.  Exiting.\n");
         exit(EXIT_SUCCESS);
     }
     g_jobs = xmalloc(g_njobs * sizeof(struct Job));
@@ -586,7 +570,7 @@ void parse_config(char const *path, char const *execfile,
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
             if (!feof(f))
-                log_line("IO error reading config file '%s'", path);
+                log_line("IO error reading config file '%s'\n", path);
             break;
         }
         size_t llen = strlen(buf);
@@ -595,10 +579,8 @@ void parse_config(char const *path, char const *execfile,
         if (buf[llen-1] == '\n')
             buf[--llen] = 0;
         ++ncs.linenum;
-        if (do_parse_config(&ncs, buf, llen) < 0) {
-            log_line("Config file '%s' is malformed at line %zu", path, ncs.linenum);
-            exit(EXIT_FAILURE);
-        }
+        if (do_parse_config(&ncs, buf, llen) < 0)
+            suicide("Config file '%s' is malformed at line %zu\n", path, ncs.linenum);
     }
     ParseCfgState_finish_ce(&ncs);
     parse_history(execfile);
