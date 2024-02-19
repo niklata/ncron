@@ -24,44 +24,54 @@ extern char **environ;
 // it probably won't run in the uptime of the machine.
 #define MAX_YEARS 5
 
-Job::Job()
+void job_init(struct Job *self)
 {
+    self->next_ = NULL;
+    self->command_ = NULL;
+    self->args_ = NULL;
+    self->exectime_ = 0;
+    self->lasttime_ = 0;
+    self->id_ = -1;
+    self->interval_ = 0;
+    self->numruns_ = 0;
+    self->journal_ = false;
+    self->runat_ = false;
     // Allowed by default.
-    memset(&cst_hhmm_, 1, sizeof cst_hhmm_);
-    memset(&cst_mday_, 1, sizeof cst_mday_);
-    memset(&cst_wday_, 1, sizeof cst_wday_);
-    memset(&cst_mon_, 1, sizeof cst_mon_);
+    memset(&self->cst_hhmm_, 1, sizeof self->cst_hhmm_);
+    memset(&self->cst_mday_, 1, sizeof self->cst_mday_);
+    memset(&self->cst_wday_, 1, sizeof self->cst_wday_);
+    memset(&self->cst_mon_, 1, sizeof self->cst_mon_);
 }
 
-Job::~Job()
+void job_destroy(struct Job *self)
 {
-    if (command_) free(command_);
-    if (args_) free(args_);
+    if (self->command_) { free(self->command_); self->command_ = NULL; }
+    if (self->args_) { free(self->args_); self->args_ = NULL; }
 }
 
-bool Job::in_month(int v) const
+static bool job_in_month(const struct Job *self, int v)
 {
     assert(v > 0 && v < 13);
-    return cst_mon_[v - 1];
+    return self->cst_mon_[v - 1];
 }
 
-bool Job::in_mday(int v) const
+static bool job_in_mday(const struct Job *self, int v)
 {
     assert(v > 0 && v < 32);
-    return cst_mday_[v - 1];
+    return self->cst_mday_[v - 1];
 }
 
-bool Job::in_wday(int v) const
+static bool job_in_wday(const struct Job *self, int v)
 {
     assert(v > 0 && v < 8);
-    return cst_wday_[v - 1];
+    return self->cst_wday_[v - 1];
 }
 
-bool Job::in_hhmm(int h, int m) const
+static bool job_in_hhmm(const struct Job *self, int h, int m)
 {
     assert(h >= 0 && h < 24);
     assert(m >= 0 && h < 60);
-    return cst_hhmm_[h * 60 + m];
+    return self->cst_hhmm_[h * 60 + m];
 }
 
 static bool is_leap_year(int year)
@@ -96,58 +106,59 @@ struct day_sieve
     // bit2 = wday
     uint8_t filter[366];
 
-    [[nodiscard]] bool day_ok(int i) const { return filter[i] == 7; }
-
-    [[nodiscard]] bool build(Job const *entry, int year)
-    {
-        memset(filter, 0, sizeof filter);
-
-        struct tm t = {};
-        t.tm_mday = 1;
-        t.tm_year = year;
-        t.tm_isdst = -1;
-        start_ts = mktime(&t);
-        if (start_ts == -1) return false;
-
-        size_t fi = 0;
-        for (size_t month = 1; month <= 12; ++month) {
-            bool include_month = entry->in_month(month);
-            for (int j = 0, jend = days_in_month(month, year); j < jend; ++j, ++fi) {
-                if (include_month) filter[fi] |= 1;
-            }
-        }
-        fi = 0;
-        for (size_t month = 1; month <= 12; ++month) {
-            for (int day = 1, dayend = days_in_month(month, year); day <= dayend; ++day, ++fi) {
-                if (entry->in_mday(day)) {
-                    filter[fi] |= 2;
-                }
-            }
-        }
-        int sdow = t.tm_wday + 1; // starting wday of year
-        int weekday = sdow; // day of the week we're checking
-        int sday = 0; // starting day of year
-        for (;;) {
-            if (entry->in_wday(weekday)) {
-                for (size_t i = static_cast<size_t>(sday); i < sizeof filter; i += 7) filter[i] |= 4;
-            }
-            weekday = weekday % 7 + 1;
-            if (weekday == sdow) break;
-            ++sday;
-            assert(sday < 7);
-        }
-        // At least one day should be allowed, otherwise
-        // the job will never run.
-        for (size_t i = 0; i < sizeof filter; ++i) {
-            if (filter[i] == 7) return true;
-        }
-        return false;
-    }
 };
+
+static bool day_sieve_day_ok(struct day_sieve *self, int i) { return self->filter[i] == 7; }
+
+static bool day_sieve_build(struct day_sieve *self, Job const *entry, int year)
+{
+    memset(self->filter, 0, sizeof self->filter);
+
+    struct tm t = {};
+    t.tm_mday = 1;
+    t.tm_year = year;
+    t.tm_isdst = -1;
+    self->start_ts = mktime(&t);
+    if (self->start_ts == -1) return false;
+
+    size_t fi = 0;
+    for (size_t month = 1; month <= 12; ++month) {
+        bool include_month = job_in_month(entry, month);
+        for (int j = 0, jend = days_in_month(month, year); j < jend; ++j, ++fi) {
+            if (include_month) self->filter[fi] |= 1;
+        }
+    }
+    fi = 0;
+    for (size_t month = 1; month <= 12; ++month) {
+        for (int day = 1, dayend = days_in_month(month, year); day <= dayend; ++day, ++fi) {
+            if (job_in_mday(entry, day)) {
+                self->filter[fi] |= 2;
+            }
+        }
+    }
+    int sdow = t.tm_wday + 1; // starting wday of year
+    int weekday = sdow; // day of the week we're checking
+    int sday = 0; // starting day of year
+    for (;;) {
+        if (job_in_wday(entry, weekday)) {
+            for (size_t i = static_cast<size_t>(sday); i < sizeof self->filter; i += 7) self->filter[i] |= 4;
+        }
+        weekday = weekday % 7 + 1;
+        if (weekday == sdow) break;
+        ++sday;
+        assert(sday < 7);
+    }
+    // At least one day should be allowed, otherwise
+    // the job will never run.
+    for (size_t i = 0; i < sizeof self->filter; ++i) {
+        if (self->filter[i] == 7) return true;
+    }
+    return false;
+}
 
 /* stime is the time we're constraining
  * returns a time value that has been appropriately constrained */
-time_t Job::constrain_time(time_t stime) const
+static time_t job_constrain_time(struct Job *self, time_t stime)
 {
     struct tm *rtime;
     time_t t;
@@ -156,8 +167,8 @@ time_t Job::constrain_time(time_t stime) const
 
     int cyear = rtime->tm_year;
     int syear = cyear;
-    day_sieve ds;
-    if (!ds.build(this, rtime->tm_year)) return 0;
+    struct day_sieve ds;
+    if (!day_sieve_build(&ds, self, rtime->tm_year)) return 0;
 
     for (;;) {
         if (cyear - syear >= MAX_YEARS)
@@ -165,11 +176,11 @@ time_t Job::constrain_time(time_t stime) const
         t = mktime(rtime);
         rtime = localtime(&t);
         if (rtime->tm_year != cyear) {
-            if (!ds.build(this, rtime->tm_year)) return 0;
+            if (!day_sieve_build(&ds, self, rtime->tm_year)) return 0;
             cyear = rtime->tm_year;
         }
 
-        if (!ds.day_ok(rtime->tm_yday)) {
+        if (!day_sieve_day_ok(&ds, rtime->tm_yday)) {
             // Day isn't allowed.  Advance to the start of
             // the next allowed day.
             rtime->tm_min = 0;
@@ -177,7 +188,7 @@ time_t Job::constrain_time(time_t stime) const
             rtime->tm_mday++;
             int ndays = is_leap_year(rtime->tm_year) ? 365 : 364;
             for (int i = rtime->tm_yday + 1; i < ndays; ++i) {
-                if (ds.day_ok(i))
+                if (day_sieve_day_ok(&ds, i))
                     goto day_ok;
                 rtime->tm_mday++;
             }
@@ -189,7 +200,7 @@ time_t Job::constrain_time(time_t stime) const
         }
     day_ok:
         for (;;) {
-            if (in_hhmm(rtime->tm_hour, rtime->tm_min))
+            if (job_in_hhmm(self, rtime->tm_hour, rtime->tm_min))
                 return mktime(rtime);
             ++rtime->tm_min;
             if (rtime->tm_min == 60) {
@@ -214,41 +225,41 @@ time_t Job::constrain_time(time_t stime) const
 }
 
 /* Used when jobs without exectimes are first loaded. */
-void Job::set_initial_exectime()
+void job_set_initial_exectime(struct Job *self)
 {
     struct timespec ts;
     clock_or_die(&ts);
-    time_t ttm = constrain_time(ts.tv_sec);
-    time_t ttd = ttm - lasttime_;
-    if (ttd < interval_) {
-        ttm += interval_ - ttd;
-        ttm = constrain_time(ttm);
+    time_t ttm = job_constrain_time(self, ts.tv_sec);
+    time_t ttd = ttm - self->lasttime_;
+    if (ttd < self->interval_) {
+        ttm += self->interval_ - ttd;
+        ttm = job_constrain_time(self, ttm);
     }
-    exectime_ = ttm;
+    self->exectime_ = ttm;
 }
 
-/* stupidly advances to next time of execution; performs constraint.  */
-void Job::set_next_time()
+// Advances to next time of execution; performs constraint
+static void job_set_next_time(struct Job *self)
 {
     struct timespec ts;
     clock_or_die(&ts);
-    time_t etime = constrain_time(ts.tv_sec + interval_);
-    exectime_ = etime > ts.tv_sec ? etime : 0;
+    time_t etime = job_constrain_time(self, ts.tv_sec + self->interval_);
+    self->exectime_ = etime > ts.tv_sec ? etime : 0;
 }
 
-void Job::exec(const struct timespec &ts)
+void job_exec(struct Job *self, const struct timespec *ts)
 {
     pid_t pid;
-    if (int ret = nk_pspawn(&pid, command_, nullptr, nullptr, args_, environ)) {
-        log_line("posix_spawn failed for '%s': %s", command_, strerror(ret));
+    if (int ret = nk_pspawn(&pid, self->command_, nullptr, nullptr, self->args_, environ)) {
+        log_line("posix_spawn failed for '%s': %s", self->command_, strerror(ret));
         return;
     }
-    ++numruns_;
-    lasttime_ = ts.tv_sec;
-    set_next_time();
+    ++self->numruns_;
+    self->lasttime_ = ts->tv_sec;
+    job_set_next_time(self);
 }
 
-void job_insert(Job **head, Job *elt)
+void job_insert(struct Job **head, struct Job *elt)
 {
     elt->next_ = nullptr;
     for (;;) {

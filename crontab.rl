@@ -79,7 +79,7 @@ struct ParseCfgState
             log_line("job count mismatch");
             exit(EXIT_FAILURE);
         }
-        new(ce) Job;
+        job_init(ce);
         seen_job = true;
         have_command = false;
         seen_cst_hhmm = false;
@@ -230,7 +230,7 @@ static void parse_history(char const *path)
                 j->lasttime_ = hst.h.lasttime;
                 if (!j->runat_) {
                     j->exectime_ = hst.h.exectime;
-                    j->set_initial_exectime();
+                    job_set_initial_exectime(j);
                 } else {
                     if (j->interval_ > 0) {
                         log_line("ERROR IN CRONTAB: interval is unused when runat is set: job %d", j->id_);

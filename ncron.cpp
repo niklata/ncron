@@ -46,13 +46,13 @@ static unsigned g_initial_sleep = 0;
 static char const *g_ncron_conf = CONFIG_FILE_DEFAULT;
 static char const *g_ncron_execfile = EXEC_FILE_DEFAULT;
 static char const *g_ncron_execfile_tmp = EXEC_FILE_DEFAULT "~";
-enum class Execmode
+enum Execmode
 {
-    normal = 0,
-    journal,
-    nosave,
+    Execmode_normal = 0,
+    Execmode_journal,
+    Execmode_nosave,
 };
-static Execmode g_ncron_execmode = Execmode::normal;
+static Execmode g_ncron_execmode = Execmode_normal;
 
 size_t g_njobs;
 Job *g_jobs;
@@ -96,7 +96,7 @@ err0:
 
 static void save_and_exit(void)
 {
-    if (g_ncron_execmode != Execmode::nosave) {
+    if (g_ncron_execmode != Execmode_nosave) {
         if (save_stack()) {
             log_line("Saved stack to %s.", g_ncron_execfile);
         } else {
@@ -105,7 +105,7 @@ static void save_and_exit(void)
         }
     }
     // Get rid of leak sanitizer noise.
-    for (size_t i = 0; i < g_njobs; ++i) g_jobs[i].~Job();
+    for (size_t i = 0; i < g_njobs; ++i) job_destroy(&g_jobs[i]);
     log_line("Exited.");
     exit(EXIT_SUCCESS);
 }
@@ -214,8 +214,8 @@ static void do_work(unsigned initial_sleep)
             if (gflags_debug)
                 log_line("DISPATCH %d (%lu <= %lu)", j->id_, j->exectime_, ts.tv_sec);
 
-            j->exec(ts);
-            if (j->journal_ || g_ncron_execmode == Execmode::journal)
+            job_exec(j, &ts);
+            if (j->journal_ || g_ncron_execmode == Execmode_journal)
                 pending_save = true;
 
             if ((j->numruns_ < j->maxruns_ || j->maxruns_ == 0) && j->exectime_ != 0) {
@@ -318,8 +318,8 @@ static void process_options(int ac, char *av[])
                           exit(EXIT_FAILURE);
                       }
                       break;
-            case '0': g_ncron_execmode = Execmode::nosave; break;
-            case 'j': g_ncron_execmode = Execmode::journal; break;
+            case '0': g_ncron_execmode = Execmode_nosave; break;
+            case 'j': g_ncron_execmode = Execmode_journal; break;
             case 't': g_ncron_conf = xstrdup(optarg); break;
             case 'H': {
                 size_t l = strlen(optarg);
