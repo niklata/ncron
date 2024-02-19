@@ -114,7 +114,7 @@ struct ParseCfgState
 		}
 		
 		// XXX: O(n^2) might be nice to avoid.
-		for (auto i = g_jobs, iend = ce; i != iend; ++i) {
+		for (Job *i = g_jobs, *iend = ce; i != iend; ++i) {
 			if (i->id_ == ce->id_) {
 				log_line("ERROR IN CRONTAB: duplicate entry for job %d", ce->id_);
 				exit(EXIT_FAILURE);
@@ -369,7 +369,7 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
 static void parse_history(char const *path)
 {
 	char buf[MAX_LINE];
-	auto f = fopen(path, "r");
+	FILE *f = fopen(path, "r");
 	if (!f) {
 		log_line("Failed to open history file '%s' for read: %s", path, strerror(errno));
 		return;
@@ -380,21 +380,21 @@ static void parse_history(char const *path)
 			if (!feof(f)) log_line("IO error reading history file '%s'", path);
 				break;
 		}
-		auto llen = strlen(buf);
+		size_t llen = strlen(buf);
 		if (llen == 0)
 			continue;
 		if (buf[llen-1] == '\n')
 			buf[--llen] = 0;
 		++linenum;
 		hstm hst;
-		const auto r = do_parse_history(hst, buf, llen);
+		int r = do_parse_history(hst, buf, llen);
 		if (r < 0) {
 			log_line("%s history entry at line %zu; ignoring",
 			r == -2 ? "Incomplete" : "Malformed", linenum);
 			continue;
 		}
 		
-		for (auto j = g_jobs, jend = g_jobs + g_njobs; j != jend; ++j) {
+		for (Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
 			if (j->id_ == hst.id) {
 				hst.print();
 				j->numruns_ = hst.h.numruns;
@@ -656,10 +656,10 @@ static void parse_command_key(ParseCfgState &ncs)
 							
 							size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
 							if (l) {
-								auto ts = static_cast<char *>(xmalloc(l + 1));
+								char *ts = static_cast<char *>(xmalloc(l + 1));
 								bool prior_bs = false;
-								auto d = ts;
-								for (auto c = pckm.st; c < p; ++c) {
+								char *d = ts;
+								for (char *c = pckm.st; c < p; ++c) {
 									if (!prior_bs) {
 										switch (*c) {
 											case 0: abort(); // should never happen by construction
@@ -688,7 +688,7 @@ static void parse_command_key(ParseCfgState &ncs)
 							
 							size_t l = p > pckm.st ? static_cast<size_t>(p - pckm.st) : 0;
 							if (l) {
-								auto ts = static_cast<char *>(xmalloc(l + 1));
+								char *ts = static_cast<char *>(xmalloc(l + 1));
 								memcpy(ts, pckm.st, l);
 								ts[l] = 0;
 								ncs.ce->args_ = ts;
@@ -1370,7 +1370,7 @@ Job **stk, Job **deadstk)
 	ParseCfgState ncs(stk, deadstk);
 	
 	char buf[MAX_LINE];
-	auto f = fopen(path, "r");
+	FILE *f = fopen(path, "r");
 	if (!f) {
 		log_line("Failed to open config file '%s': %s", path, strerror(errno));
 		exit(EXIT_FAILURE);
@@ -1388,7 +1388,7 @@ Job **stk, Job **deadstk)
 				log_line("IO error reading config file '%s'", path);
 			break;
 		}
-		auto llen = strlen(buf);
+		size_t llen = strlen(buf);
 		if (llen == 0)
 			continue;
 		if (buf[llen-1] == '\n')
@@ -1402,7 +1402,7 @@ Job **stk, Job **deadstk)
 	ncs.finish_ce();
 	parse_history(execfile);
 	
-	for (auto j = g_jobs, jend = g_jobs + g_njobs; j != jend; ++j) {
+	for (Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
 		bool alive = !j->runat_?
 		((j->maxruns_ == 0 || j->numruns_ < j->maxruns_) && j->exectime_ != 0)
 		: (j->numruns_ == 0);

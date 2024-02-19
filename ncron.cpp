@@ -59,24 +59,26 @@ Job *g_jobs;
 static Job * stackl;
 static Job * deadstackl;
 
+static bool do_save_stack(FILE *f, Job *j)
+{
+    for (; j; j = j->next_) {
+        if (fprintf(f, "%d=%li:%u|%lu\n", j->id_, j->exectime_, j->numruns_, j->lasttime_) < 0) {
+            log_line("Failed to write to history file %s", g_ncron_execfile_tmp);
+            return false;
+        }
+    }
+    return true;
+}
+
 [[nodiscard]] static bool save_stack()
 {
-    auto f = fopen(g_ncron_execfile_tmp, "w");
+    FILE *f = fopen(g_ncron_execfile_tmp, "w");
     if (!f) {
         log_line("Failed to open history file %s for write", g_ncron_execfile_tmp);
         return false;
     }
-    auto do_save = [&f](Job *j) -> bool {
-        for (; j; j = j->next_) {
-            if (fprintf(f, "%d=%li:%u|%lu\n", j->id_, j->exectime_, j->numruns_, j->lasttime_) < 0) {
-                log_line("Failed to write to history file %s", g_ncron_execfile_tmp);
-                return false;
-            }
-        }
-        return true;
-    };
-    if (!do_save(stackl)) goto err1;
-    if (!do_save(deadstackl)) goto err1;
+    if (!do_save_stack(f, stackl)) goto err1;
+    if (!do_save_stack(f, deadstackl)) goto err1;
     fclose(f);
 
     if (rename(g_ncron_execfile_tmp, g_ncron_execfile)) {
@@ -160,7 +162,7 @@ static void fail_on_fdne(char const *file, int mode)
 static void sleep_or_die(struct timespec *ts)
 {
 retry:
-    auto r = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, ts, NULL);
+    int r = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, ts, NULL);
     if (r) {
         if (r == EINTR) {
             if (pending_save_and_exit) save_and_exit();
@@ -184,7 +186,7 @@ static inline void debug_stack_print(const struct timespec &ts) {
         return;
     if (stackl)
         log_line("ts.tv_sec = %lu  stack.front().exectime = %lu", ts.tv_sec, stackl->exectime_);
-    for (auto j = stackl; j; j = j->next_)
+    for (Job *j = stackl; j; j = j->next_)
         log_line("job %d exectime = %lu", j->id_, j->exectime_);
 }
 
@@ -208,7 +210,7 @@ static void do_work(unsigned initial_sleep)
         sleep_or_die(&ts);
 
         while (stackl->exectime_ <= ts.tv_sec) {
-            auto j = stackl;
+            Job *j = stackl;
             if (gflags_debug)
                 log_line("DISPATCH %d (%lu <= %lu)", j->id_, j->exectime_, ts.tv_sec);
 
@@ -218,12 +220,12 @@ static void do_work(unsigned initial_sleep)
 
             if ((j->numruns_ < j->maxruns_ || j->maxruns_ == 0) && j->exectime_ != 0) {
                 if (stackl->next_) {
-                    auto t = stackl;
+                    Job *t = stackl;
                     stackl = stackl->next_;
                     job_insert(&stackl, t);
                 }
             } else {
-                auto t = stackl;
+                Job *t = stackl;
                 stackl = stackl->next_;
                 job_insert(&deadstackl, t);
             }
@@ -233,9 +235,9 @@ static void do_work(unsigned initial_sleep)
 
         debug_stack_print(ts);
         {
-            const auto j = stackl;
+            Job *j = stackl;
             if (ts.tv_sec <= j->exectime_) {
-                auto tdelta = j->exectime_ - ts.tv_sec;
+                time_t tdelta = j->exectime_ - ts.tv_sec;
                 ts.tv_sec = j->exectime_;
                 ts.tv_nsec = 0;
                 if (gflags_debug)
@@ -263,7 +265,7 @@ static void usage()
 
 static char *xstrdup(const char *s)
 {
-    auto r = strdup(s);
+    char *r = strdup(s);
     if (!r) exit(EXIT_FAILURE);
     return r;
 }
@@ -306,7 +308,7 @@ static void process_options(int ac, char *av[])
         {nullptr, 0, nullptr, 0 }
     };
     for (;;) {
-        auto c = getopt_long(ac, av, "hvbs:0jt:H:d:V", long_options, nullptr);
+        int c = getopt_long(ac, av, "hvbs:0jt:H:d:V", long_options, nullptr);
         if (c == -1) break;
         switch (c) {
             case 'h': usage(); exit(EXIT_SUCCESS); break;
@@ -320,9 +322,9 @@ static void process_options(int ac, char *av[])
             case 'j': g_ncron_execmode = Execmode::journal; break;
             case 't': g_ncron_conf = xstrdup(optarg); break;
             case 'H': {
-                auto l = strlen(optarg);
+                size_t l = strlen(optarg);
                 g_ncron_execfile = xstrdup(optarg);
-                auto tmpf = static_cast<char *>(xmalloc(l + 2));
+                char *tmpf = static_cast<char *>(xmalloc(l + 2));
                 memcpy(tmpf, optarg, l);
                 tmpf[l] = '~';
                 tmpf[l+1] = 0;

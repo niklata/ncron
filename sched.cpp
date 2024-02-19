@@ -124,9 +124,9 @@ struct day_sieve
                 }
             }
         }
-        auto sdow = t.tm_wday + 1; // starting wday of year
-        auto weekday = sdow; // day of the week we're checking
-        auto sday = 0; // starting day of year
+        int sdow = t.tm_wday + 1; // starting wday of year
+        int weekday = sdow; // day of the week we're checking
+        int sday = 0; // starting day of year
         for (;;) {
             if (entry->in_wday(weekday)) {
                 for (size_t i = static_cast<size_t>(sday); i < sizeof filter; i += 7) filter[i] |= 4;
@@ -175,7 +175,7 @@ time_t Job::constrain_time(time_t stime) const
             rtime->tm_min = 0;
             rtime->tm_hour = 0;
             rtime->tm_mday++;
-            auto ndays = is_leap_year(rtime->tm_year) ? 365 : 364;
+            int ndays = is_leap_year(rtime->tm_year) ? 365 : 364;
             for (int i = rtime->tm_yday + 1; i < ndays; ++i) {
                 if (ds.day_ok(i))
                     goto day_ok;
@@ -232,7 +232,7 @@ void Job::set_next_time()
 {
     struct timespec ts;
     clock_or_die(&ts);
-    auto etime = constrain_time(ts.tv_sec + interval_);
+    time_t etime = constrain_time(ts.tv_sec + interval_);
     exectime_ = etime > ts.tv_sec ? etime : 0;
 }
 
