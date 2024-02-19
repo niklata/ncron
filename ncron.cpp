@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -19,11 +20,11 @@
 #include <sys/prctl.h>
 #endif
 
-#include <nk/from_string.hpp>
 extern "C" {
 #include "nk/log.h"
 #include "nk/io.h"
 #include "xmalloc.h"
+#include "strconv.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -310,7 +311,7 @@ static void process_options(int ac, char *av[])
         switch (c) {
             case 'h': usage(); exit(EXIT_SUCCESS); break;
             case 'v': print_version(); exit(EXIT_SUCCESS); break;
-            case 's': if (!nk::from_string<unsigned>(optarg, &g_initial_sleep)) {
+            case 's': if (!strconv_to_u32(optarg, optarg + strlen(optarg), &g_initial_sleep)) {
                           log_line("invalid sleep '%s' specified", optarg);
                           exit(EXIT_FAILURE);
                       }

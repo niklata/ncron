@@ -6,10 +6,11 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <nk/from_string.hpp>
+#include <memory>
 extern "C" {
 #include "nk/log.h"
 #include "xmalloc.h"
+#include "strconv.h"
 }
 #include "ncron.hpp"
 #include "sched.hpp"
@@ -139,33 +140,31 @@ struct hstm {
     }
 };
 
-#define MARKED_HST() hst.st, (p > hst.st ? static_cast<size_t>(p - hst.st) : 0)
-
 %%{
     machine history_m;
     access hst.;
 
     action St { hst.st = p; }
     action LastTimeEn {
-        if (!nk::from_string<time_t>(MARKED_HST(), &hst.h.lasttime)) {
+        if (!strconv_to_i64(hst.st, p, &hst.h.lasttime)) {
             hst.parse_error = true;
             fbreak;
         }
     }
     action NumRunsEn {
-        if (!nk::from_string<unsigned>(MARKED_HST(), &hst.h.numruns)) {
+        if (!strconv_to_u32(hst.st, p, &hst.h.numruns)) {
             hst.parse_error = true;
             fbreak;
         }
     }
     action ExecTimeEn {
-        if (!nk::from_string<time_t>(MARKED_HST(), &hst.h.exectime)) {
+        if (!strconv_to_i64(hst.st, p, &hst.h.exectime)) {
             hst.parse_error = true;
             fbreak;
         }
     }
     action IdEn {
-        if (!nk::from_string<int>(MARKED_HST(), &hst.id)) {
+        if (!strconv_to_i32(hst.st, p, &hst.id)) {
             hst.parse_error = true;
             fbreak;
         }
@@ -408,8 +407,7 @@ static void parse_command_key(ParseCfgState &ncs)
 static void parse_time_unit(const ParseCfgState &ncs, const char *p, unsigned unit, unsigned *dest)
 {
     unsigned t;
-    auto offs = p > (ncs.time_st + 1) ? static_cast<size_t>(p - ncs.time_st - 1) : 0;
-    if (!nk::from_string<unsigned>(ncs.time_st, offs, &t)) {
+    if (!strconv_to_u32(ncs.time_st, p - 1, &t)) {
         log_line("Invalid time unit at line %zu", ncs.linenum);
         exit(EXIT_FAILURE);
     }
@@ -418,7 +416,7 @@ static void parse_time_unit(const ParseCfgState &ncs, const char *p, unsigned un
 
 static void parse_int_value(const char *p, const char *start, size_t linenum, int *dest)
 {
-    if (!nk::from_string<int>(start, p > start ? static_cast<size_t>(p - start) : 0, dest)) {
+    if (!strconv_to_i32(start, p, dest)) {
         log_line("Invalid integer value at line %zu", linenum);
         exit(EXIT_FAILURE);
     }

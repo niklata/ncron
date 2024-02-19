@@ -1,4 +1,4 @@
-NCRON_C_SRCS = $(sort xmalloc.c nk/io.c nk/pspawn.c)
+NCRON_C_SRCS = $(sort xmalloc.c strconv.c nk/io.c nk/pspawn.c)
 NCRON_CXX_SRCS = $(sort ncron.cpp sched.cpp crontab.cpp)
 NCRON_OBJS = $(NCRON_C_SRCS:.c=.o) $(NCRON_CXX_SRCS:.cpp=.o)
 NCRON_DEP = $(NCRON_C_SRCS:.c=.d) $(NCRON_CXX_SRCS:.cpp=.d)
