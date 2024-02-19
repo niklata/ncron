@@ -24,16 +24,7 @@ extern char **environ;
 
 void job_init(struct Job *self)
 {
-    self->next_ = NULL;
-    self->command_ = NULL;
-    self->args_ = NULL;
-    self->exectime_ = 0;
-    self->lasttime_ = 0;
-    self->id_ = -1;
-    self->interval_ = 0;
-    self->numruns_ = 0;
-    self->journal_ = false;
-    self->runat_ = false;
+    *self = (struct Job){ .id_ = -1 };
     // Allowed by default.
     memset(&self->cst_hhmm_, 1, sizeof self->cst_hhmm_);
     memset(&self->cst_mday_, 1, sizeof self->cst_mday_);
@@ -110,13 +101,11 @@ static bool day_sieve_day_ok(struct day_sieve *self, int i) { return self->filte
 
 static bool day_sieve_build(struct day_sieve *self, struct Job const *entry, int year)
 {
-    memset(self->filter, 0, sizeof self->filter);
-
     struct tm t = {0};
     t.tm_mday = 1;
     t.tm_year = year;
     t.tm_isdst = -1;
-    self->start_ts = mktime(&t);
+    *self = (struct day_sieve){ .start_ts = mktime(&t) };
     if (self->start_ts == -1) return false;
 
     size_t fi = 0;

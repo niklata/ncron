@@ -61,29 +61,12 @@ struct ParseCfgState
 
 static void ParseCfgState_init(struct ParseCfgState *self, struct Job **stk, struct Job **dstk)
 {
-    self->stackl = stk;
-    self->deadstackl = dstk;
-    self->ce = NULL;
-    self->jobid_st = NULL;
-    self->time_st = NULL;
-    self->intv_st = NULL;
-    self->strv_st = NULL;
-    self->v_strlen = 0;
-    self->linenum = 0;
-    self->v_time = 0;
-    self->v_int1 = 0;
-    self->v_int2 = 0;
-    self->v_int3 = -1;
-    self->v_int4 = -1;
-    self->cs = 0;
-    self->have_command = false;
-    self->intv2_exist = false;
-    self->seen_cst_hhmm = false;
-    self->seen_cst_wday = false;
-    self->seen_cst_mday = false;
-    self->seen_cst_mon = false;
-    self->seen_job = false;
-    memset(self->v_str, 0, sizeof self->v_str);
+    *self = (struct ParseCfgState){
+        .stackl = stk,
+        .deadstackl = dstk,
+        .v_int3 = -1,
+        .v_int4 = -1,
+    };
 }
 
 static void ParseCfgState_create_ce(struct ParseCfgState *self)
