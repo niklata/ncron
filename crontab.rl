@@ -23,7 +23,7 @@ extern "C" {
 
 extern int gflags_debug;
 extern size_t g_njobs;
-extern Job *g_jobs;
+extern struct Job *g_jobs;
 
 struct item_history {
     time_t exectime = 0;
@@ -33,139 +33,159 @@ struct item_history {
 
 struct ParseCfgState
 {
-    ParseCfgState(Job **stk, Job **dstk)
-    : stackl(stk), deadstackl(dstk)
-    {
-        memset(v_str, 0, sizeof v_str);
-    }
     char v_str[MAX_LINE];
 
-    Job **stackl = nullptr;
-    Job **deadstackl = nullptr;
+    struct Job **stackl;
+    struct Job **deadstackl;
 
-    Job *ce = nullptr;
+    struct Job *ce;
 
-    const char *jobid_st = nullptr;
-    const char *time_st = nullptr;
-    const char *intv_st = nullptr;
-    const char *intv2_st = nullptr;
-    const char *strv_st = nullptr;
+    const char *jobid_st;
+    const char *time_st;
+    const char *intv_st;
+    const char *intv2_st;
+    const char *strv_st;
 
-    size_t v_strlen = 0;
-    size_t linenum = 0;
+    size_t v_strlen;
+    size_t linenum;
 
     unsigned int v_time;
 
-    int v_int1 = 0;
-    int v_int2 = 0;
-    int v_int3 = -1;
-    int v_int4 = -1;
+    int v_int1;
+    int v_int2;
+    int v_int3;
+    int v_int4;
 
-    int cs = 0;
-    bool have_command = false;
-
-    bool intv2_exist = false;
-
-    bool seen_cst_hhmm = false;
-    bool seen_cst_wday = false;
-    bool seen_cst_mday = false;
-    bool seen_cst_mon = false;
-
-    bool seen_job = false;
-
-    void create_ce()
-    {
-        if (ce == g_jobs + g_njobs) {
-            log_line("job count mismatch");
-            exit(EXIT_FAILURE);
-        }
-        job_init(ce);
-        seen_job = true;
-        have_command = false;
-        seen_cst_hhmm = false;
-        seen_cst_wday = false;
-        seen_cst_mday = false;
-        seen_cst_mon = false;
-    }
-
-    inline void debug_print_ce() const
-    {
-        if (!gflags_debug) return;
-        log_line("id=%d:\tcommand: %s", ce->id_, ce->command_ ? ce->command_ : "");
-        log_line("\targs: %s", ce->args_ ? ce->args_ : "");
-        log_line("\tnumruns: %u\n\tmaxruns: %u", ce->numruns_, ce->maxruns_);
-        log_line("\tjournal: %s", ce->journal_ ? "true" : "false");
-        log_line("\trunat: %s", ce->runat_ ? "true" : "false");
-        log_line("\tinterval: %u\n\texectime: %lu\n\tlasttime: %lu", ce->interval_, ce->exectime_, ce->lasttime_);
-    }
-
-    void finish_ce()
-    {
-        if (!seen_job) return;
-
-        debug_print_ce();
-
-        if (ce->id_ < 0
-            || (ce->interval_ <= 0 && ce->exectime_ <= 0)
-            || !ce->command_ || !have_command) {
-            log_line("ERROR IN CRONTAB: invalid id, command, or interval for job %d", ce->id_);
-            exit(EXIT_FAILURE);
-        }
-
-        // XXX: O(n^2) might be nice to avoid.
-        for (Job *i = g_jobs, *iend = ce; i != iend; ++i) {
-            if (i->id_ == ce->id_) {
-                log_line("ERROR IN CRONTAB: duplicate entry for job %d", ce->id_);
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        // Preserve this job and work on the next one.
-        ++ce;
-    }
+    int cs;
+    bool have_command;
+    bool intv2_exist;
+    bool seen_cst_hhmm;
+    bool seen_cst_wday;
+    bool seen_cst_mday;
+    bool seen_cst_mon;
+    bool seen_job;
 };
+
+static void ParseCfgState_init(struct ParseCfgState *self, struct Job **stk, struct Job **dstk)
+{
+    self->stackl = stk;
+    self->deadstackl = dstk;
+    self->ce = nullptr;
+    self->jobid_st = nullptr;
+    self->time_st = nullptr;
+    self->intv_st = nullptr;
+    self->strv_st = nullptr;
+    self->v_strlen = 0;
+    self->linenum = 0;
+    self->v_time = 0;
+    self->v_int1 = 0;
+    self->v_int2 = 0;
+    self->v_int3 = -1;
+    self->v_int4 = -1;
+    self->cs = 0;
+    self->have_command = false;
+    self->intv2_exist = false;
+    self->seen_cst_hhmm = false;
+    self->seen_cst_wday = false;
+    self->seen_cst_mday = false;
+    self->seen_cst_mon = false;
+    self->seen_job = false;
+    memset(self->v_str, 0, sizeof self->v_str);
+}
+
+static void ParseCfgState_create_ce(struct ParseCfgState *self)
+{
+    if (self->ce == g_jobs + g_njobs) {
+        log_line("job count mismatch");
+        exit(EXIT_FAILURE);
+    }
+    job_init(self->ce);
+    self->seen_job = true;
+    self->have_command = false;
+    self->seen_cst_hhmm = false;
+    self->seen_cst_wday = false;
+    self->seen_cst_mday = false;
+    self->seen_cst_mon = false;
+}
+
+static void ParseCfgState_debug_print_ce(const struct ParseCfgState *self)
+{
+    if (!gflags_debug) return;
+    const struct Job *j = self->ce;
+    log_line("id=%d:\tcommand: %s", j->id_, j->command_ ? j->command_ : "");
+    log_line("\targs: %s", j->args_ ? j->args_ : "");
+    log_line("\tnumruns: %u\n\tmaxruns: %u", j->numruns_, j->maxruns_);
+    log_line("\tjournal: %s", j->journal_ ? "true" : "false");
+    log_line("\trunat: %s", j->runat_ ? "true" : "false");
+    log_line("\tinterval: %u\n\texectime: %lu\n\tlasttime: %lu", j->interval_, j->exectime_, j->lasttime_);
+}
+
+static void ParseCfgState_finish_ce(struct ParseCfgState *self)
+{
+    if (!self->seen_job) return;
+
+    ParseCfgState_debug_print_ce(self);
+
+    if (self->ce->id_ < 0
+        || (self->ce->interval_ <= 0 && self->ce->exectime_ <= 0)
+        || !self->ce->command_ || !self->have_command) {
+        log_line("ERROR IN CRONTAB: invalid id, command, or interval for job %d", self->ce->id_);
+        exit(EXIT_FAILURE);
+    }
+
+    // XXX: O(n^2) might be nice to avoid.
+    for (struct Job *i = g_jobs, *iend = self->ce; i != iend; ++i) {
+        if (i->id_ == self->ce->id_) {
+            log_line("ERROR IN CRONTAB: duplicate entry for job %d", self->ce->id_);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Preserve this job and work on the next one.
+    ++self->ce;
+}
 
 struct hstm {
     const char *st = nullptr;
     int cs = 0;
     int id = -1;
-    item_history h;
+    struct item_history h;
     bool parse_error = false;
-
-    void print() const
-    {
-        if (!gflags_debug) return;
-        log_line("id=%d:\tnumruns = %u\n\texectime = %lu\n\tlasttime = %lu",
-                 id, h.numruns, h.exectime, h.lasttime);
-    }
 };
+
+static void hstm_print(const struct hstm *self)
+{
+    if (!gflags_debug) return;
+    log_line("id=%d:\tnumruns = %u\n\texectime = %lu\n\tlasttime = %lu",
+             self->id, self->h.numruns, self->h.exectime, self->h.lasttime);
+}
 
 %%{
     machine history_m;
-    access hst.;
+    access hst->;
 
-    action St { hst.st = p; }
+    action St { hst->st = p; }
     action LastTimeEn {
-        if (!strconv_to_i64(hst.st, p, &hst.h.lasttime)) {
-            hst.parse_error = true;
+        if (!strconv_to_i64(hst->st, p, &hst->h.lasttime)) {
+            hst->parse_error = true;
             fbreak;
         }
     }
     action NumRunsEn {
-        if (!strconv_to_u32(hst.st, p, &hst.h.numruns)) {
-            hst.parse_error = true;
+        if (!strconv_to_u32(hst->st, p, &hst->h.numruns)) {
+            hst->parse_error = true;
             fbreak;
         }
     }
     action ExecTimeEn {
-        if (!strconv_to_i64(hst.st, p, &hst.h.exectime)) {
-            hst.parse_error = true;
+        if (!strconv_to_i64(hst->st, p, &hst->h.exectime)) {
+            hst->parse_error = true;
             fbreak;
         }
     }
     action IdEn {
-        if (!strconv_to_i32(hst.st, p, &hst.id)) {
-            hst.parse_error = true;
+        if (!strconv_to_i32(hst->st, p, &hst->id)) {
+            hst->parse_error = true;
             fbreak;
         }
     }
@@ -179,7 +199,7 @@ struct hstm {
 
 %% write data;
 
-static int do_parse_history(hstm &hst, const char *p, size_t plen)
+static int do_parse_history(struct hstm *hst, const char *p, size_t plen)
 {
     const char *pe = p + plen;
     const char *eof = pe;
@@ -187,10 +207,10 @@ static int do_parse_history(hstm &hst, const char *p, size_t plen)
     %% write init;
     %% write exec;
 
-    if (hst.parse_error) return -1;
-    if (hst.cs >= history_m_first_final)
+    if (hst->parse_error) return -1;
+    if (hst->cs >= history_m_first_final)
         return 1;
-    if (hst.cs == history_m_error)
+    if (hst->cs == history_m_error)
         return -1;
     return -2;
 }
@@ -215,17 +235,17 @@ static void parse_history(char const *path)
         if (buf[llen-1] == '\n')
             buf[--llen] = 0;
         ++linenum;
-        hstm hst;
-        int r = do_parse_history(hst, buf, llen);
+        struct hstm hst;
+        int r = do_parse_history(&hst, buf, llen);
         if (r < 0) {
             log_line("%s history entry at line %zu; ignoring",
                      r == -2 ? "Incomplete" : "Malformed", linenum);
             continue;
         }
 
-        for (Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
+        for (struct Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
             if (j->id_ == hst.id) {
-                hst.print();
+                hstm_print(&hst);
                 j->numruns_ = hst.h.numruns;
                 j->lasttime_ = hst.h.lasttime;
                 if (!j->runat_) {
@@ -243,90 +263,89 @@ static void parse_history(char const *path)
     fclose(f);
 }
 
-static bool add_cst_mon(ParseCfgState &ncs)
+static bool ParseCfgState_add_cst_mon(struct ParseCfgState *self)
 {
-    int min = ncs.v_int1;
-    int max = ncs.intv2_exist ? ncs.v_int2 : -1;
+    int min = self->v_int1;
+    int max = self->intv2_exist ? self->v_int2 : -1;
     if (max < 0) max = min;
     assert(min > 0 && min <= 12);
     assert(max > 0 && max <= 12);
     if (max < min) return false;
     if (min <= 0 || min > 12) return false;
     if (max <= 0 || max > 12) return false;
-    if (!ncs.seen_cst_mon) {
-        memset(&ncs.ce->cst_mon_, 0, sizeof ncs.ce->cst_mon_);
-        ncs.seen_cst_mon = true;
+    if (!self->seen_cst_mon) {
+        memset(&self->ce->cst_mon_, 0, sizeof self->ce->cst_mon_);
+        self->seen_cst_mon = true;
     }
     for (int i = min; i <= max; ++i)
-        ncs.ce->cst_mon_[i - 1] = true;
+        self->ce->cst_mon_[i - 1] = true;
     return true;
 }
 
-static bool add_cst_mday(ParseCfgState &ncs)
+static bool ParseCfgState_add_cst_mday(struct ParseCfgState *self)
 {
-    int min = ncs.v_int1;
-    int max = ncs.intv2_exist ? ncs.v_int2 : -1;
+    int min = self->v_int1;
+    int max = self->intv2_exist ? self->v_int2 : -1;
     if (max < 0) max = min;
     assert(min > 0 && min <= 31);
     assert(max > 0 && max <= 31);
     if (max < min) return false;
     if (min <= 0 || min > 31) return false;
     if (max <= 0 || max > 31) return false;
-    if (!ncs.seen_cst_mday) {
-        memset(&ncs.ce->cst_mday_, 0, sizeof ncs.ce->cst_mday_);
-        ncs.seen_cst_mday = true;
+    if (!self->seen_cst_mday) {
+        memset(&self->ce->cst_mday_, 0, sizeof self->ce->cst_mday_);
+        self->seen_cst_mday = true;
     }
     for (int i = min; i <= max; ++i)
-        ncs.ce->cst_mday_[i - 1] = true;
+        self->ce->cst_mday_[i - 1] = true;
     return true;
 }
 
-static bool add_cst_wday(ParseCfgState &ncs)
+static bool ParseCfgState_add_cst_wday(struct ParseCfgState *self)
 {
-    int min = ncs.v_int1;
-    int max = ncs.intv2_exist ? ncs.v_int2 : -1;
+    int min = self->v_int1;
+    int max = self->intv2_exist ? self->v_int2 : -1;
     if (max < 0) max = min;
     assert(min > 0 && min <= 7);
     assert(max > 0 && max <= 7);
     if (max < min) return false;
     if (min <= 0 || min > 7) return false;
     if (max <= 0 || max > 7) return false;
-    if (!ncs.seen_cst_wday) {
-        memset(&ncs.ce->cst_wday_, 0, sizeof ncs.ce->cst_wday_);
-        ncs.seen_cst_wday = true;
+    if (!self->seen_cst_wday) {
+        memset(&self->ce->cst_wday_, 0, sizeof self->ce->cst_wday_);
+        self->seen_cst_wday = true;
     }
     for (int i = min; i <= max; ++i)
-        ncs.ce->cst_wday_[i - 1] = true;
+        self->ce->cst_wday_[i - 1] = true;
     return true;
 }
 
-static bool add_cst_time(ParseCfgState &ncs)
+static bool ParseCfgState_add_cst_time(struct ParseCfgState *self)
 {
-    bool single_value = ncs.v_int3 == -1 && ncs.v_int4 == -1;
+    bool single_value = self->v_int3 == -1 && self->v_int4 == -1;
     // Enforce that range is low-high.
     if (!single_value) {
-        if (ncs.v_int3 < ncs.v_int1) return false;
-        if (ncs.v_int3 == ncs.v_int1) {
-            if (ncs.v_int4 < ncs.v_int2) return false;
+        if (self->v_int3 < self->v_int1) return false;
+        if (self->v_int3 == self->v_int1) {
+            if (self->v_int4 < self->v_int2) return false;
         }
     }
-    if (!ncs.seen_cst_hhmm) {
-        memset(&ncs.ce->cst_hhmm_, 0, sizeof ncs.ce->cst_hhmm_);
-        ncs.seen_cst_hhmm = true;
+    if (!self->seen_cst_hhmm) {
+        memset(&self->ce->cst_hhmm_, 0, sizeof self->ce->cst_hhmm_);
+        self->seen_cst_hhmm = true;
     }
-    int min = ncs.v_int1 * 60 + ncs.v_int2;
-    int max = ncs.v_int3 * 60 + ncs.v_int4;
+    int min = self->v_int1 * 60 + self->v_int2;
+    int max = self->v_int3 * 60 + self->v_int4;
     assert(min >= 0 && min < 1440);
     assert(max >= 0 && max < 1440);
     for (int i = min; i <= max; ++i)
-        ncs.ce->cst_hhmm_[i] = true;
+        self->ce->cst_hhmm_[i] = true;
     return true;
 }
 
 struct Pckm {
-    Pckm() {}
-    char *st = nullptr;
-    int cs = 0;
+    char *st;
+    int cs;
 };
 
 %%{
@@ -355,7 +374,7 @@ struct Pckm {
             }
             if (prior_bs) *d++ = '\\';
             *d++ = 0;
-            ncs.ce->command_ = ts;
+            self->ce->command_ = ts;
         }
     }
     action ArgEn {
@@ -364,7 +383,7 @@ struct Pckm {
             char *ts = static_cast<char *>(xmalloc(l + 1));
             memcpy(ts, pckm.st, l);
             ts[l] = 0;
-            ncs.ce->args_ = ts;
+            self->ce->args_ = ts;
         }
     }
 
@@ -377,16 +396,16 @@ struct Pckm {
 
 %% write data;
 
-static void parse_command_key(ParseCfgState &ncs)
+static void ParseCfgState_parse_command_key(struct ParseCfgState *self)
 {
-    char *p = ncs.v_str;
-    const char *pe = ncs.v_str + ncs.v_strlen;
+    char *p = self->v_str;
+    const char *pe = self->v_str + self->v_strlen;
     const char *eof = pe;
 
-    Pckm pckm;
+    Pckm pckm = {};
 
-    if (ncs.have_command) {
-        log_line("Duplicate 'command' value at line %zu", ncs.linenum);
+    if (self->have_command) {
+        log_line("Duplicate 'command' value at line %zu", self->linenum);
         exit(EXIT_FAILURE);
     }
 
@@ -394,21 +413,21 @@ static void parse_command_key(ParseCfgState &ncs)
     %% write exec;
 
     if (pckm.cs == parse_cmd_key_m_error) {
-        log_line("Malformed 'command' value at line %zu", ncs.linenum);
+        log_line("Malformed 'command' value at line %zu", self->linenum);
         exit(EXIT_FAILURE);
     } else if (pckm.cs >= parse_cmd_key_m_first_final) {
-        ncs.have_command = true;
+        self->have_command = true;
     } else {
-        log_line("Incomplete 'command' value at line %zu", ncs.linenum);
+        log_line("Incomplete 'command' value at line %zu", self->linenum);
         exit(EXIT_FAILURE);
     }
 }
 
-static void parse_time_unit(const ParseCfgState &ncs, const char *p, unsigned unit, unsigned *dest)
+static void ParseCfgState_parse_time_unit(const struct ParseCfgState *self, const char *p, unsigned unit, unsigned *dest)
 {
     unsigned t;
-    if (!strconv_to_u32(ncs.time_st, p - 1, &t)) {
-        log_line("Invalid time unit at line %zu", ncs.linenum);
+    if (!strconv_to_u32(self->time_st, p - 1, &t)) {
+        log_line("Invalid time unit at line %zu", self->linenum);
         exit(EXIT_FAILURE);
     }
     *dest += unit * t;
@@ -424,45 +443,45 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
 
 %%{
     machine ncrontab;
-    access ncs.;
+    access ncs->;
 
     spc = [ \t];
     eqsep = spc* '=' spc*;
 
-    action TUnitSt { ncs.time_st = p; ncs.v_time = 0; }
-    action TSecEn  { parse_time_unit(ncs, p, 1, &ncs.v_time); }
-    action TMinEn  { parse_time_unit(ncs, p, 60, &ncs.v_time); }
-    action THrEn   { parse_time_unit(ncs, p, 3600, &ncs.v_time); }
-    action TDayEn  { parse_time_unit(ncs, p, 86400, &ncs.v_time); }
-    action TWeekEn { parse_time_unit(ncs, p, 604800, &ncs.v_time); }
+    action TUnitSt { ncs->time_st = p; ncs->v_time = 0; }
+    action TSecEn  { ParseCfgState_parse_time_unit(ncs, p, 1, &ncs->v_time); }
+    action TMinEn  { ParseCfgState_parse_time_unit(ncs, p, 60, &ncs->v_time); }
+    action THrEn   { ParseCfgState_parse_time_unit(ncs, p, 3600, &ncs->v_time); }
+    action TDayEn  { ParseCfgState_parse_time_unit(ncs, p, 86400, &ncs->v_time); }
+    action TWeekEn { ParseCfgState_parse_time_unit(ncs, p, 604800, &ncs->v_time); }
 
     action IntValSt {
-        ncs.intv_st = p;
-        ncs.v_int1 = ncs.v_int2 = 0;
-        ncs.intv2_exist = false;
+        ncs->intv_st = p;
+        ncs->v_int1 = ncs->v_int2 = 0;
+        ncs->intv2_exist = false;
     }
-    action IntValEn { parse_int_value(p, ncs.intv_st, ncs.linenum, &ncs.v_int1); }
-    action IntVal2St { ncs.intv2_st = p; }
-    action IntVal2En { parse_int_value(p, ncs.intv2_st, ncs.linenum, &ncs.v_int2); ncs.intv2_exist = true; }
+    action IntValEn { parse_int_value(p, ncs->intv_st, ncs->linenum, &ncs->v_int1); }
+    action IntVal2St { ncs->intv2_st = p; }
+    action IntVal2En { parse_int_value(p, ncs->intv2_st, ncs->linenum, &ncs->v_int2); ncs->intv2_exist = true; }
     action IntValSwap {
         using std::swap;
-        swap(ncs.v_int1, ncs.v_int3);
-        swap(ncs.v_int2, ncs.v_int4);
+        swap(ncs->v_int1, ncs->v_int3);
+        swap(ncs->v_int2, ncs->v_int4);
     }
     action IntVal34Clear {
-        ncs.v_int3 = -1;
-        ncs.v_int4 = -1;
+        ncs->v_int3 = -1;
+        ncs->v_int4 = -1;
     }
 
-    action StrValSt { ncs.strv_st = p; ncs.v_strlen = 0; }
+    action StrValSt { ncs->strv_st = p; ncs->v_strlen = 0; }
     action StrValEn {
-        ncs.v_strlen = p > ncs.strv_st ? static_cast<size_t>(p - ncs.strv_st) : 0;
-        if (ncs.v_strlen >= sizeof ncs.v_str) {
-            log_line("error parsing line %zu in crontab: too long", ncs.linenum);
+        ncs->v_strlen = p > ncs->strv_st ? static_cast<size_t>(p - ncs->strv_st) : 0;
+        if (ncs->v_strlen >= sizeof ncs->v_str) {
+            log_line("error parsing line %zu in crontab: too long", ncs->linenum);
             exit(EXIT_FAILURE);
         }
-        memcpy(ncs.v_str, ncs.strv_st, ncs.v_strlen);
-        ncs.v_str[ncs.v_strlen] = 0;
+        memcpy(ncs->v_str, ncs->strv_st, ncs->v_strlen);
+        ncs->v_str[ncs->v_strlen] = 0;
     }
 
     t_sec  = (digit+ > TUnitSt) 's' % TSecEn;
@@ -478,24 +497,24 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
                   ('-' (digit+ > IntVal2St % IntVal2En))?;
     stringval = ([^\0\n]+ > StrValSt % StrValEn);
 
-    action JournalEn { ncs.ce->journal_ = true; }
+    action JournalEn { ncs->ce->journal_ = true; }
     journal = 'journal'i % JournalEn;
 
     action RunAtEn {
-        ncs.ce->runat_ = true;
-        ncs.ce->exectime_ = ncs.v_int1;
-        ncs.ce->maxruns_ = 1;
-        ncs.ce->journal_ = true;
+        ncs->ce->runat_ = true;
+        ncs->ce->exectime_ = ncs->v_int1;
+        ncs->ce->maxruns_ = 1;
+        ncs->ce->journal_ = true;
     }
     action MaxRunsEn {
-        if (!ncs.ce->runat_)
-            ncs.ce->maxruns_ = ncs.v_int1 > 0 ? static_cast<unsigned>(ncs.v_int1) : 0;
+        if (!ncs->ce->runat_)
+            ncs->ce->maxruns_ = ncs->v_int1 > 0 ? static_cast<unsigned>(ncs->v_int1) : 0;
     }
 
     runat = 'runat'i eqsep intval % RunAtEn;
     maxruns = 'maxruns'i eqsep intval % MaxRunsEn;
 
-    action IntervalEn { ncs.ce->interval_ = ncs.v_time; }
+    action IntervalEn { ncs->ce->interval_ = ncs->v_time; }
 
     interval = 'interval'i eqsep timeval % IntervalEn;
 
@@ -504,26 +523,26 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
     hhmm = xhour > IntValSt % IntValEn ':' xminute > IntVal2St % IntVal2En;
     hhmm_range = hhmm > IntVal34Clear (spc* '-' spc* hhmm)? > IntValSwap % IntValSwap;
 
-    action MonthEn { add_cst_mon(ncs); }
-    action DayEn { add_cst_mday(ncs); }
-    action WeekdayEn { add_cst_wday(ncs); }
-    action TimeEn { add_cst_time(ncs); }
+    action MonthEn { ParseCfgState_add_cst_mon(ncs); }
+    action DayEn { ParseCfgState_add_cst_mday(ncs); }
+    action WeekdayEn { ParseCfgState_add_cst_wday(ncs); }
+    action TimeEn { ParseCfgState_add_cst_time(ncs); }
 
     month = 'month'i eqsep intrangeval % MonthEn;
     day = 'day'i eqsep intrangeval % DayEn;
     weekday = 'weekday'i eqsep intrangeval % WeekdayEn;
     time = 'time'i eqsep hhmm_range % TimeEn;
 
-    action CommandEn { parse_command_key(ncs); }
+    action CommandEn { ParseCfgState_parse_command_key(ncs); }
 
     command = 'command'i eqsep stringval % CommandEn;
 
     cmds = command | time | weekday | day |
            month | interval | maxruns | runat | journal;
 
-    action JobIdSt { ncs.jobid_st = p; }
-    action JobIdEn { parse_int_value(p, ncs.jobid_st, ncs.linenum, &ncs.ce->id_); }
-    action CreateCe { ncs.finish_ce(); ncs.create_ce(); }
+    action JobIdSt { ncs->jobid_st = p; }
+    action JobIdEn { parse_int_value(p, ncs->jobid_st, ncs->linenum, &ncs->ce->id_); }
+    action CreateCe { ParseCfgState_finish_ce(ncs); ParseCfgState_create_ce(ncs); }
 
     jobid = ('!' > CreateCe) (digit+ > JobIdSt) % JobIdEn;
     comment = (';'|'#') any*;
@@ -533,7 +552,7 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
 
 %% write data;
 
-static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
+static int do_parse_config(struct ParseCfgState *ncs, const char *p, size_t plen)
 {
     const char *pe = p + plen;
     const char *eof = pe;
@@ -541,15 +560,15 @@ static int do_parse_config(ParseCfgState &ncs, const char *p, size_t plen)
     %% write init;
     %% write exec;
 
-    if (ncs.cs == ncrontab_error)
+    if (ncs->cs == ncrontab_error)
         return -1;
-    if (ncs.cs >= ncrontab_first_final)
+    if (ncs->cs >= ncrontab_first_final)
         return 1;
     return 0;
 }
 
 // Seeks back to start of file when done.
-size_t count_config_jobs(FILE *f)
+static size_t count_config_jobs(FILE *f)
 {
     size_t r = 0;
     int lc = '\n', llc = 0;
@@ -569,9 +588,10 @@ size_t count_config_jobs(FILE *f)
 }
 
 void parse_config(char const *path, char const *execfile,
-                  Job **stk, Job **deadstk)
+                  struct Job **stk, struct Job **deadstk)
 {
-    ParseCfgState ncs(stk, deadstk);
+    struct ParseCfgState ncs;
+    ParseCfgState_init(&ncs, stk, deadstk);
 
     char buf[MAX_LINE];
     FILE *f = fopen(path, "r");
@@ -584,7 +604,7 @@ void parse_config(char const *path, char const *execfile,
         log_line("No jobs found in config file.  Exiting.");
         exit(EXIT_SUCCESS);
     }
-    g_jobs = static_cast<Job *>(xmalloc(g_njobs * sizeof(Job)));
+    g_jobs = static_cast<struct Job *>(xmalloc(g_njobs * sizeof(struct Job)));
     ncs.ce = g_jobs;
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {
@@ -598,15 +618,15 @@ void parse_config(char const *path, char const *execfile,
         if (buf[llen-1] == '\n')
             buf[--llen] = 0;
         ++ncs.linenum;
-        if (do_parse_config(ncs, buf, llen) < 0) {
+        if (do_parse_config(&ncs, buf, llen) < 0) {
             log_line("Config file '%s' is malformed at line %zu", path, ncs.linenum);
             exit(EXIT_FAILURE);
         }
     }
-    ncs.finish_ce();
+    ParseCfgState_finish_ce(&ncs);
     parse_history(execfile);
 
-    for (Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
+    for (struct Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
         bool alive = !j->runat_?
                      ((j->maxruns_ == 0 || j->numruns_ < j->maxruns_) && j->exectime_ != 0)
                    : (j->numruns_ == 0);
