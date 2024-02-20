@@ -140,6 +140,14 @@ static bool day_sieve_build(struct day_sieve *self, struct Job const *entry, int
     return false;
 }
 
+#define ADVANCE_YEAR_OR_STOP() \
+    rtime->tm_mday = 1;\
+    rtime->tm_mon = 0;\
+    rtime->tm_year++;\
+    if (cyear - syear >= MAX_YEARS)\
+        return 0;\
+    continue
+
 /* stime is the time we're constraining
  * returns a time value that has been appropriately constrained */
 static time_t job_constrain_time(struct Job *self, time_t stime)
@@ -149,19 +157,19 @@ static time_t job_constrain_time(struct Job *self, time_t stime)
 
     rtime = localtime(&stime);
 
-    int cyear = rtime->tm_year;
-    int syear = cyear;
+    int syear = rtime->tm_year;
+    int cyear = syear - 1; // force sieve to be built
     struct day_sieve ds;
-    if (!day_sieve_build(&ds, self, rtime->tm_year)) return 0;
 
     for (;;) {
-        if (cyear - syear >= MAX_YEARS)
-            return 0;
         t = mktime(rtime);
         rtime = localtime(&t);
         if (rtime->tm_year != cyear) {
-            if (!day_sieve_build(&ds, self, rtime->tm_year)) return 0;
             cyear = rtime->tm_year;
+            if (!day_sieve_build(&ds, self, rtime->tm_year)) {
+                // Year has no permitted days, try the next.
+                ADVANCE_YEAR_OR_STOP();
+            }
         }
 
         if (!day_sieve_day_ok(&ds, rtime->tm_yday)) {
@@ -177,10 +185,7 @@ static time_t job_constrain_time(struct Job *self, time_t stime)
                 rtime->tm_mday++;
             }
             // If we get here, then we've exhausted the year.
-            rtime->tm_mday = 1;
-            rtime->tm_mon = 0;
-            rtime->tm_year++;
-            continue;
+            ADVANCE_YEAR_OR_STOP();
         }
     day_ok:
         for (;;) {
