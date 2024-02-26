@@ -6,7 +6,7 @@
 bool strconv_to_u32(const char *str, const char *strend, uint32_t *val)
 {
   char *endptr;
-  unsigned long r = strtoul(str, (char **)&endptr, 10);
+  unsigned long r = strtoul(str, &endptr, 10);
   if (r == ULONG_MAX && errno == ERANGE)
     return false;
   if (*str != '\0' && *endptr == *strend) {
