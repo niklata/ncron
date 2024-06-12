@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <errno.h>
 #include <assert.h>
 #include "nk/log.h"
@@ -233,6 +234,12 @@ static void parse_history(char const *path)
         }
     }
     fclose(f);
+    for (struct Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
+        // Periodic jobs that never ran in the past should run ASAP.
+        if (!j->runat_ && !j->exectime_) {
+           j->exectime_ = time(NULL);
+        }
+    }
 }
 
 static bool ParseCfgState_add_cst_mon(struct ParseCfgState *self)
