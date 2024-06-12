@@ -74,8 +74,10 @@ command=/bin/echo Hello world!
 interval=5m
 ```
 
-The exectimes file will be created by ncron; it stores the history of
-previously run jobs (denoted by the `!NUMBER` markers in the crontab).
+The exectimes file must be readable and writable by ncron; create
+it with touch and set proper ownership and permissions on it.  exectimes
+stores the history of previously run jobs (denoted by the `!NUMBER`
+markers in the crontab).
 
 Read the man pages for more info!  But what I've written here should be
 enough to get you started.
