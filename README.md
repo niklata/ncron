@@ -41,13 +41,12 @@ Compile and install ncron.
 * Install the `ncron` executable in a normal place:
 ```
 $ su
-# cp ncron /usr/local/bin
-# chown root.root /usr/local/bin/ncron
-# chmod 755 /usr/local/bin/ncron
+# install -o root -g root -m 755 ncron /usr/local/bin/ncron
 
-# mkdir -m 755 -p /usr/local/share/man/man[15]
-# cp ncron.1 /usr/local/share/man/man1
-# cp crontab.5 /usr/local/share/man/man5
+# mkdir -m 755 -p /usr/local/share/man/man1
+# mkdir -m 755 -p /usr/local/share/man/man5
+# install -m 644 ncron.1 /usr/local/share/man/man1/
+# install -m 644 crontab.5 /usr/local/share/man/man5/
 # exit
 ```
 
