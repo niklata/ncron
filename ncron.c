@@ -120,7 +120,7 @@ static void signal_handler(int sig)
 static void fix_signals(void)
 {
     static const int ss[] = {
-        SIGHUP, SIGINT, SIGTERM, SIGKILL
+        SIGHUP, SIGINT, SIGTERM, SIGPIPE, SIGKILL
     };
     sigset_t mask;
     if (sigprocmask(0, 0, &mask) < 0)
@@ -128,8 +128,6 @@ static void fix_signals(void)
     for (int i = 0; ss[i] != SIGKILL; ++i)
         if (sigdelset(&mask, ss[i]))
             suicide("sigdelset failed\n");
-    if (sigaddset(&mask, SIGPIPE))
-        suicide("sigaddset failed\n");
     if (sigprocmask(SIG_SETMASK, &mask, NULL) < 0)
         suicide("sigprocmask failed\n");
 
