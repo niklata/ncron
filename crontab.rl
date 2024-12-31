@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <assert.h>
 #include "nk/log.h"
-#include "xmalloc.h"
 #include "strconv.h"
 #include "ncron.h"
 #include "sched.h"
@@ -335,7 +334,8 @@ struct Pckm {
     action CmdEn {
         size_t l = p > pckm.st ? (size_t)(p - pckm.st) : 0;
         if (l) {
-            char *ts = xmalloc(l + 1);
+            char *ts = malloc(l + 1);
+            if (!ts) abort();
             bool prior_bs = false;
             char *d = ts;
             for (char *c = pckm.st; c < p; ++c) {
@@ -359,7 +359,8 @@ struct Pckm {
     action ArgEn {
         size_t l = p > pckm.st ? (size_t)(p - pckm.st) : 0;
         if (l) {
-            char *ts = xmalloc(l + 1);
+            char *ts = malloc(l + 1);
+            if (!ts) abort();
             memcpy(ts, pckm.st, l);
             ts[l] = 0;
             self->ce->args_ = ts;
@@ -572,7 +573,8 @@ void parse_config(char const *path, char const *execfile,
         log_line("No jobs found in config file.  Exiting.\n");
         exit(EXIT_SUCCESS);
     }
-    g_jobs = xmalloc(g_njobs * sizeof(struct Job));
+    g_jobs = malloc(g_njobs * sizeof(struct Job));
+    if (!g_jobs) abort();
     ncs.ce = g_jobs;
     while (!feof(f)) {
         if (!fgets(buf, sizeof buf, f)) {

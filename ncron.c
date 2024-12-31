@@ -22,7 +22,6 @@
 
 #include "nk/log.h"
 #include "nk/io.h"
-#include "xmalloc.h"
 #include "strconv.h"
 #include "ncron.h"
 #include "sched.h"
@@ -253,13 +252,6 @@ static void usage(void)
     );
 }
 
-static char *xstrdup(const char *s)
-{
-    char *r = strdup(s);
-    if (!r) exit(EXIT_FAILURE);
-    return r;
-}
-
 static void print_version(void)
 {
     log_line("ncron " NCRON_VERSION ", cron/at daemon.\n"
@@ -308,11 +300,13 @@ static void process_options(int ac, char *av[])
                       break;
             case '0': g_ncron_execmode = Execmode_nosave; break;
             case 'j': g_ncron_execmode = Execmode_journal; break;
-            case 't': g_ncron_conf = xstrdup(optarg); break;
+            case 't': g_ncron_conf = strdup(optarg); if (!g_ncron_conf) abort(); break;
             case 'H': {
                 size_t l = strlen(optarg);
-                g_ncron_execfile = xstrdup(optarg);
-                char *tmpf = xmalloc(l + 2);
+                g_ncron_execfile = strdup(optarg);
+                if (!g_ncron_execfile) abort();
+                char *tmpf = malloc(l + 2);
+                if (!tmpf) abort();
                 memcpy(tmpf, optarg, l);
                 tmpf[l] = '~';
                 tmpf[l+1] = 0;

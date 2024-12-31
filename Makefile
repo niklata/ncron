@@ -1,4 +1,4 @@
-NCRON_C_SRCS = xmalloc.c strconv.c nk/io.c nk/pspawn.c ncron.c sched.c crontab.c
+NCRON_C_SRCS = strconv.c nk/io.c nk/pspawn.c ncron.c sched.c crontab.c
 NCRON_OBJS = $(NCRON_C_SRCS:.c=.o)
 NCRON_DEP = $(NCRON_C_SRCS:.c=.d)
 INCL = -iquote .
