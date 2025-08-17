@@ -1,4 +1,5 @@
-// Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
+// -*- c -*-
+// Copyright 2003-2025 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #include <stdio.h>
 #include <unistd.h>
@@ -197,11 +198,7 @@ static void parse_history(char const *path)
         return;
     }
     size_t linenum = 0;
-    while (!feof(f)) {
-        if (!fgets(buf, sizeof buf, f)) {
-            if (!feof(f)) log_line("IO error reading history file '%s'\n", path);
-            break;
-        }
+    while (fgets(buf, sizeof buf, f)) {
         size_t llen = strlen(buf);
         if (llen == 0)
             continue;
@@ -231,6 +228,10 @@ static void parse_history(char const *path)
                 }
             }
         }
+    }
+    if (ferror(f)) {
+       log_line("IO error reading history file '%s'\n", path);
+       exit(1);
     }
     fclose(f);
     for (struct Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
@@ -543,11 +544,13 @@ static size_t count_config_jobs(FILE *f)
 {
     size_t r = 0;
     int lc = '\n', llc = 0;
-    while (!feof(f)) {
-        int c = fgetc(f);
-        if (!c) {
-            if (!feof(f))
+    int c;
+    while ((c = fgetc(f))) {
+        if (c == EOF) {
+            if (ferror(f)) {
                 log_line("IO error reading config file\n");
+                exit(1);
+            }
             break;
         }
         if ((c >= '0' && c <= '9') && lc == '!' && llc == '\n') ++r;
@@ -576,12 +579,7 @@ void parse_config(char const *path, char const *execfile,
     g_jobs = malloc(g_njobs * sizeof(struct Job));
     if (!g_jobs) abort();
     ncs.ce = g_jobs;
-    while (!feof(f)) {
-        if (!fgets(buf, sizeof buf, f)) {
-            if (!feof(f))
-                log_line("IO error reading config file '%s'\n", path);
-            break;
-        }
+    while (fgets(buf, sizeof buf, f)) {
         size_t llen = strlen(buf);
         if (llen == 0)
             continue;
@@ -590,6 +588,10 @@ void parse_config(char const *path, char const *execfile,
         ++ncs.linenum;
         if (do_parse_config(&ncs, buf, llen) < 0)
             suicide("Config file '%s' is malformed at line %zu\n", path, ncs.linenum);
+    }
+    if (ferror(f)) {
+        log_line("IO error reading config file '%s'\n", path);
+        exit(1);
     }
     ParseCfgState_finish_ce(&ncs);
     parse_history(execfile);
