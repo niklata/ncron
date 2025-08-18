@@ -1,0 +1,16 @@
+#!/sbin/openrc-run
+# Copyright 2025 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+name="ncron daemon"
+description="ncron cron daemon"
+command=/usr/local/bin/ncron
+supervisor="supervise-daemon"
+pidfile="/run/ncron.pid"
+command_args="${ncron_args}"
+
+depend() {
+	need clock
+	use logger
+	provide cron
+}

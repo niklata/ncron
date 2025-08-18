@@ -3,4 +3,7 @@ nk/*.o
 *.d
 nk/*.d
 ncron
+!init/**
+TODO
+test_history
 

@@ -1,21 +1,29 @@
 # ncron
-Copyright 2003-2024 Nicholas J. Kain.
+Copyright 2003-2025 Nicholas J. Kain.
 See LICENSE for licensing information.
 
 ## Introduction
 
-ncron is a constraint-solving cron daemon that supports persistence of
-job execution times and also subsumes most of the abilities of atd.
+ncron runs programs at user specified times.  It works somewhat
+differently than traditional cron, which wakes up at regular intervals
+to see if it should run jobs at that current moment.
 
-The advantage over conventional crons is that it can execute tasks
-at arbitrary (limited by system API and QoI) time precision and also
-makes it easy to restrict job execution times to certain arbitrary time
-constraints and intervals.
+ncron instead has a run interval specified for every job that tells it
+the minimum time to wait between invocations of a given program.  Then
+constraints can be specified for jobs that restrict when a program can
+be run.  For example, a job might be restricted to only run between
+1AM and 5AM.
 
-It also does not force the system to periodically wake and poll for
-pending jobs; ncron calculates the next time it will need to act and
-has the OS wake it after that time has passed.  This method is better
-for power efficiency.
+The most recent time that a program has been run is persistently
+stored to disk, so system downtimes cause minimal disruptions to run
+schedules.  ncron also has the ability to simply run a given job one
+time and never again.
+
+A nice advantage of this scheme is that ncron can precalculate when
+the next job will run and sleep until that time.  It does not wake
+at regular intervals just to check to see if it should run jobs.
+This approach allows for better power efficiency from fewer context
+switches.
 
 Setting spawned task state (chroot, rlimits, uid, gid, etc) should be performed
 via a wrapper script (either shell or
@@ -51,6 +59,10 @@ $ su
 ```
 
 Read the manpages for information on crontab format and paths.
+
+I provide a sample init file for the OpenRC init system in
+'init/openrc/ncron'.
+
 ```
 $ man 5 crontab
 $ man 1 ncron
@@ -96,6 +108,20 @@ The most recent (Feb2024) ncron makes some changes to the crontab format:
 - Constraint ranges must be low-high.  If the old high-low behavior
   is needed, write two constraints in the form of low-high instead.
   This restriction may be relaxed in the future.
+
+## Notes
+
+Legacy cron woke up at regular intervals to run jobs because
+precalculating a run time subject to constraints is an instance of
+solving the Boolean satisfiability problem, which is NP-complete in
+the general case.  It may seem like solving this problem ahead of time
+rather than by statistical sampling (as legacy cron essentially does)
+would be computationally costly.  But ncron is in practice very fast,
+as it can simply handle calendar day constraints by 'crossing out'
+days from a year.  Constraint times for a given job are not allowed to
+vary dependently on other constraints (for example, constraint times
+can't vary by the day of the week).  Given these chosen limitations,
+ncron is able to calculate the nearest valid runtime very quickly.
 
 ## Downloads
 
