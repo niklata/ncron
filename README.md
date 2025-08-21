@@ -25,13 +25,6 @@ at regular intervals just to check to see if it should run jobs.
 This approach allows for better power efficiency from fewer context
 switches.
 
-Setting spawned task state (chroot, rlimits, uid, gid, etc) should be performed
-via a wrapper script (either shell or
-[execline](https://skarnet.org/software/execline/)) that perform chain loading
-("Bernstein chaining") for the job. I suggest using the tools such as
-s6-softlimit or s6-applyuidgid from the
-[s6 suite](https://www.skarnet.org/software/s6/overview.html).
-
 ## Requirements
 
 * Linux kernel

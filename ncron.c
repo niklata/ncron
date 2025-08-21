@@ -33,7 +33,6 @@
 
 int gflags_debug;
 static volatile sig_atomic_t pending_save_and_exit;
-static int s6_notify_fd = -1;
 
 /* Time (in msec) to sleep before dispatching events at startup.
    Set to a nonzero value so as not to compete for cpu with init scripts at
@@ -285,7 +284,6 @@ static void process_options(int ac, char *av[])
         {"journal", 0, NULL, 'j'},
         {"crontab", 1, NULL, 't'},
         {"history", 1, NULL, 'H'},
-        {"s6-notify", 1, NULL, 'd'},
         {"verbose", 0, NULL, 'V'},
         {NULL, 0, NULL, 0 }
     };
@@ -313,7 +311,6 @@ static void process_options(int ac, char *av[])
                 g_ncron_execfile_tmp = tmpf;
                 break;
             }
-            case 'd': s6_notify_fd = atoi(optarg); break;
             case 'V': gflags_debug = 1; break;
             default: break;
         }
@@ -338,12 +335,6 @@ int main(int argc, char* argv[])
     prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0);
     prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);
 #endif
-
-    if (s6_notify_fd >= 0) {
-        char buf[] = "\n";
-        safe_write(s6_notify_fd, buf, 1);
-        close(s6_notify_fd);
-    }
 
     do_work(g_initial_sleep);
     exit(EXIT_SUCCESS);
