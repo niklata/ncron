@@ -6,6 +6,8 @@ name="ncron daemon"
 description="ncron cron daemon"
 command=/usr/local/bin/ncron
 supervisor="supervise-daemon"
+output_logger="logger -et '${RC_SVCNAME}'"
+error_logger="logger -et '${RC_SVCNAME}' -p3"
 pidfile="/run/ncron.pid"
 command_args="${ncron_args}"
 
