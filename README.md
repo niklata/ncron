@@ -1,5 +1,5 @@
 # ncron
-Copyright 2003-2025 Nicholas J. Kain.
+Copyright 2003-2026 Nicholas J. Kain.
 See LICENSE for licensing information.
 
 ## Introduction
@@ -32,8 +32,8 @@ switches.
 * GNU Make
 * For developers: [Ragel](https://www.colm.net/open-source/ragel)
 
-ncron should work on most POSIX platforms, but the primary development
-platform is x64 Linux with recent glibc.
+ncron should work on most POSIX platforms.  I use and test it on
+Linux/glibc amd64 and aarch64.
 
 ## Installation
 
@@ -48,7 +48,6 @@ $ su
 # mkdir -m 755 -p /usr/local/share/man/man5
 # install -m 644 ncron.1 /usr/local/share/man/man1/
 # install -m 644 crontab.5 /usr/local/share/man/man5/
-# exit
 ```
 
 Read the manpages for information on crontab format and paths.
@@ -64,6 +63,12 @@ $ man 1 ncron
 A system-wide ncron will have its crontab at `/var/lib/ncron/crontab`.
 The directory will look much like:
 ```
+# chmod 700 /var/lib/ncron
+# touch /var/lib/ncron/crontab
+# chmod 600 /var/lib/ncron/crontab
+# touch /var/lib/ncron/exectimes
+# chmod 644 /var/lib/ncron/exectimes
+
 # ls -laF /var/lib/ncron
 total 12
 drwx------  2 root root   36 May 13  2017 ./
@@ -122,4 +127,3 @@ ncron is able to calculate the nearest valid runtime very quickly.
 * [Codeberg](https://codeberg.org/niklata/ncron)
 * [BitBucket](https://bitbucket.com/niklata/ncron)
 * [GitHub](https://github.com/niklata/ncron)
-
