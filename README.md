@@ -30,7 +30,7 @@ switches.
 * Linux kernel
 * GCC or Clang
 * GNU Make
-* For developers: [Ragel](https://www.colm.net/open-source/ragel)
+* For developers or on non-x86 targets: [Ragel](https://www.colm.net/open-source/ragel)
 
 ncron should work on most POSIX platforms.  I use and test it on
 Linux/glibc amd64 and aarch64.
@@ -38,6 +38,10 @@ Linux/glibc amd64 and aarch64.
 ## Installation
 
 Compile and install ncron.
+* If you are building on a non-x86 target such as ARM, the bundled
+  Ragel-generated artifacts may not be correct.  In that case,
+  ragel must be installed on your system and the prebuilt ragel
+  files must be removed via: `make cleanragel`
 * Build ncron: `make`
 * Install the `ncron` executable in a normal place:
 ```
