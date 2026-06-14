@@ -29,7 +29,7 @@ void job_init(struct Job *);
 void job_destroy(struct Job *);
 void job_insert(struct Job **head, struct Job *elt);
 
-void job_set_initial_exectime(struct Job *);
+void job_set_initial_exectime(struct Job *, const struct timespec *ts);
 void job_exec(struct Job *, const struct timespec *ts);
 
 void parse_config(char const *path, char const *execfile,

@@ -214,12 +214,10 @@ static time_t job_constrain_time(struct Job *self, time_t stime)
 }
 
 /* Used when jobs are first loaded. */
-void job_set_initial_exectime(struct Job *self)
+void job_set_initial_exectime(struct Job *self, const struct timespec *ts)
 {
-    struct timespec ts;
-    clock_or_die(&ts);
-    self->exectime_ = ts.tv_sec;
-    time_t ttm = job_constrain_time(self, ts.tv_sec);
+    self->exectime_ = ts->tv_sec;
+    time_t ttm = job_constrain_time(self, ts->tv_sec);
     time_t ttd = ttm - self->lasttime_;
     if (ttd < self->interval_) {
         ttm += self->interval_ - ttd;

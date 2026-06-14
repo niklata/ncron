@@ -204,12 +204,14 @@ static void parse_history(char const *path)
             continue;
         }
 
+        struct timespec ts;
+        clock_or_die(&ts);
         for (struct Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
             if (j->id_ == hst.id) {
                 hstm_print(&hst);
                 j->numruns_ = hst.h.numruns;
                 j->lasttime_ = hst.h.lasttime;
-                job_set_initial_exectime(j);
+                job_set_initial_exectime(j, &ts);
             }
         }
     }
