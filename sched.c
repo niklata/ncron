@@ -227,12 +227,10 @@ void job_set_initial_exectime(struct Job *self, const struct timespec *ts)
 }
 
 // Advances to next time of execution; performs constraint
-static void job_set_next_time(struct Job *self)
+static void job_set_next_time(struct Job *self, const struct timespec *ts)
 {
-    struct timespec ts;
-    clock_or_die(&ts);
-    time_t etime = job_constrain_time(self, ts.tv_sec + self->interval_);
-    self->exectime_ = etime > ts.tv_sec ? etime : 0;
+    time_t etime = job_constrain_time(self, ts->tv_sec + self->interval_);
+    self->exectime_ = etime > ts->tv_sec ? etime : 0;
 }
 
 void job_exec(struct Job *self, const struct timespec *ts)
@@ -245,7 +243,7 @@ void job_exec(struct Job *self, const struct timespec *ts)
     }
     ++self->numruns_;
     self->lasttime_ = ts->tv_sec;
-    job_set_next_time(self);
+    job_set_next_time(self, ts);
 }
 
 void job_insert(struct Job **head, struct Job *elt)
