@@ -1,5 +1,5 @@
 // -*- c -*-
-// Copyright 2003-2025 Nicholas J. Kain <njkain at gmail dot com>
+// Copyright 2003-2026 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #include <stdio.h>
 #include <unistd.h>
@@ -20,7 +20,6 @@ extern size_t g_njobs;
 extern struct Job *g_jobs;
 
 struct item_history {
-    time_t exectime;
     time_t lasttime;
     unsigned int numruns;
 };
@@ -92,7 +91,6 @@ static void ParseCfgState_debug_print_ce(const struct ParseCfgState *self)
     log_line("\targs: %s\n", j->args_ ? j->args_ : "");
     log_line("\tnumruns: %u\n\tmaxruns: %u\n", j->numruns_, j->maxruns_);
     log_line("\tjournal: %s\n", j->journal_ ? "true" : "false");
-    log_line("\trunat: %s\n", j->runat_ ? "true" : "false");
     log_line("\tinterval: %u\n\texectime: %lu\n\tlasttime: %lu\n", j->interval_, j->exectime_, j->lasttime_);
 }
 
@@ -130,8 +128,8 @@ struct hstm {
 static void hstm_print(const struct hstm *self)
 {
     if (!gflags_debug) return;
-    log_line("id=%d:\tnumruns = %u\n\texectime = %lu\n\tlasttime = %lu\n",
-             self->id, self->h.numruns, self->h.exectime, self->h.lasttime);
+    log_line("id=%d:\tnumruns = %u\n\tlasttime = %lu\n",
+             self->id, self->h.numruns, self->h.lasttime);
 }
 
 %%{
@@ -151,12 +149,6 @@ static void hstm_print(const struct hstm *self)
             fbreak;
         }
     }
-    action ExecTimeEn {
-        if (!strconv_to_i64(hst->st, p, &hst->h.exectime)) {
-            hst->parse_error = true;
-            fbreak;
-        }
-    }
     action IdEn {
         if (!strconv_to_i32(hst->st, p, &hst->id)) {
             hst->parse_error = true;
@@ -164,11 +156,10 @@ static void hstm_print(const struct hstm *self)
         }
     }
 
-    lasttime = '|' digit+ > St % LastTimeEn;
-    numruns = ':' digit+ > St % NumRunsEn;
-    exectime = '=' digit+ > St % ExecTimeEn;
+    lasttime = ':' digit+ > St % LastTimeEn;
+    numruns = '=' digit+ > St % NumRunsEn;
     id = digit+ > St % IdEn;
-    main := id exectime numruns lasttime;
+    main := id numruns lasttime;
 }%%
 
 %% write data;
@@ -218,14 +209,7 @@ static void parse_history(char const *path)
                 hstm_print(&hst);
                 j->numruns_ = hst.h.numruns;
                 j->lasttime_ = hst.h.lasttime;
-                if (!j->runat_) {
-                    j->exectime_ = hst.h.exectime;
-                    job_set_initial_exectime(j);
-                } else {
-                    if (j->interval_ > 0) {
-                        suicide("ERROR IN CRONTAB: interval is unused when runat is set: job %d\n", j->id_);
-                    }
-                }
+                job_set_initial_exectime(j);
             }
         }
     }
@@ -234,11 +218,10 @@ static void parse_history(char const *path)
        exit(1);
     }
     fclose(f);
+
+    // Periodic jobs that never ran in the past should run ASAP.
     for (struct Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
-        // Periodic jobs that never ran in the past should run ASAP.
-        if (!j->runat_ && !j->exectime_) {
-           j->exectime_ = time(NULL);
-        }
+        if (!j->exectime_) j->exectime_ = time(NULL);
     }
 }
 
@@ -472,18 +455,10 @@ static void swap_int_pair(int *a, int *b) { int t = *a; *a = *b; *b = t; }
     action JournalEn { ncs->ce->journal_ = true; }
     journal = 'journal'i % JournalEn;
 
-    action RunAtEn {
-        ncs->ce->runat_ = true;
-        ncs->ce->exectime_ = ncs->v_int1;
-        ncs->ce->maxruns_ = 1;
-        ncs->ce->journal_ = true;
-    }
     action MaxRunsEn {
-        if (!ncs->ce->runat_)
-            ncs->ce->maxruns_ = ncs->v_int1 > 0 ? (unsigned)ncs->v_int1 : 0;
+        ncs->ce->maxruns_ = ncs->v_int1 > 0 ? (unsigned)ncs->v_int1 : 0;
     }
 
-    runat = 'runat'i eqsep intval % RunAtEn;
     maxruns = 'maxruns'i eqsep intval % MaxRunsEn;
 
     action IntervalEn { ncs->ce->interval_ = ncs->v_time; }
@@ -510,7 +485,7 @@ static void swap_int_pair(int *a, int *b) { int t = *a; *a = *b; *b = t; }
     command = 'command'i eqsep stringval % CommandEn;
 
     cmds = command | time | weekday | day |
-           month | interval | maxruns | runat | journal;
+           month | interval | maxruns | journal;
 
     action JobIdSt { ncs->jobid_st = p; }
     action JobIdEn { parse_int_value(p, ncs->jobid_st, ncs->linenum, &ncs->ce->id_); }
@@ -597,9 +572,7 @@ void parse_config(char const *path, char const *execfile,
     parse_history(execfile);
 
     for (struct Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
-        bool alive = !j->runat_?
-                     ((j->maxruns_ == 0 || j->numruns_ < j->maxruns_) && j->exectime_ != 0)
-                   : (j->numruns_ == 0);
+        bool alive = j->exectime_ && (j->maxruns_ == 0 || j->numruns_ < j->maxruns_);
         job_insert(alive ? stk : deadstk, j);
     }
     fclose(f);

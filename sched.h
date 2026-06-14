@@ -1,4 +1,4 @@
-// Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
+// Copyright 2003-2026 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #ifndef NCRON_SCHED_H_
 #define NCRON_SCHED_H_
@@ -18,7 +18,6 @@ struct Job
     unsigned int numruns_;   /* number of times a job has run */
     unsigned int maxruns_;   /* max # of times a job will run, 0 = nolim */
     bool journal_;
-    bool runat_;
 
     bool cst_hhmm_[1440]; // If corresponding bit is set, time is allowed.
     bool cst_mday_[31];

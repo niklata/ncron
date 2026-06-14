@@ -1,4 +1,4 @@
-// Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
+// Copyright 2003-2026 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #include <stdint.h>
 #include <unistd.h>
@@ -213,7 +213,7 @@ static time_t job_constrain_time(struct Job *self, time_t stime)
     return 0;
 }
 
-/* Used when jobs without exectimes are first loaded. */
+/* Used when jobs are first loaded. */
 void job_set_initial_exectime(struct Job *self)
 {
     struct timespec ts;

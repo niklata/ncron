@@ -1,8 +1,8 @@
 .\" Man page for ncron
 .\"
-.\" Copyright (c) 2004-2024 Nicholas J. Kain
+.\" Copyright (c) 2004-2026 Nicholas J. Kain
 .\"
-.TH crontab 5 "Feburary 9, 2024"
+.TH crontab 5 "June 14, 2026"
 .LO 1
 .SH NAME
 crontab \- ncron configuration file
@@ -29,7 +29,6 @@ JOB :=  JOBID
         interval=(UINT[TIME_UNIT])+
         journal
         maxruns=UINT
-        runat=UINT
 COMMENT := '#' or ';' ANY
 
 config file :=
@@ -102,14 +101,9 @@ every job to be journalled in the configuration file.
 maxruns=INTEGER
 Maximum number of times that a job will be run. The number of runs for a job is
 accounted for between invocations of ncron. A value of zero denotes no limit.
-.TP
-runat=TIME
-ncron will run the specified job only one time, at a time greater than or equal
-to the time (in seconds since epoch) passed as an argument to runat. The job
-will implicitly be journalled.  "interval" is obviously meaningless if this
-keyword is to be used, and should be omitted for human readability (although
-ncron does not care). This keyword allows ncron to act as an atd as well as a
-crond.
+This keyword can be used to emulate the functionality of atd; simply set the
+interval to be some reasonable step for the constraint search and set a
+constraint equal to the time the job should be run with a maxruns=1 setting.
 .PP
 Note that for all constraints, values outside of valid ranges will be treated
 as wildcards.
@@ -149,18 +143,13 @@ Years may not be used as constraints.  Generally periodic jobs on a
 computer don't vary by year.  Technically it would be possible to
 support year constraints but it doesn't seem worth the work and complexity.
 .SH TIPS
-Note that when a job is removed, the history entries will be removed
-automatically for interval / non-runat jobs if ncron is shut down and
-restarted twice.  Alternatively, lines starting with job ids no longer
-in use can be deleted from the history file so long as ncron is not
-running.  If ncron is running, it will overwrite any changes made when
-it saves out the current history state to disk on shutdown.
-.PP.
-The "runat" keyword allows ncron to function as either a cron daemon (which
-runs tasks at periodic intervals of time) or an at daemon (which runs tasks at
-defined times).
+If ncron is running, it will overwrite any changes made when it saves out
+the current history state to disk on shutdown.
 .PP
-ncron is also designed to run effectively as either a single uid-root daemon,
+Job numbers can be reclaimed for use by removing the corresponding entry in
+the history file when ncron is not running.
+.PP
+ncron is designed to run effectively as either a single uid-root daemon,
 multiplexing between multiple user accounts, or as a per-user cron daemon, with
 one daemon for each user account.  Both models run efficiently, but have
 different administrative and security characteristics.

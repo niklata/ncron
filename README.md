@@ -66,15 +66,15 @@ The directory will look much like:
 # chmod 700 /var/lib/ncron
 # touch /var/lib/ncron/crontab
 # chmod 600 /var/lib/ncron/crontab
-# touch /var/lib/ncron/exectimes
-# chmod 644 /var/lib/ncron/exectimes
+# touch /var/lib/ncron/history
+# chmod 644 /var/lib/ncron/history
 
 # ls -laF /var/lib/ncron
 total 12
 drwx------  2 root root   36 May 13  2017 ./
 drwxr-xr-x  3 root root 4096 May 13  2017 ../
 -rw-------  1 root root  252 May 13  2017 crontab
--rw-r--r--  1 root root  131 May 13  2017 exectimes
+-rw-r--r--  1 root root  131 May 13  2017 history
 ```
 
 A simple crontab file (remove the leading spaces if you copy/paste):
@@ -84,8 +84,8 @@ command=/bin/echo Hello world!
 interval=5m
 ```
 
-The exectimes file must be readable and writable by ncron; create
-it with touch and set proper ownership and permissions on it.  exectimes
+The history file must be readable and writable by ncron; create
+it with touch and set proper ownership and permissions on it.  history
 stores the history of previously run jobs (denoted by the `!NUMBER`
 markers in the crontab).
 
@@ -94,7 +94,35 @@ enough to get you started.
 
 ## Upgrading
 
-The most recent (Feb2024) ncron makes some changes to the crontab format:
+If you are upgrading from a version before Jun2026, it is necessary to
+convert from the execfile format to the history format.  There is a
+simple GNU sed script to perform the necessary changes (removal of the
+exectime field):
+
+```
+# sed -E 's/([0-9]+)=[0-9]+:([0-9]+)[|]([0-9]+)/\1=\2:\3/' /var/lib/ncron/exectimes > /var/lib/ncron/history
+# chmod 644 /var/lib/ncron/history
+# rm /var/lib/ncron/exectimes
+```
+
+The exectime field is removed because ncron now recalculates the
+runtime for each job when it is started.  This change is to make it
+easier to redefine the properties of an existing job without having to
+also modify the history file.  The old design dates back to when
+computers were potentially a lot slower and saving cycles was more
+important than ergonomics.
+
+The runat= command in crontab no longer exists.  Instead, it is
+recommended to instead use maxruns=1 with a reasonable interval= for
+constraint solving (equal to that of the unit of the smallest
+constraint that is set) and appropriate constraint to define the time
+to run the job.
+
+runat= is removed because the functionality that it provides is
+redundant and less well-tested than the alternative just described.
+
+If you are upgrading from a version before Feb2024, it is necessary to
+make some changes to your crontab file:
 
 - The dummy '!0' job is no longer required to terminate the crontab.
 - Single line comments starting with '#' or ';' are now allowed.

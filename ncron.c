@@ -27,7 +27,7 @@
 #include "sched.h"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
-#define EXEC_FILE_DEFAULT "/var/lib/ncron/exectimes"
+#define HISTORY_FILE_DEFAULT "/var/lib/ncron/history"
 
 #define NCRON_VERSION "3.0"
 
@@ -40,8 +40,8 @@ static volatile sig_atomic_t pending_save_and_exit;
 static unsigned g_initial_sleep = 0;
 
 static char const *g_ncron_conf = CONFIG_FILE_DEFAULT;
-static char const *g_ncron_execfile = EXEC_FILE_DEFAULT;
-static char const *g_ncron_execfile_tmp = EXEC_FILE_DEFAULT "~";
+static char const *g_ncron_history = HISTORY_FILE_DEFAULT;
+static char const *g_ncron_history_tmp = HISTORY_FILE_DEFAULT "~";
 enum Execmode
 {
     Execmode_normal = 0,
@@ -58,8 +58,8 @@ static struct Job * deadstackl;
 static bool do_save_stack(FILE *f, struct Job *j)
 {
     for (; j; j = j->next_) {
-        if (fprintf(f, "%d=%li:%u|%lu\n", j->id_, j->exectime_, j->numruns_, j->lasttime_) < 0) {
-            log_line("Failed to write to history file %s\n", g_ncron_execfile_tmp);
+        if (fprintf(f, "%d=%u:%lu\n", j->id_, j->numruns_, j->lasttime_) < 0) {
+            log_line("Failed to write to history file %s\n", g_ncron_history_tmp);
             return false;
         }
     }
@@ -68,25 +68,25 @@ static bool do_save_stack(FILE *f, struct Job *j)
 
 static bool save_stack(void)
 {
-    FILE *f = fopen(g_ncron_execfile_tmp, "w");
+    FILE *f = fopen(g_ncron_history_tmp, "w");
     if (!f) {
-        log_line("Failed to open history file %s for write\n", g_ncron_execfile_tmp);
+        log_line("Failed to open history file %s for write\n", g_ncron_history_tmp);
         return false;
     }
     if (!do_save_stack(f, stackl)) goto err1;
     if (!do_save_stack(f, deadstackl)) goto err1;
     fclose(f);
 
-    if (rename(g_ncron_execfile_tmp, g_ncron_execfile)) {
+    if (rename(g_ncron_history_tmp, g_ncron_history)) {
         log_line("Failed to update history file (%s => %s): %s\n",
-                 g_ncron_execfile_tmp, g_ncron_execfile, strerror(errno));
+                 g_ncron_history_tmp, g_ncron_history, strerror(errno));
         goto err0;
     }
     return true;
 err1:
     fclose(f);
 err0:
-    unlink(g_ncron_execfile_tmp);
+    unlink(g_ncron_history_tmp);
     return false;
 }
 
@@ -94,10 +94,10 @@ static void save_and_exit(void)
 {
     if (g_ncron_execmode != Execmode_nosave) {
         if (save_stack()) {
-            log_line("Saved stack to %s.\n", g_ncron_execfile);
+            log_line("Saved stack to %s.\n", g_ncron_history);
         } else {
             log_line("Failed to save stack to %s; some jobs may run again.\n",
-                     g_ncron_execfile);
+                     g_ncron_history);
         }
     }
     // Get rid of leak sanitizer noise.
@@ -190,7 +190,7 @@ static void do_work(unsigned initial_sleep)
         if (pending_save) {
             if (!save_stack()) {
                 log_line("Failed to save stack to %s for a journalled job.\n",
-                         g_ncron_execfile);
+                         g_ncron_history);
             } else {
                 pending_save = false;
             }
@@ -206,7 +206,7 @@ static void do_work(unsigned initial_sleep)
             if (j->journal_ || g_ncron_execmode == Execmode_journal)
                 pending_save = true;
 
-            if ((j->numruns_ < j->maxruns_ || j->maxruns_ == 0) && j->exectime_ != 0) {
+            if (j->exectime_ && (j->numruns_ < j->maxruns_ || j->maxruns_ == 0)) {
                 if (stackl->next_) {
                     struct Job *t = stackl;
                     stackl = stackl->next_;
@@ -301,14 +301,14 @@ static void process_options(int ac, char *av[])
             case 't': g_ncron_conf = strdup(optarg); if (!g_ncron_conf) abort(); break;
             case 'H': {
                 size_t l = strlen(optarg);
-                g_ncron_execfile = strdup(optarg);
-                if (!g_ncron_execfile) abort();
+                g_ncron_history = strdup(optarg);
+                if (!g_ncron_history) abort();
                 char *tmpf = malloc(l + 2);
                 if (!tmpf) abort();
                 memcpy(tmpf, optarg, l);
                 tmpf[l] = '~';
                 tmpf[l+1] = 0;
-                g_ncron_execfile_tmp = tmpf;
+                g_ncron_history_tmp = tmpf;
                 break;
             }
             case 'V': gflags_debug = 1; break;
@@ -321,8 +321,8 @@ int main(int argc, char* argv[])
 {
     process_options(argc, argv);
     fail_on_fdne(g_ncron_conf, R_OK);
-    fail_on_fdne(g_ncron_execfile, R_OK | W_OK);
-    parse_config(g_ncron_conf, g_ncron_execfile, &stackl, &deadstackl);
+    fail_on_fdne(g_ncron_history, R_OK | W_OK);
+    parse_config(g_ncron_conf, g_ncron_history, &stackl, &deadstackl);
 
     if (!stackl)
         suicide("No jobs, exiting.\n");
