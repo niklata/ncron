@@ -157,7 +157,7 @@ static void sleep_or_die(struct timespec *ts)
     }
 }
 
-static inline void debug_stack_print(const struct timespec *ts) {
+static void debug_stack_print(const struct timespec *ts) {
     if (!gflags_debug)
         return;
     if (stackl)
@@ -166,7 +166,7 @@ static inline void debug_stack_print(const struct timespec *ts) {
         log_line("job %d exectime = %lu\n", j->id_, j->exectime_);
 }
 
-static void do_work()
+static void do_work(void)
 {
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts)) {
