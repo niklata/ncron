@@ -27,7 +27,6 @@ switches.
 
 ## Requirements
 
-* Linux kernel
 * GCC or Clang
 * GNU Make
 * For developers or on non-x86 targets: [Ragel](https://www.colm.net/open-source/ragel)
@@ -143,6 +142,18 @@ make some changes to your crontab file:
   This restriction may be relaxed in the future.
 
 ## Notes
+
+If a jobid is no longer needed and you would like to use it for
+a conceptually new job, a little effort is required to safely re-use it.
+First, edit the crontab file to set up the new job that will reuse
+the jobid.  Then shut down ncron if it is running; it will save its
+internal state to the history file.  Then edit the history file
+and delete the jobid=runs:last_time line where jobid matches the
+jobid of the reused/new job.  Once the updated history file is saved,
+restart ncron.  If you would like to avoid this process, just
+use new jobids for every new job and don't reuse them.  The history
+file will retain state for unused jobids, but that is the only cost;
+that state will not be loaded into memory.
 
 Legacy cron woke up at regular intervals to run jobs because
 precalculating a run time subject to constraints is an instance of
