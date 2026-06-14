@@ -218,11 +218,6 @@ static void parse_history(char const *path)
        exit(1);
     }
     fclose(f);
-
-    // Periodic jobs that never ran in the past should run ASAP.
-    for (struct Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
-        if (!j->exectime_) j->exectime_ = time(NULL);
-    }
 }
 
 static bool ParseCfgState_add_cst_mon(struct ParseCfgState *self)

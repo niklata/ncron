@@ -218,6 +218,7 @@ void job_set_initial_exectime(struct Job *self)
 {
     struct timespec ts;
     clock_or_die(&ts);
+    self->exectime_ = ts.tv_sec;
     time_t ttm = job_constrain_time(self, ts.tv_sec);
     time_t ttd = ttm - self->lasttime_;
     if (ttd < self->interval_) {

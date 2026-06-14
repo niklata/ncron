@@ -11,3 +11,6 @@ interval=45s
 month=2
 day=9-15
 weekday=2-5
+!4
+command=/bin/echo kek
+interval=7s
