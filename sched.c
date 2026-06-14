@@ -13,7 +13,6 @@
 #include "nk/log.h"
 #include "nk/pspawn.h"
 #include "nk/io.h"
-#include "ncron.h"
 #include "sched.h"
 
 extern char **environ;

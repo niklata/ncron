@@ -10,7 +10,6 @@
 #include <assert.h>
 #include "nk/log.h"
 #include "strconv.h"
-#include "ncron.h"
 #include "sched.h"
 
 #define MAX_LINE 2048
@@ -182,6 +181,12 @@ static int do_parse_history(struct hstm *hst, const char *p, size_t plen)
 
 static void parse_history(char const *path)
 {
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts)) {
+        log_line("clock_gettime failed: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
     char buf[MAX_LINE];
     FILE *f = fopen(path, "r");
     if (!f) {
@@ -204,8 +209,6 @@ static void parse_history(char const *path)
             continue;
         }
 
-        struct timespec ts;
-        clock_or_die(&ts);
         for (struct Job *j = g_jobs, *jend = g_jobs + g_njobs; j != jend; ++j) {
             if (j->id_ == hst.id) {
                 hstm_print(&hst);
@@ -217,7 +220,7 @@ static void parse_history(char const *path)
     }
     if (ferror(f)) {
        log_line("IO error reading history file '%s'\n", path);
-       exit(1);
+       exit(EXIT_FAILURE);
     }
     fclose(f);
 }
@@ -521,7 +524,7 @@ static size_t count_config_jobs(FILE *f)
         if (c == EOF) {
             if (ferror(f)) {
                 log_line("IO error reading config file\n");
-                exit(1);
+                exit(EXIT_FAILURE);
             }
             break;
         }
@@ -563,7 +566,7 @@ void parse_config(char const *path, char const *execfile,
     }
     if (ferror(f)) {
         log_line("IO error reading config file '%s'\n", path);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     ParseCfgState_finish_ce(&ncs);
     parse_history(execfile);

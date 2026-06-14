@@ -23,7 +23,6 @@
 #include "nk/log.h"
 #include "nk/io.h"
 #include "strconv.h"
-#include "ncron.h"
 #include "sched.h"
 
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
@@ -158,12 +157,6 @@ static void sleep_or_die(struct timespec *ts)
     }
 }
 
-void clock_or_die(struct timespec *ts)
-{
-    if (clock_gettime(CLOCK_REALTIME, ts))
-        suicide("clock_gettime failed: %s\n", strerror(errno));
-}
-
 static inline void debug_stack_print(const struct timespec *ts) {
     if (!gflags_debug)
         return;
@@ -176,7 +169,11 @@ static inline void debug_stack_print(const struct timespec *ts) {
 static void do_work()
 {
     struct timespec ts;
-    clock_or_die(&ts);
+    if (clock_gettime(CLOCK_REALTIME, &ts)) {
+        log_line("clock_gettime failed: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
     bool pending_save = false;
     for (;;) {
         if (pending_save) {
