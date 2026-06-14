@@ -1,4 +1,4 @@
-// Copyright 2003-2024 Nicholas J. Kain <njkain at gmail dot com>
+// Copyright 2003-2026 Nicholas J. Kain <njkain at gmail dot com>
 // SPDX-License-Identifier: MIT
 #include <unistd.h>
 #include <stdio.h>
@@ -29,15 +29,10 @@
 #define CONFIG_FILE_DEFAULT "/var/lib/ncron/crontab"
 #define HISTORY_FILE_DEFAULT "/var/lib/ncron/history"
 
-#define NCRON_VERSION "3.0"
+#define NCRON_VERSION "4.0"
 
 int gflags_debug;
 static volatile sig_atomic_t pending_save_and_exit;
-
-/* Time (in msec) to sleep before dispatching events at startup.
-   Set to a nonzero value so as not to compete for cpu with init scripts at
-   boot time. */
-static unsigned g_initial_sleep = 0;
 
 static char const *g_ncron_conf = CONFIG_FILE_DEFAULT;
 static char const *g_ncron_history = HISTORY_FILE_DEFAULT;
@@ -178,13 +173,10 @@ static inline void debug_stack_print(const struct timespec *ts) {
         log_line("job %d exectime = %lu\n", j->id_, j->exectime_);
 }
 
-static void do_work(unsigned initial_sleep)
+static void do_work()
 {
     struct timespec ts;
     clock_or_die(&ts);
-    ts.tv_sec += initial_sleep / 1000;
-    ts.tv_nsec += (initial_sleep % 1000) * 1000000;
-
     bool pending_save = false;
     for (;;) {
         if (pending_save) {
@@ -238,7 +230,7 @@ static void do_work(unsigned initial_sleep)
 static void usage(void)
 {
     printf("ncron " NCRON_VERSION ", cron/at daemon.\n"
-           "Copyright 2003-2024 Nicholas J. Kain\n"
+           "Copyright 2003-2026 Nicholas J. Kain\n"
            "Usage: ncron [options]...\n\nOptions:\n"
            "--help         -h    Print usage and exit.\n"
            "--version      -v    Print version and exit.\n"
@@ -254,7 +246,7 @@ static void usage(void)
 static void print_version(void)
 {
     log_line("ncron " NCRON_VERSION ", cron/at daemon.\n"
-             "Copyright 2003-2024 Nicholas J. Kain\n\n"
+             "Copyright 2003-2026 Nicholas J. Kain\n\n"
 "Permission is hereby granted, free of charge, to any person obtaining\n"
 "a copy of this software and associated documentation files (the\n"
 "\"Software\"), to deal in the Software without restriction, including\n"
@@ -279,7 +271,6 @@ static void process_options(int ac, char *av[])
     static struct option long_options[] = {
         {"help", 0, NULL, 'h'},
         {"version", 0, NULL, 'v'},
-        {"sleep", 1, NULL, 's'},
         {"noexecsave", 0, NULL, '0'},
         {"journal", 0, NULL, 'j'},
         {"crontab", 1, NULL, 't'},
@@ -288,14 +279,11 @@ static void process_options(int ac, char *av[])
         {NULL, 0, NULL, 0 }
     };
     for (;;) {
-        int c = getopt_long(ac, av, "hvbs:0jt:H:d:V", long_options, NULL);
+        int c = getopt_long(ac, av, "hvb0jt:H:d:V", long_options, NULL);
         if (c == -1) break;
         switch (c) {
             case 'h': usage(); exit(EXIT_SUCCESS); break;
             case 'v': print_version(); exit(EXIT_SUCCESS); break;
-            case 's': if (!strconv_to_u32(optarg, optarg + strlen(optarg), &g_initial_sleep))
-                          suicide("invalid sleep '%s' specified\n", optarg);
-                      break;
             case '0': g_ncron_execmode = Execmode_nosave; break;
             case 'j': g_ncron_execmode = Execmode_journal; break;
             case 't': g_ncron_conf = strdup(optarg); if (!g_ncron_conf) abort(); break;
@@ -336,7 +324,7 @@ int main(int argc, char* argv[])
     prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);
 #endif
 
-    do_work(g_initial_sleep);
+    do_work();
     exit(EXIT_SUCCESS);
 }
 

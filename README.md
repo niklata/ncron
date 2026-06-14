@@ -125,6 +125,9 @@ to run the job.
 runat= is removed because the functionality that it provides is
 redundant and less well-tested than the alternative just described.
 
+The -s or --sleep command line option is removed.  Just use
+`sleep n; ncron` or similar instead.
+
 If you are upgrading from a version before Feb2024, it is necessary to
 make some changes to your crontab file:
 

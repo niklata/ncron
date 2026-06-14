@@ -1,13 +1,13 @@
 .\" Man page for ncron
 .\"
-.\" Copyright (c) 2004-2024 Nicholas J. Kain
+.\" Copyright (c) 2004-2026 Nicholas J. Kain
 .\"
-.TH ncron 1 "Feburary 9, 2024"
+.TH ncron 1 "July 14, 2026"
 .LO 1
 .SH NAME
 ncron \- secure and reliable cron/at daemon
 .SH SYNOPSIS
-ncron [\-b0jqhv] [\-s msec] [\-c config_file] [\-t crontab_file]
+ncron [\-b0jqhv] [\-c config_file] [\-t crontab_file]
       [\-H history_file]
 .SH DESCRIPTION
 .B ncron
@@ -29,12 +29,7 @@ Specify the crontab file to use; the default is
 Specify the file in which ncron will store job
 runtimes and the number of times that a job has
 been invoked.  The default location is
-.BR /var/lib/ncron/exectime .
-.TP
-.B \-\^s , \-\-sleep=MSEC
-Wait for the specified number of milliseconds at startup before running any
-tasks.  Useful for boot scripts that invoke ncron.  Note that if ncron receives
-a signal during this wait time, ncron will run pending jobs immediately.
+.BR /var/lib/ncron/history .
 .TP
 .B \-\^0   \-\-noexecsave
 Do not save any data on the times when jobs are executed.
