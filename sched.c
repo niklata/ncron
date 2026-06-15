@@ -93,7 +93,6 @@ struct day_sieve
     // bit1 = mday
     // bit2 = wday
     uint8_t filter[366];
-
 };
 
 static bool day_sieve_day_ok(struct day_sieve *self, int i) { return self->filter[i] == 7; }
