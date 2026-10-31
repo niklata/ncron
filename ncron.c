@@ -231,7 +231,6 @@ static void usage(void)
            "Usage: ncron [options]...\n\nOptions:\n"
            "--help         -h    Print usage and exit.\n"
            "--version      -v    Print version and exit.\n"
-           "--sleep        -s [] Initial sleep time in seconds.\n"
            "--noexecsave   -0    Don't save execution history at all.\n"
            "--journal      -j    Save exectimes at each job invocation.\n"
            "--crontab      -t [] Path to crontab file.\n"
