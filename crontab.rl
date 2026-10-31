@@ -34,8 +34,10 @@ struct ParseCfgState
 
     const char *jobid_st;
     const char *time_st;
-    const char *intv_st;
+    const char *intv1_st;
     const char *intv2_st;
+    const char *intv3_st;
+    const char *intv4_st;
     const char *strv_st;
 
     size_t v_strlen;
@@ -51,6 +53,7 @@ struct ParseCfgState
     int cs;
     bool have_command;
     bool intv2_exist;
+    bool intv4_exist;
     bool seen_cst_hhmm;
     bool seen_cst_wday;
     bool seen_cst_mday;
@@ -286,11 +289,12 @@ static bool ParseCfgState_add_cst_time(struct ParseCfgState *self)
 {
     bool single_value = self->v_int3 == -1 && self->v_int4 == -1;
     // Enforce that range is low-high.
-    if (!single_value) {
-        if (self->v_int3 < self->v_int1) return false;
-        if (self->v_int3 == self->v_int1) {
-            if (self->v_int4 < self->v_int2) return false;
-        }
+    if (!single_value && (self->v_int3 < self->v_int1
+                          || (self->v_int3 == self->v_int1
+                              && self->v_int4 < self->v_int2))) {
+        fprintf(stderr, "Invalid time constraint: [t0=%d:%d, t1=%d:%d] where t1 < t0\n",
+                self->v_int1, self->v_int2, self->v_int3, self->v_int4);
+        return false;
     }
     if (!self->seen_cst_hhmm) {
         memset(&self->ce->cst_hhmm_, 0, sizeof self->ce->cst_hhmm_);
@@ -397,8 +401,6 @@ static void parse_int_value(const char *p, const char *start, size_t linenum, in
         suicide("Invalid integer value at line %zu\n", linenum);
 }
 
-static void swap_int_pair(int *a, int *b) { int t = *a; *a = *b; *b = t; }
-
 %%{
     machine ncrontab;
     access ncs->;
@@ -413,22 +415,23 @@ static void swap_int_pair(int *a, int *b) { int t = *a; *a = *b; *b = t; }
     action TDayEn  { ParseCfgState_parse_time_unit(ncs, p, 86400, &ncs->v_time); }
     action TWeekEn { ParseCfgState_parse_time_unit(ncs, p, 604800, &ncs->v_time); }
 
-    action IntValSt {
-        ncs->intv_st = p;
+    action IntVal1St {
+        ncs->intv1_st = p;
         ncs->v_int1 = ncs->v_int2 = 0;
         ncs->intv2_exist = false;
     }
-    action IntValEn { parse_int_value(p, ncs->intv_st, ncs->linenum, &ncs->v_int1); }
+    action IntVal1En { parse_int_value(p, ncs->intv1_st, ncs->linenum, &ncs->v_int1); }
     action IntVal2St { ncs->intv2_st = p; }
     action IntVal2En { parse_int_value(p, ncs->intv2_st, ncs->linenum, &ncs->v_int2); ncs->intv2_exist = true; }
-    action IntValSwap {
-        swap_int_pair(&ncs->v_int1, &ncs->v_int3);
-        swap_int_pair(&ncs->v_int2, &ncs->v_int4);
+
+    action IntVal3St {
+        ncs->intv3_st = p;
+        ncs->v_int3 = ncs->v_int4 = 0;
+        ncs->intv4_exist = false;
     }
-    action IntVal34Clear {
-        ncs->v_int3 = -1;
-        ncs->v_int4 = -1;
-    }
+    action IntVal3En { parse_int_value(p, ncs->intv3_st, ncs->linenum, &ncs->v_int3); }
+    action IntVal4St { ncs->intv4_st = p; }
+    action IntVal4En { parse_int_value(p, ncs->intv4_st, ncs->linenum, &ncs->v_int4); ncs->intv4_exist = true; }
 
     action StrValSt { ncs->strv_st = p; ncs->v_strlen = 0; }
     action StrValEn {
@@ -446,9 +449,9 @@ static void swap_int_pair(int *a, int *b) { int t = *a; *a = *b; *b = t; }
     t_week = (digit+ > TUnitSt) 'w' % TWeekEn;
     t_any = (t_sec | t_min | t_hr | t_day | t_week);
 
-    intval = (digit+ > IntValSt % IntValEn);
+    intval = (digit+ > IntVal1St % IntVal1En);
     timeval = t_any (spc* t_any)*;
-    intrangeval = (digit+ > IntValSt % IntValEn)
+    intrangeval = (digit+ > IntVal1St % IntVal1En)
                   ('-' (digit+ > IntVal2St % IntVal2En))?;
     stringval = ([^\0\n]+ > StrValSt % StrValEn);
 
@@ -467,8 +470,9 @@ static void swap_int_pair(int *a, int *b) { int t = *a; *a = *b; *b = t; }
 
     xhour = digit | ('0' digit) | ('1' digit) | '20' | '21' | '22' | '23';
     xminute = ('0' | '1' | '2' | '3' | '4' | '5') digit;
-    hhmm = xhour > IntValSt % IntValEn ':' xminute > IntVal2St % IntVal2En;
-    hhmm_range = hhmm > IntVal34Clear (spc* '-' spc* hhmm)? > IntValSwap % IntValSwap;
+    hhmm_low = xhour > IntVal1St % IntVal1En ':' xminute > IntVal2St % IntVal2En;
+    hhmm_high = xhour > IntVal3St % IntVal3En ':' xminute > IntVal4St % IntVal4En;
+    hhmm_range = hhmm_low (spc* '-' spc* hhmm_high)?;
 
     action MonthEn { ParseCfgState_add_cst_mon(ncs); }
     action DayEn { ParseCfgState_add_cst_mday(ncs); }
